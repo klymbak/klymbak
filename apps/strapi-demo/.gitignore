@@ -1,0 +1,8 @@
+.tmp/
+.strapi/
+.strapi-updater.json
+build/
+dist/
+types/generated/
+public/uploads/*
+!public/uploads/.gitkeep

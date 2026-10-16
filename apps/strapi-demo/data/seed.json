@@ -1,0 +1,107 @@
+{
+  "global": {
+    "siteName": "Field Notes",
+    "siteDescription": "A small blog about technology, food and the natural world, written by people who like to look closely.",
+    "defaultSeo": {
+      "metaTitle": "Field Notes",
+      "metaDescription": "Short, careful writing about technology, food and nature."
+    }
+  },
+  "about": {
+    "title": "About Field Notes",
+    "blocks": [
+      { "__component": "shared.quote", "title": "Thelonious Monk", "body": "You've got to dig it to dig it, you dig?" },
+      {
+        "__component": "shared.rich-text",
+        "body": "## Why we write\n\nField Notes started as a shared document where three colleagues kept things they found interesting. It became a blog when the document got too long to scroll.\n\nWe publish when we have something worth saying, usually once or twice a week."
+      }
+    ]
+  },
+  "categories": [
+    { "name": "news", "slug": "news", "description": "What happened, and why it matters." },
+    { "name": "tech", "slug": "tech", "description": "Software, hardware and the people who build them." },
+    { "name": "food", "slug": "food", "description": "Cooking, baking and eating well." },
+    { "name": "nature", "slug": "nature", "description": "Animals, plants and the planet." },
+    { "name": "story", "slug": "story" }
+  ],
+  "authors": [
+    { "key": "david", "name": "David Doe", "email": "daviddoe@strapi.io" },
+    { "key": "sarah", "name": "Sarah Baker", "email": "sarahbaker@strapi.io" },
+    { "key": "priya", "name": "Priya Raman", "email": "priya.raman@example.com" }
+  ],
+  "articles": [
+    {
+      "title": "The internet's own boy",
+      "slug": "the-internet-s-own-boy",
+      "description": "Follow the story of Aaron Swartz, the boy who could change the world.",
+      "category": "story",
+      "author": "david",
+      "status": "published",
+      "quote": { "title": "Aaron Swartz", "body": "Be curious. Read widely. Try new things." },
+      "body": "Aaron Swartz helped build RSS at fourteen, co-founded Reddit and spent his short life arguing that knowledge should be free to everyone.\n\nThe documentary *The Internet's Own Boy* follows him from a precocious childhood in Highland Park to the federal prosecution that ended with his death in 2013. It is not an easy film, but it is a fair one: it lets friends, family and critics speak, and it leaves the hard questions with the viewer.\n\nWatch it with someone you can talk to afterwards."
+    },
+    {
+      "title": "This shrimp is awesome",
+      "slug": "this-shrimp-is-awesome",
+      "description": "Mantis shrimps, or stomatopods, are marine crustaceans of the order Stomatopoda.",
+      "category": "nature",
+      "author": "david",
+      "status": "published",
+      "body": "The mantis shrimp punches with the acceleration of a bullet. Its club strikes so fast that the water around it boils for a moment, producing a flash of light and a second shock wave.\n\nIt also sees the world in a way no other animal does: up to sixteen kinds of colour receptors, against our three, and the ability to detect polarised light.\n\nNone of this makes it a good aquarium pet. It can crack the glass."
+    },
+    {
+      "title": "A bug is becoming a meme on the internet",
+      "slug": "a-bug-is-becoming-a-meme-on-the-internet",
+      "description": "How a bug in MySQL turned into an inside joke for a generation of developers.",
+      "category": "tech",
+      "author": "sarah",
+      "status": "published",
+      "quote": { "title": "Bug #11472", "body": "Triggers are not executed on cascading foreign key actions." },
+      "body": "Some bug reports outlive the software versions they were filed against. MySQL bug #11472 was opened in 2005 and is still discussed today, mostly as a joke about how long some problems take to fix.\n\nThe bug itself is real: triggers don't fire for rows changed by cascading foreign keys. The joke is that every few years someone rediscovers it, writes a long comment, and adds their name to the list of people waiting.\n\nIf you maintain an issue tracker, there is a lesson here about closing things you will never do."
+    },
+    {
+      "title": "What's inside a black hole",
+      "slug": "what-s-inside-a-black-hole",
+      "description": "Maybe the answer is in this article, or maybe not.",
+      "category": "news",
+      "author": "sarah",
+      "status": "published",
+      "body": "Nobody knows, and that is the honest answer. General relativity predicts a singularity at the centre, a point of infinite density, but most physicists read that as a sign the theory has run out of road rather than a description of something real.\n\nWhat we do know comes from the outside: the event horizon, the disc of gas around it and, since 2019, actual images of two of them.\n\nThe inside remains a question for a theory we don't have yet."
+    },
+    {
+      "title": "Beautiful picture",
+      "slug": "beautiful-picture",
+      "description": "Description of a beautiful picture",
+      "category": "nature",
+      "author": "sarah",
+      "status": "draft",
+      "body": "We took this photo at six in the morning on the ridge above the lake, about ten minutes before the fog lifted.\n\nTODO: add the photo, the location and the camera settings."
+    },
+    {
+      "title": "Ten keyboard shortcuts we use every day",
+      "slug": "ten-keyboard-shortcuts-we-use-every-day",
+      "description": "Small habits that save a few minutes, many times a day.",
+      "category": "tech",
+      "author": "david",
+      "status": "modified",
+      "body": "1. **Ctrl+Shift+T** reopens the tab you just closed.\n2. **Ctrl+L** jumps to the address bar.\n3. **Alt+Tab**, held, lets you pick a window.\n4. **Win+V** opens the clipboard history.\n5. **Ctrl+Backspace** deletes a whole word.\n\nThe other five are coming in the next draft.",
+      "draftBody": "1. **Ctrl+Shift+T** reopens the tab you just closed.\n2. **Ctrl+L** jumps to the address bar.\n3. **Alt+Tab**, held, lets you pick a window.\n4. **Win+V** opens the clipboard history.\n5. **Ctrl+Backspace** deletes a whole word.\n6. **Ctrl+W** closes the current tab.\n7. **Win+Shift+S** takes a screenshot of part of the screen.\n\nThree more to go."
+    },
+    {
+      "title": "Sourdough for people who hate waiting",
+      "slug": "sourdough-for-people-who-hate-waiting",
+      "category": "food",
+      "author": "priya",
+      "status": "draft",
+      "body": "Sourdough has a reputation for being slow, and it is. But most of the time is the dough's, not yours.\n\nMix in the evening, fold twice before bed, shape in the morning and bake after work. Total hands-on time: about twenty minutes.\n\nThe starter is the only part that needs regular attention, and it forgives a missed feeding more often than you'd think."
+    },
+    {
+      "title": "Why our office plants keep dying",
+      "slug": "why-our-office-plants-keep-dying",
+      "description": "Too much love, mostly.",
+      "author": "priya",
+      "status": "draft",
+      "body": "We have killed four plants this year. A fern, two succulents and something the shop called unkillable.\n\nThe culprit, according to the nursery, is water. Everyone who walks past gives them a little, and nobody tells anyone else.\n\nThe new plan is a schedule on the fridge and a cactus."
+    }
+  ]
+}

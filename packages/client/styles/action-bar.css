@@ -1,0 +1,14 @@
+.kl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.kl-actions__title {
+  font-size: 12px;
+  color: var(--kl-text-muted);
+  margin-right: 4px;
+}
+.kl-actions a.kl-btn {
+  text-decoration: none;
+}

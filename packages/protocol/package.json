@@ -1,0 +1,28 @@
+{
+  "name": "@klymbak/protocol",
+  "version": "0.1.0",
+  "description": "Wire protocol shared by @klymbak/server and @klymbak/vue: chat messages, stream events, generative UI blocks.",
+  "license": "MIT",
+  "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
+  "homepage": "https://github.com/klymbak/klymbak/tree/main/packages/protocol#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klymbak/klymbak.git",
+    "directory": "packages/protocol"
+  },
+  "bugs": "https://github.com/klymbak/klymbak/issues",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@klymbak/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

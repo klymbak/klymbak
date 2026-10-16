@@ -1,0 +1,33 @@
+{
+  "name": "klymbak",
+  "private": true,
+  "type": "module",
+  "description": "Replace internal admin panels with an agent that lives in a chat. Vue 3 + Node, built on the pi agent harness.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,console -c blue,green \"pnpm --filter acme-api dev\" \"pnpm --filter acme-console dev\"",
+    "dev:site": "pnpm --filter site dev",
+    "dev:react": "concurrently -k -n api,react -c blue,cyan \"pnpm --filter acme-api dev\" \"pnpm --filter react-console dev\"",
+    "dev:strapi": "pnpm --filter \"@klymbak/strapi...\" build && pnpm --filter strapi-demo dev",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "start": "pnpm --filter acme-api start",
+    "dev:all": "concurrently -k -n api,console,site -c blue,green,magenta \"pnpm --filter acme-api dev\" \"pnpm --filter acme-console dev\" \"pnpm --filter site dev\"",
+    "seed": "pnpm --filter acme-api seed"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/test-utils": "^2.4.6",
+    "concurrently": "^9.2.1",
+    "happy-dom": "^20.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.0",
+    "vue": "^3.5.22"
+  }
+}

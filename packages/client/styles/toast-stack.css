@@ -1,0 +1,55 @@
+.kl-toasts {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: grid;
+  gap: 8px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.kl-toast {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--kl-border);
+  border-left: 3px solid var(--kl-tone);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+  box-shadow: var(--kl-shadow-lg);
+  pointer-events: auto;
+}
+.kl-toast__icon {
+  color: var(--kl-tone);
+  margin-top: 2px;
+  flex: none;
+}
+.kl-toast__body {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+.kl-toast__body p {
+  margin: 0;
+  color: var(--kl-text-muted);
+  font-size: 12.5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.kl-toast__body .kl-btn {
+  justify-self: start;
+}
+.kl-toast-enter-active,
+.kl-toast-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+.kl-toast-enter-from,
+.kl-toast-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}

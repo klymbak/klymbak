@@ -1,0 +1,22 @@
+{
+  "name": "carrier-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Demo MCP server for a parcel carrier: tracking, quotes and return labels. Runs as a separate process over stdio.",
+  "type": "module",
+  "exports": {
+    "./rules": "./src/rules.ts"
+  },
+  "bin": {
+    "carrier-mcp": "./src/server.ts"
+  },
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "zod": "^3.25.76"
+  }
+}

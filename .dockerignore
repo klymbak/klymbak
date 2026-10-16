@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/dist-single
+apps/acme-api/data
+**/.env
+.git
+docs
+apps/strapi-demo/.tmp
+apps/strapi-demo/.strapi
+apps/strapi-demo/public/uploads
+apps/strapi-demo/types/generated

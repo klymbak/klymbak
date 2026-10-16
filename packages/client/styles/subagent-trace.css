@@ -1,0 +1,59 @@
+.kl-sub {
+  display: grid;
+  gap: 8px;
+}
+.kl-sub__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kl-sub__agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+.kl-sub__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.kl-sub__status .kl-spinner {
+  width: 10px;
+  height: 10px;
+}
+.kl-sub__head .kl-btn {
+  margin-left: auto;
+}
+.kl-sub__task {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--kl-border-strong);
+  font-size: 12.5px;
+  color: var(--kl-text-muted);
+  white-space: pre-line;
+}
+.kl-sub__steps {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0 0 12px;
+  border-left: 2px dashed var(--kl-border);
+}
+.kl-sub__result {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface-muted);
+  font-size: 13px;
+}
+.kl-sub__result-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--kl-text-faint);
+}

@@ -1,0 +1,313 @@
+/*
+ * Klymbak default theme.
+ * Everything visual is a --kl-* token so host apps can re-skin with a few variables:
+ *   .kl-root { --kl-accent: #0b7a53; --kl-radius: 4px; }
+ * Layout idea: a quiet document column for the conversation, with tool work drawn as
+ * bordered "work cards" so actions stand apart from prose.
+ */
+.kl-root {
+  --kl-font: inherit;
+  --kl-font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --kl-text-size: 14px;
+  --kl-radius: 10px;
+  --kl-radius-sm: 7px;
+  --kl-content-width: 980px;
+
+  --kl-bg: #ffffff;
+  --kl-canvas: #f5f7fa;
+  --kl-surface: #ffffff;
+  --kl-surface-muted: #f1f4f8;
+  --kl-surface-hover: #e9edf3;
+  --kl-border: #e1e6ed;
+  --kl-border-strong: #c9d1dc;
+  --kl-text: #121923;
+  --kl-text-muted: #536071;
+  --kl-text-faint: #8691a1;
+  --kl-accent: #2950c8;
+  --kl-accent-hover: #2143a9;
+  --kl-accent-soft: #e9effd;
+  --kl-accent-text: #ffffff;
+  --kl-focus: #2950c8;
+  --kl-user-bubble: #edf1f7;
+
+  --kl-success: #187a49;
+  --kl-success-soft: #e4f3ea;
+  --kl-warning: #9a5800;
+  --kl-warning-soft: #fcf0d9;
+  --kl-danger: #bb2c2c;
+  --kl-danger-soft: #fbe8e7;
+  --kl-info: #2667a8;
+  --kl-info-soft: #e6eff9;
+  --kl-neutral: #586274;
+  --kl-neutral-soft: #eef1f5;
+
+  --kl-series-1: #2950c8;
+  --kl-series-2: #0e8577;
+  --kl-series-3: #c2651a;
+  --kl-series-4: #8549cc;
+
+  --kl-shadow: 0 1px 2px rgb(18 25 35 / 0.06), 0 2px 8px rgb(18 25 35 / 0.06);
+  --kl-shadow-lg: 0 12px 32px rgb(18 25 35 / 0.16), 0 2px 6px rgb(18 25 35 / 0.08);
+
+  color-scheme: light;
+  font-family: var(--kl-font);
+  font-size: var(--kl-text-size);
+  line-height: 1.5;
+  color: var(--kl-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.kl-root[data-kl-theme="dark"] {
+  --kl-bg: #0f141b;
+  --kl-canvas: #0a0e14;
+  --kl-surface: #141a23;
+  --kl-surface-muted: #1a222d;
+  --kl-surface-hover: #212b38;
+  --kl-border: #252f3d;
+  --kl-border-strong: #344155;
+  --kl-text: #e5eaf1;
+  --kl-text-muted: #a2acbb;
+  --kl-text-faint: #6d798b;
+  --kl-accent: #7f9cff;
+  --kl-accent-hover: #9ab1ff;
+  --kl-accent-soft: #1b2645;
+  --kl-accent-text: #0a1020;
+  --kl-focus: #9ab1ff;
+  --kl-user-bubble: #1d2633;
+  --kl-success: #5cc78f;
+  --kl-success-soft: #13291f;
+  --kl-warning: #e6a74a;
+  --kl-warning-soft: #2e2212;
+  --kl-danger: #f07b75;
+  --kl-danger-soft: #331817;
+  --kl-info: #74aef0;
+  --kl-info-soft: #14243a;
+  --kl-neutral: #9aa5b6;
+  --kl-neutral-soft: #1d2531;
+  --kl-series-1: #7f9cff;
+  --kl-series-2: #4fc7b5;
+  --kl-series-3: #f0a35e;
+  --kl-series-4: #b892f5;
+  --kl-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+  --kl-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .kl-root[data-kl-theme="auto"] {
+    --kl-bg: #0f141b;
+    --kl-canvas: #0a0e14;
+    --kl-surface: #141a23;
+    --kl-surface-muted: #1a222d;
+    --kl-surface-hover: #212b38;
+    --kl-border: #252f3d;
+    --kl-border-strong: #344155;
+    --kl-text: #e5eaf1;
+    --kl-text-muted: #a2acbb;
+    --kl-text-faint: #6d798b;
+    --kl-accent: #7f9cff;
+    --kl-accent-hover: #9ab1ff;
+    --kl-accent-soft: #1b2645;
+    --kl-accent-text: #0a1020;
+    --kl-focus: #9ab1ff;
+    --kl-user-bubble: #1d2633;
+    --kl-success: #5cc78f;
+    --kl-success-soft: #13291f;
+    --kl-warning: #e6a74a;
+    --kl-warning-soft: #2e2212;
+    --kl-danger: #f07b75;
+    --kl-danger-soft: #331817;
+    --kl-info: #74aef0;
+    --kl-info-soft: #14243a;
+    --kl-neutral: #9aa5b6;
+    --kl-neutral-soft: #1d2531;
+    --kl-series-1: #7f9cff;
+    --kl-series-2: #4fc7b5;
+    --kl-series-3: #f0a35e;
+    --kl-series-4: #b892f5;
+    --kl-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 8px rgb(0 0 0 / 0.3);
+    --kl-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+.kl-root *,
+.kl-root *::before,
+.kl-root *::after {
+  box-sizing: border-box;
+}
+
+/* Controls ---------------------------------------------------------------- */
+.kl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+  color: var(--kl-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.kl-btn:hover:not(:disabled) {
+  background: var(--kl-surface-hover);
+}
+.kl-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.kl-btn--primary {
+  background: var(--kl-accent);
+  border-color: var(--kl-accent);
+  color: var(--kl-accent-text);
+}
+.kl-btn--primary:hover:not(:disabled) {
+  background: var(--kl-accent-hover);
+  border-color: var(--kl-accent-hover);
+}
+.kl-btn--danger {
+  color: var(--kl-danger);
+}
+.kl-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.kl-btn--sm {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.kl-btn--icon {
+  width: 32px;
+  padding: 0;
+}
+.kl-btn--icon.kl-btn--sm {
+  width: 26px;
+}
+
+.kl-input,
+.kl-select,
+.kl-textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+  color: var(--kl-text);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 10px;
+}
+.kl-textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+.kl-input::placeholder,
+.kl-textarea::placeholder {
+  color: var(--kl-text-faint);
+}
+
+.kl-root :focus-visible {
+  outline: 2px solid var(--kl-focus);
+  outline-offset: 2px;
+}
+
+.kl-label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--kl-text-muted);
+}
+
+/* Pills and tones ----------------------------------------------------------- */
+.kl-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: var(--kl-neutral-soft);
+  color: var(--kl-neutral);
+}
+.kl-tone-success { --kl-tone: var(--kl-success); --kl-tone-soft: var(--kl-success-soft); }
+.kl-tone-warning { --kl-tone: var(--kl-warning); --kl-tone-soft: var(--kl-warning-soft); }
+.kl-tone-danger { --kl-tone: var(--kl-danger); --kl-tone-soft: var(--kl-danger-soft); }
+.kl-tone-info { --kl-tone: var(--kl-info); --kl-tone-soft: var(--kl-info-soft); }
+.kl-tone-accent { --kl-tone: var(--kl-accent); --kl-tone-soft: var(--kl-accent-soft); }
+.kl-tone-neutral { --kl-tone: var(--kl-neutral); --kl-tone-soft: var(--kl-neutral-soft); }
+.kl-pill[class*="kl-tone-"] {
+  background: var(--kl-tone-soft);
+  color: var(--kl-tone);
+}
+
+.kl-kbd,
+.kl-code {
+  font-family: var(--kl-font-mono);
+  font-size: 0.92em;
+}
+.kl-code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--kl-surface-muted);
+}
+
+.kl-muted {
+  color: var(--kl-text-muted);
+}
+.kl-faint {
+  color: var(--kl-text-faint);
+}
+.kl-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.kl-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.kl-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: kl-spin 0.7s linear infinite;
+  flex: none;
+}
+@keyframes kl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.kl-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kl-border-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kl-root *,
+  .kl-root *::before,
+  .kl-root *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

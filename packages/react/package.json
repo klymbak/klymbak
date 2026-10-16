@@ -1,0 +1,48 @@
+{
+  "name": "@klymbak/react",
+  "version": "0.1.0",
+  "description": "React components for chat-native admin panels: streaming chat, tool cards, approvals, subagent traces, generative UI, model picker.",
+  "license": "MIT",
+  "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
+  "homepage": "https://github.com/klymbak/klymbak/tree/main/packages/react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klymbak/klymbak.git",
+    "directory": "packages/react"
+  },
+  "bugs": "https://github.com/klymbak/klymbak/issues",
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": {
+    ".": {
+      "@klymbak/source": "./src/index.ts",
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": {
+      "@klymbak/source": "./src/empty.css",
+      "default": "./dist/style.css"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@klymbak/client": "workspace:*",
+    "@klymbak/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "happy-dom": "^20.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "vite": "^8.3.0"
+  }
+}

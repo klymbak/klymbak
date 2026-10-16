@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "klymbak_conversations",
+  "info": {
+    "singularName": "conversation",
+    "pluralName": "conversations",
+    "displayName": "Assistant conversation",
+    "description": "Conversations with the Klymbak assistant. Managed by the plugin."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "key": { "type": "string", "required": true, "unique": true },
+    "owner": { "type": "string", "required": true },
+    "audience": { "type": "json" },
+    "summary": { "type": "json", "required": true },
+    "transcript": { "type": "json" }
+  }
+}

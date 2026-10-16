@@ -1,0 +1,38 @@
+.kl-block-md {
+  padding: 10px 12px;
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+}
+.kl-alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-tone-soft);
+  color: var(--kl-tone);
+}
+.kl-alert .kl-icon {
+  margin-top: 2px;
+  flex: none;
+}
+.kl-alert strong {
+  display: block;
+  font-size: 13px;
+}
+.kl-alert p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--kl-text);
+}
+.kl-block-raw {
+  margin: 0;
+  padding: 10px;
+  max-height: 240px;
+  overflow: auto;
+  font-family: var(--kl-font-mono);
+  font-size: 12px;
+  background: var(--kl-surface-muted);
+  border-radius: var(--kl-radius-sm);
+}

@@ -1,0 +1,83 @@
+{
+  "name": "@klymbak/strapi",
+  "version": "0.1.0",
+  "description": "An AI assistant for the Strapi 5 admin panel. It finds, writes and updates content as the signed-in admin, within their Strapi permissions, and asks before it changes anything.",
+  "license": "MIT",
+  "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
+  "homepage": "https://github.com/klymbak/klymbak/tree/main/packages/strapi#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klymbak/klymbak.git",
+    "directory": "packages/strapi"
+  },
+  "bugs": "https://github.com/klymbak/klymbak/issues",
+  "keywords": ["strapi", "strapi-plugin", "strapi-5", "ai", "agent", "assistant", "mcp", "klymbak"],
+  "strapi": {
+    "kind": "plugin",
+    "name": "klymbak",
+    "displayName": "Assistant",
+    "description": "An AI assistant that works with your content as you, and asks before it changes anything."
+  },
+  "main": "./dist/server/index.js",
+  "module": "./dist/server/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "source": "./server/src/index.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./strapi-server": {
+      "types": "./dist/types/index.d.ts",
+      "source": "./server/src/index.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./strapi-admin": {
+      "source": "./admin/src/index.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "build": "vite build --mode server && vite build --mode admin && tsc -p server/tsconfig.build.json",
+    "dev": "concurrently -k -n server,admin \"vite build --mode server --watch\" \"vite build --mode admin --watch\"",
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p admin/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@klymbak/react": "workspace:*",
+    "@klymbak/server": "workspace:*"
+  },
+  "peerDependencies": {
+    "@strapi/design-system": "^2.0.0",
+    "@strapi/icons": "^2.0.0",
+    "@strapi/strapi": "^5.47.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "styled-components": "^6.0.0"
+  },
+  "devDependencies": {
+    "@klymbak/protocol": "workspace:*",
+    "@strapi/design-system": "2.2.4",
+    "@strapi/icons": "2.2.4",
+    "@strapi/strapi": "5.58.0",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6",
+    "styled-components": "6.6.0",
+    "vite": "^8.3.0"
+  }
+}

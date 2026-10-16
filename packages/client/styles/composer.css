@@ -1,0 +1,76 @@
+.kl-composer {
+  display: grid;
+  gap: 6px;
+  padding: 10px 10px 8px 12px;
+  border: 1px solid var(--kl-border-strong);
+  border-radius: 14px;
+  background: var(--kl-surface);
+  box-shadow: var(--kl-shadow);
+}
+.kl-composer:focus-within {
+  border-color: var(--kl-accent);
+}
+.kl-composer--running {
+  border-style: dashed;
+}
+.kl-composer__input {
+  width: 100%;
+  min-height: 24px;
+  max-height: 220px;
+  padding: 2px 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--kl-text);
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.kl-composer__input:focus-visible {
+  outline: none;
+}
+.kl-composer__input::placeholder {
+  color: var(--kl-text-faint);
+}
+.kl-composer__bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.kl-composer__spacer {
+  flex: 1;
+}
+.kl-composer__send {
+  border-radius: 9px;
+}
+.kl-composer__files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kl-composer__file {
+  position: relative;
+  display: inline-flex;
+}
+.kl-composer__file img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--kl-border);
+}
+.kl-composer__file .kl-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--kl-surface);
+  border-color: var(--kl-border);
+  border-radius: 50%;
+}
+.kl-composer__hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--kl-text-faint);
+}

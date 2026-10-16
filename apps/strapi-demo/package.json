@@ -1,0 +1,33 @@
+{
+  "name": "strapi-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Demo: a Strapi 5 blog with the Klymbak assistant in its admin panel.",
+  "scripts": {
+    "dev": "strapi develop",
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "build:admin": "strapi build",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@klymbak/strapi": "workspace:*",
+    "@strapi/database": "5.58.0",
+    "@strapi/plugin-users-permissions": "5.58.0",
+    "@strapi/strapi": "5.58.0",
+    "better-sqlite3": "12.8.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6",
+    "styled-components": "6.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.19"
+  }
+}

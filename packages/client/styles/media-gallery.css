@@ -1,0 +1,111 @@
+.kl-media {
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+  overflow: hidden;
+  min-width: 0;
+}
+.kl-media__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--kl-border);
+}
+.kl-media__title {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kl-media__count {
+  font-size: 12px;
+  color: var(--kl-text-faint);
+}
+.kl-media__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+}
+.kl-media__grid > li {
+  min-width: 0;
+}
+.kl-media--single .kl-media__grid {
+  grid-template-columns: minmax(0, 320px);
+}
+.kl-media__item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+.kl-media__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface-muted);
+  color: var(--kl-text-muted);
+  text-decoration: none;
+}
+a.kl-media__preview:hover {
+  border-color: var(--kl-border-strong);
+}
+.kl-media__preview img,
+.kl-media__preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.kl-media__file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.kl-media__item figcaption {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.kl-media__name {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kl-media__meta,
+.kl-media__caption {
+  font-size: 11.5px;
+  color: var(--kl-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kl-media__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--kl-border);
+  font-size: 12px;
+}
+.kl-media__foot-caption {
+  margin-left: auto;
+  font-family: var(--kl-font-mono);
+  font-size: 11.5px;
+}

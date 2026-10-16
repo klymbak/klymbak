@@ -1,0 +1,24 @@
+.kl-list {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.kl-list__inner {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  width: 100%;
+  max-width: var(--kl-content-width, 860px);
+  margin: 0 auto;
+  padding: 20px max(16px, env(safe-area-inset-left, 0px)) 24px max(16px, env(safe-area-inset-right, 0px));
+}
+.kl-list__jump {
+  position: sticky;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: var(--kl-shadow);
+  display: flex;
+}

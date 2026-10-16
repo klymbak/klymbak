@@ -1,0 +1,42 @@
+{
+  "name": "@klymbak/server",
+  "version": "0.1.0",
+  "description": "Agent harness for chat-native admin panels: tools, MCP, hooks, approvals, subagents, scheduled tasks and an HTTP/SSE API. Built on pi.",
+  "license": "MIT",
+  "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
+  "homepage": "https://github.com/klymbak/klymbak/tree/main/packages/server#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klymbak/klymbak.git",
+    "directory": "packages/server"
+  },
+  "bugs": "https://github.com/klymbak/klymbak/issues",
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@klymbak/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "1.3.0",
+    "@earendil-works/pi-ai": "1.3.0",
+    "@earendil-works/pi-mcp": "1.3.0",
+    "@hono/node-server": "^1.19.5",
+    "@klymbak/protocol": "workspace:*",
+    "croner": "^9.1.0",
+    "hono": "^4.10.4"
+  }
+}

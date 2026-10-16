@@ -1,0 +1,95 @@
+.kl-approval {
+  padding: 12px;
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-tone-soft);
+  border: 1px solid color-mix(in srgb, var(--kl-tone) 30%, transparent);
+}
+.kl-approval--approved,
+.kl-approval--denied,
+.kl-approval--expired {
+  background: var(--kl-surface-muted);
+  border-color: var(--kl-border);
+  padding: 8px 12px;
+}
+.kl-approval__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--kl-tone);
+}
+.kl-approval__head .kl-pill {
+  margin-left: auto;
+  text-transform: none;
+}
+.kl-approval__title {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 14px;
+}
+.kl-approval__desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--kl-text-muted);
+  white-space: pre-line;
+  max-height: 180px;
+  overflow: auto;
+}
+.kl-approval__reason {
+  margin-top: 10px;
+}
+.kl-approval__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.kl-approval__remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--kl-text-muted);
+  cursor: pointer;
+}
+.kl-approval__decided {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kl-approval__summary {
+  display: grid;
+  min-width: 0;
+  font-size: 12.5px;
+}
+.kl-approval__summary .kl-approval__title {
+  margin: 0;
+  font-size: 13px;
+}
+/* A rubber stamp: the back-office way of saying a person signed off. */
+.kl-stamp {
+  flex: none;
+  padding: 2px 8px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  font-family: var(--kl-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  opacity: 0.9;
+}
+.kl-stamp--approved {
+  color: var(--kl-success);
+}
+.kl-stamp--denied {
+  color: var(--kl-danger);
+}
+.kl-stamp--expired {
+  color: var(--kl-text-faint);
+}

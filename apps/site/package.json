@@ -1,0 +1,24 @@
+{
+  "name": "site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Explainer site: how to bring an agent into your product, step by step.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "vite build",
+    "build:single": "vite build --mode single",
+    "preview": "vite preview --port 5174",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@klymbak/vue": "workspace:*",
+    "vue": "^3.5.22"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "vite": "^8.3.0",
+    "vite-plugin-singlefile": "^2.3.0",
+    "vue-tsc": "^3.1.0"
+  }
+}

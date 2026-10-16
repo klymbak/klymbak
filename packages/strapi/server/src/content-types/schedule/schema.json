@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "klymbak_schedules",
+  "info": {
+    "singularName": "schedule",
+    "pluralName": "schedules",
+    "displayName": "Assistant schedule",
+    "description": "Scheduled tasks of the Klymbak assistant. Managed by the plugin."
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "key": { "type": "string", "required": true, "unique": true },
+    "record": { "type": "json", "required": true }
+  }
+}

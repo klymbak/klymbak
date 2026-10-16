@@ -1,0 +1,274 @@
+# Klymbak
+
+**Replace an internal admin panel with an AI agent that lives in a chat.**
+
+Staff ask for what they need ("Jane's tent arrived torn, refund it and send a return label"). The agent looks things up through your existing systems, shows results as tables and charts, and **stops for a person's approval before it changes anything**.
+
+This repository is a complete, working reference build:
+
+- **`@klymbak/server`**: an agent harness for Node built on the MIT-licensed [pi](https://github.com/earendil-works/pi) agent loop. It adds typed tools, MCP servers, lifecycle hooks, human approvals, specialist subagents, scheduled tasks, sessions, and an HTTP + SSE API.
+- **`@klymbak/vue`**: Vue 3 components: a full workspace, a single chat, or a floating widget. They include streaming, tool cards, approval prompts, subagent traces, generative UI (tables, charts, stat tiles), a model/provider picker and schedules.
+- **`@klymbak/react`**: the same workspace, chat and floating widget for React 18 and 19, on the same store and stylesheet.
+- **`@klymbak/strapi`**: a Strapi 5 plugin. The assistant works with content as the signed-in admin, within their role's permissions, from a page in the admin, a side panel in the edit view and a bulk action in the list view.
+- **A realistic demo**: the back office of "Acme Outfitters", an outdoor-gear store with SQLite data, 16 tools, a separate carrier **MCP server**, policy hooks, three subagents and scheduled briefings.
+- **An explainer site** that walks a client through the six steps of bringing an agent into their product.
+
+![Approval card in the Acme back office](docs/screenshots/approval.jpg)
+
+| | |
+|---|---|
+| ![Approved actions with rubber-stamp receipts](docs/screenshots/approved.jpg) | ![Sales report with stat tiles and chart, dark mode](docs/screenshots/chart-dark.jpg) |
+
+![Explainer site hero with a replayable session](docs/screenshots/site-hero.jpg)
+
+---
+
+## Quick start
+
+Requirements: **Node 22.19+** (uses the built-in `node:sqlite`) and **pnpm 10**.
+
+```bash
+pnpm install
+cp apps/acme-api/.env.example apps/acme-api/.env   # add at least one API key, or run a local model
+pnpm dev                                           # API on :8787, console on :5173
+pnpm dev:site                                      # explainer site on :5174
+pnpm dev:react                                     # API + React playground on :5175
+pnpm dev:strapi                                    # Strapi 5 blog with the plugin on :1337 (see apps/strapi-demo)
+```
+
+Open <http://localhost:5173>. The model picker lists every model whose provider is configured:
+
+- **Cloud**: set `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, … (any provider pi supports).
+- **Local**: start [LM Studio](https://lmstudio.ai) or [Ollama](https://ollama.com); models are discovered automatically. Load a tool-capable model with **at least 16k context** (e.g. `lms load qwen/qwen3.6-35b-a3b --context-length 32768`). The demo was developed against Qwen 3.6 35B-A3B in LM Studio.
+
+The demo database is generated on first start, with dates relative to today. Reset it with `pnpm --filter acme-api seed` or the `POST /api/demo/reset` endpoint.
+
+### Things to try
+
+| Prompt | What it shows |
+|---|---|
+| *How did sales do this week compared with last week?* | Stat tiles + chart rendered from tool output; the model reads only a summary |
+| *jane.cooper@example.com says her tent arrived torn. Sort it out.* | Multi-step investigation, parallel lookups, refund + return label behind approvals |
+| *Where is Liam Novak's order? He says it's stuck.* | The carrier **MCP server**, rendered by a custom Vue component |
+| *Ask the analyst and the inventory planner in parallel…* | Two **subagents** running concurrently, nested in the transcript |
+| *Every Monday at 9:00, send me a summary of last week's refunds* | The agent creates a **scheduled task** from chat |
+| Switch to **Marcus (Support)** and refund a $448 order | A **policy hook** blocks it: support can refund up to $150 |
+| Switch to **Priya (Analyst)** and list top customers | A **PII hook** masks emails and phones for that role |
+| Deny an approval with a reason | The agent reads your reason and changes course |
+| Schedules → *Morning ops briefing* → **Run now** | An unattended run that posts to `#ops` and notifies you |
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    UI["@klymbak/vue<br/>AgentWorkspace · AgentChat · AgentWidget"]
+  end
+  subgraph Server["Your Node service"]
+    API["HTTP + SSE routes<br/>(your auth)"]
+    RT["AgentRuntime<br/>sessions · approvals · notifications"]
+    H["Harness per session<br/>hooks · subagents · turn limit · context window"]
+    PI["pi agent loop<br/>@earendil-works/pi-agent-core"]
+    SCH["Scheduler (cron)"]
+  end
+  UI <-- "fetch + server-sent events" --> API
+  API --> RT --> H --> PI
+  SCH --> RT
+  PI -- "tools" --> T["Your APIs / DB<br/>defineTool()"]
+  PI -- "MCP (stdio / HTTP)" --> M["MCP servers<br/>pi-mcp client"]
+  PI -- "pi-ai" --> LLM["Claude · GPT · Gemini · OpenRouter ·<br/>Bedrock · Azure · LM Studio · Ollama …"]
+```
+
+**What pi provides** (MIT): the agent loop (`Agent`), tool execution with `beforeToolCall`/`afterToolCall`, steering and follow-up queues, 40+ model providers with streaming, cost tracking and thinking levels, and a dependency-free MCP client.
+
+**What this repo adds on top**: tool definitions with approvals, roles and UI output; Claude-Code-style lifecycle hooks; an approval broker; subagent delegation with nested event streams; a cron scheduler for unattended runs; persistent sessions; a wire protocol with a shared reducer; a framework-agnostic client store; and the Vue and React UIs.
+
+```
+packages/
+  protocol/   wire types, generative-UI blocks, the event reducer, an SSE parser (no dependencies)
+  server/     the harness: runtime, tools, hooks, approvals, MCP, subagents, scheduler, storage, HTTP
+  client/     framework-agnostic browser side: the API client, the chat store, formatting, Markdown, the stylesheet
+  vue/        Vue 3 components over the client store
+  react/      React components over the client store
+  strapi/     Strapi 5 plugin: the agent in-process, content tools that act as the signed-in admin, admin UI
+apps/
+  acme-api/      demo back end: SQLite store, 16 tools, policy hooks, subagents, schedules
+  carrier-mcp/   demo MCP server (stdio): shipment tracking, quotes, return labels
+  acme-console/  demo front end: AgentWorkspace with Acme branding and a custom tool renderer
+  react-console/ React playground against the same demo API
+  strapi-demo/   Strapi 5 blog (articles, authors, categories) with the plugin installed
+  site/          explainer site
+```
+
+---
+
+## Add it to your app
+
+### 1. Server
+
+```ts
+import { createAgentServer, defineTool, Type, ui, auditTrail, lmStudio } from "@klymbak/server";
+
+const listOrders = defineTool({
+  name: "list_orders",
+  description: "Search orders by status or customer email.",
+  readOnly: true,
+  parameters: Type.Object({ status: Type.Optional(Type.String()), email: Type.Optional(Type.String()) }),
+  execute: async (args, ctx) => {
+    const rows = await db.orders.search(args, { as: ctx.user });  // runs as the signed-in person
+    return {
+      text: `${rows.length} orders: ${rows.map((r) => `#${r.id} ${r.status}`).join(", ")}`, // what the model reads
+      ui: ui.table({ title: "Orders", columns: [{ key: "id", label: "Order" }, { key: "total", label: "Total", format: "currency" }], rows }), // what people see
+    };
+  },
+});
+
+const agent = createAgentServer({
+  systemPrompt: "You are the back-office agent for …",
+  models: { providers: ["anthropic", "openai"], custom: [lmStudio()], default: "anthropic/claude-sonnet-5-5" },
+  tools: [listOrders, refundOrder],
+  mcpServers: { stripe: { url: "https://mcp.stripe.com", headers: { authorization: `Bearer ${process.env.STRIPE_KEY}` }, approval: true } },
+  hooks: [auditTrail((entry) => audit.write(entry))],
+  auth: async (request) => sessions.userFrom(request), // null → 401
+});
+
+// Hono / Bun / Deno / Cloudflare:  app.route("/api/agent", agent.app)
+// Express / Node http:            app.use("/api/agent", agent.nodeHandler)
+await agent.start();
+```
+
+### 2. Client
+
+```vue
+<script setup lang="ts">
+import { AgentWorkspace } from "@klymbak/vue";
+import "@klymbak/vue/style.css";
+</script>
+
+<template>
+  <AgentWorkspace base-url="/api/agent" />
+  <!-- or <AgentChat base-url="/api/agent" />, or the floating <AgentWidget base-url="/api/agent" /> -->
+</template>
+```
+
+Or install it once with `app.use(Klymbak, { baseUrl: "/api/agent", headers: () => ({ authorization: … }) })` and use the components anywhere. Re-skin with CSS variables (`--kl-accent`, `--kl-radius`, `--kl-font`, …); the demo console's [theme.css](apps/acme-console/src/theme.css) is the whole branding layer.
+
+To chat about what is on screen, pass it as `context` (`<AgentChat context="Order #1042 is open" />`, or `store.setContext(…)`): it goes to the model with every message and never shows in the transcript.
+
+### On Strapi
+
+Install the [plugin](packages/strapi) instead: `npm install @klymbak/strapi`, add a model key, and the assistant appears in the admin menu, in the edit view and in the list view's bulk actions.
+
+---
+
+## Concepts
+
+### Tools
+
+`defineTool({ name, description, parameters, execute })`, with parameters as a TypeBox schema (re-exported as `Type`). Arguments are validated before `execute` runs. A tool returns a string or `{ text, data, ui, isError, images }`:
+
+- `text` is what the model reads. Keep it compact; it is truncated past 24k characters.
+- `ui` blocks go only to the browser: `table`, `stats`, `chart` (bar/line/area), `keyvalue`, `media` (images and videos as previews, other files as tiles that open them), `markdown`, `alert`, `actions` (buttons that send a prompt or emit an event to your app) and `custom` (your own Vue component). A 500-row table costs no tokens.
+- Options: `approval` (boolean or a function of the arguments returning `{ title, description, risk }`), `roles`, `readOnly`, `sequential`, `maxResultChars`.
+
+`ctx` gives every tool the signed-in `user`, `sessionId`, `signal`, `headless` (unattended) and `progress(text)` for live status lines.
+
+### Human approval
+
+When a tool needs approval, the run pauses and the UI shows a card with the exact action. **Approve**, **Deny with a reason** (the model reads it), or **Don't ask again in this chat**. Approvals expire (default 15 min) and are refused automatically in unattended runs, where the agent is told to recommend the action in its report instead.
+
+### Hooks
+
+Hooks follow Claude Code's lifecycle and run in registration order:
+
+| Hook | Use it to |
+|---|---|
+| `sessionStart` | add context to a new conversation (e.g. a live business snapshot) |
+| `userPromptSubmit` | refuse a prompt, rewrite it, or attach hidden context |
+| `preToolUse` | `deny` (policy), `ask` (force approval) or `allow` (skip the tool's own approval). Any deny wins, then ask, then allow. A hook that throws blocks the call (fails closed). |
+| `postToolUse` | rewrite results, e.g. mask PII for some roles (changes both model text and UI) |
+| `stop` | send the agent one more instruction before it finishes |
+| `runEnd` / `onEvent` | telemetry, audit, analytics |
+
+Built in: `requireApproval({ tools })`, `redactPii({ roles })`, `auditTrail(sink)`. See [apps/acme-api/src/hooks.ts](apps/acme-api/src/hooks.ts) for the refund policy, business snapshot, audit log and telemetry used by the demo.
+
+### MCP servers
+
+```ts
+mcpServers: {
+  carrier: { command: "node", args: ["carrier-server.js"], approval: ["create_return_label"] }, // stdio
+  zendesk: { url: "https://mcp.example.com/mcp", headers: { authorization: "Bearer …" }, roles: ["support"] }, // Streamable HTTP
+}
+```
+
+Tools appear as `<server>_<tool>`. MCP annotations are honoured (`readOnlyHint`, and `destructiveHint` asks for approval). `approval`, `readOnly`, `include` and `exclude` take a list of tool names or a function, for servers whose tools carry no annotations: `approval: (name) => !/^(list|get)_/.test(name)`. Tool-list changes are picked up live. Structured results render automatically: files (records with a `url` and a MIME type, such as Strapi's media library) as a gallery, other lists of records as tables. You can register a Vue renderer per tool (the demo's shipment timeline). With `runtimeMcp: true`, admins can also connect HTTP MCP servers from the **Tools** panel.
+
+### Subagents
+
+```ts
+subagents: [{ name: "analyst", description: "Sales trends and ad-hoc SQL", systemPrompt: "…", tools: ["sales_report", "query_database"] }]
+```
+
+The main agent gets a `delegate_task` tool. Specialists get a fresh context and a narrower tool set, run in parallel when delegated together, use the same approval flow, and stream their steps nested under the delegating card.
+
+### Scheduled tasks
+
+Define them in config (`schedules: [{ id, name, cron, prompt, agent?, audience? }]`), create them in the **Schedules** panel, or ask the agent ("every weekday at 8, …"). Each run is an unattended session owned by the schedule's owner. People in its audience see the result and get a notification.
+
+### Models and providers
+
+`models.providers` enables any [pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) provider. It is listed only when credentials are present, filtered by `allow` globs. `custom` adds any OpenAI-compatible endpoint, with presets `lmStudio()` and `ollama()` that discover models (LM Studio's API also reports context length and tool support). People pick the model and thinking level per conversation, and every answer reports its tokens and cost.
+
+### Sessions, streaming and steering
+
+Sessions persist through an `AgentStorage` adapter (`memoryStorage()`, `fileStorage(dir)`, or your database). A run streams typed events over SSE; the same `applyEvent` reducer builds the transcript on the server (for storage and reconnects) and in the browser. Reload mid-run and the UI re-attaches. While the agent works, anything typed is sent as a **steering** message that it reads after the current step.
+
+<details>
+<summary>HTTP API</summary>
+
+| Method | Path | |
+|---|---|---|
+| GET | `/config` | models, tools, subagents, MCP servers, features for the current user |
+| GET / POST | `/sessions` | list / create |
+| GET / PATCH / DELETE | `/sessions/:id` | read (with transcript) / rename, change model / delete |
+| POST | `/sessions/:id/runs` | start a run; the response is an SSE stream until `run_end` |
+| GET | `/sessions/:id/stream` | snapshot + live events (reconnect) |
+| POST | `/sessions/:id/abort`, `/steer`, `/approvals/:approvalId` | stop, steer, decide |
+| GET / POST / PATCH / DELETE | `/schedules[/:id]`, POST `/schedules/:id/run` | scheduled tasks |
+| GET / POST / DELETE | `/mcp[/:name]` | integrations |
+| GET | `/events` | notifications (schedule results, approvals waiting, session list) |
+
+</details>
+
+---
+
+## Development
+
+```bash
+pnpm test        # protocol, harness (with pi's scripted faux provider), HTTP API, scheduler, client store, Vue and React components, the Strapi plugin
+pnpm typecheck
+pnpm build       # libraries to dist/, demo console and site to static files
+```
+
+In development the workspace packages resolve to their TypeScript sources through a custom export condition (`@klymbak/source`), so there is no build step between editing the library and seeing it in the demo.
+
+## Deploying the demo
+
+The API serves the built console, so the demo deploys as one service:
+
+```bash
+docker build -t klymbak-demo .
+docker run -p 8787:8787 -e ANTHROPIC_API_KEY=… klymbak-demo
+```
+
+The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Set `VITE_DEMO_URL`, `VITE_HIRE_URL`, `VITE_REPO_URL` and `VITE_CONTACT_EMAIL` at build time.
+
+## Roadmap
+
+The Strapi plugin has shipped; next are more host products (Bagisto, Chatwoot, Medusa, Krayin). The full list, and the reasoning behind the order, is in [ROADMAP.md](ROADMAP.md).
+
+## License
+
+MIT. pi (`@earendil-works/pi-*`) is MIT-licensed by Mario Zechner and contributors.

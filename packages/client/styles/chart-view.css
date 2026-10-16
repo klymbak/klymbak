@@ -1,0 +1,80 @@
+.kl-chart {
+  margin: 0;
+  padding: 12px 12px 6px;
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+  min-width: 0;
+}
+.kl-chart__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.kl-chart__legend {
+  display: flex;
+  gap: 10px;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--kl-text-muted);
+}
+.kl-chart__key i,
+.kl-chart__tooltip i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 5px;
+}
+.kl-chart__plot {
+  position: relative;
+  width: 100%;
+}
+.kl-chart__plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.kl-chart__grid line {
+  stroke: var(--kl-border);
+  stroke-dasharray: 2 3;
+}
+.kl-chart__baseline {
+  stroke: var(--kl-border-strong);
+}
+.kl-chart__grid text,
+.kl-chart__xlabels text {
+  fill: var(--kl-text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.kl-chart__guide {
+  stroke: var(--kl-text-faint);
+  stroke-dasharray: 3 3;
+}
+.kl-chart__tooltip {
+  position: absolute;
+  top: 8px;
+  display: grid;
+  gap: 2px;
+  padding: 6px 9px;
+  border: 1px solid var(--kl-border);
+  border-radius: 6px;
+  background: var(--kl-surface);
+  box-shadow: var(--kl-shadow);
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 2;
+}
+.kl-chart__caption {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--kl-text-faint);
+}

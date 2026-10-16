@@ -1,0 +1,60 @@
+/*
+ * Acme brand applied to the Klymbak components through tokens only.
+ * This is the whole "theming" story for a customer's app: override a few variables.
+ */
+:root {
+  --acme-pine: #1d6a4c;
+  --acme-pine-dark: #155238;
+  --acme-bar: #f3f5f2;
+  --acme-bar-text: #1a2620;
+  --acme-bar-border: #dde3dd;
+  color-scheme: light;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--acme-bar);
+}
+
+.acme .kl-root {
+  --kl-font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --kl-accent: var(--acme-pine);
+  --kl-accent-hover: var(--acme-pine-dark);
+  --kl-accent-soft: #e5f1eb;
+  --kl-focus: var(--acme-pine);
+  --kl-canvas: #f4f6f3;
+  --kl-user-bubble: #ebf0ea;
+  --kl-series-1: #1d6a4c;
+  --kl-series-2: #2b6cb0;
+  --kl-series-3: #c2651a;
+  --kl-radius: 8px;
+  --kl-radius-sm: 6px;
+}
+
+.acme[data-theme="dark"] {
+  --acme-bar: #0c110e;
+  --acme-bar-text: #e3ebe5;
+  --acme-bar-border: #1f2a24;
+  color-scheme: dark;
+}
+
+.acme[data-theme="dark"] .kl-root {
+  --kl-accent: #5fc79a;
+  --kl-accent-hover: #7dd6ae;
+  --kl-accent-soft: #15291f;
+  --kl-accent-text: #07140d;
+  --kl-focus: #5fc79a;
+  --kl-canvas: #0b0f0d;
+  --kl-bg: #0f1411;
+  --kl-surface: #141a16;
+  --kl-surface-muted: #1a221d;
+  --kl-user-bubble: #1b241f;
+  --kl-series-1: #5fc79a;
+}
