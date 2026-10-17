@@ -1,5 +1,5 @@
 // The explainer site on Cloudflare Workers as static assets, at klymbak.ai.
-// Build first (`pnpm --filter site build`), then `npx wrangler deploy` from this folder.
+// Build first (`pnpm --filter site build`), then `pnpm --filter site run deploy`.
 {
   "name": "klymbak-site",
   "compatibility_date": "2026-10-01",
