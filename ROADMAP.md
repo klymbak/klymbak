@@ -17,6 +17,7 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
   - [x] Toasts animate out with `animate.leave`, the widget panel with Vue's transition classes, like the other bindings
   - [x] Tests in Vitest with Analog's Vite plugin (AOT), a Vitest project of their own in `pnpm test`
   - [x] A live run in the playground against Qwen 3.6 35B-A3B in LM Studio: streaming, a table with row actions, an approval denied with a reason and then approved, the widget, dark mode, a chart. It found a bug the tests now cover: zoneless Angular renders after events, so Enter right after typing left the sent text in the box.
+  - [x] Published to npm as 0.1.0 (2026-10-17), on the `@klymbak/client` and `@klymbak/protocol` 0.1.0 already there
 - **`@klymbak/strapi`**: Klymbak as a Strapi 5 plugin (5.47+, tested on 5.58), with a demo blog in `apps/strapi-demo` (`pnpm dev:strapi`). A plugin rather than a fork: Strapi releases weekly, and a plugin works in every Strapi project under our own license.
   - [x] **Server**: `@klymbak/server` runs inside the plugin; conversations and schedules live in Strapi's database (two hidden plugin content types).
   - [x] **Mounting on Koa**: admin routes at `/klymbak/agent/*` rebuild a `Request` from `ctx.request.body`, call `agent.fetch()` and stream the `Response` back through Koa. They sit behind Strapi's admin authentication and a `plugin::klymbak.use` permission; `ctx.state.user` becomes the agent's user.
