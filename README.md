@@ -283,7 +283,7 @@ docker build -t klymbak-demo .
 docker run -p 8787:8787 -e ANTHROPIC_API_KEY=… klymbak-demo
 ```
 
-The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Set `VITE_DEMO_URL`, `VITE_HIRE_URL`, `VITE_REPO_URL` and `VITE_CONTACT_EMAIL` at build time.
+The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Set `VITE_DEMO_URL`, `VITE_REPO_URL` and `VITE_CONTACT_EMAIL` at build time.
 
 ## Roadmap
 

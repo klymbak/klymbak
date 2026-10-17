@@ -3,7 +3,7 @@
     <svg viewBox="0 0 980 420" role="img" aria-labelledby="arch-title arch-desc">
       <title id="arch-title">How the pieces connect</title>
       <desc id="arch-desc">
-        Your app embeds the Vue chat, which talks to the agent server over HTTPS and server-sent events using your existing login.
+        Your app embeds the chat (Vue, React or Angular components), which talks to the agent server over HTTPS and server-sent events using your existing login.
         The agent server runs the pi agent loop with hooks, approvals, subagents, schedules and sessions, and calls your systems as tools,
         MCP servers, and model providers.
       </desc>
@@ -16,9 +16,9 @@
       <!-- Your app -->
       <rect x="10" y="110" width="220" height="200" rx="12" class="arch__box" />
       <text x="30" y="142" class="arch__eyebrow">YOUR APP</text>
-      <text x="30" y="172" class="arch__title">Vue chat</text>
-      <text x="30" y="198" class="arch__text">AgentWorkspace</text>
-      <text x="30" y="220" class="arch__text">AgentChat · AgentWidget</text>
+      <text x="30" y="172" class="arch__title">Chat UI</text>
+      <text x="30" y="198" class="arch__text arch__text--strong">Vue · React · Angular</text>
+      <text x="30" y="220" class="arch__text">Workspace · chat · widget</text>
       <text x="30" y="250" class="arch__text">Tool cards, approvals,</text>
       <text x="30" y="272" class="arch__text">tables & charts</text>
 

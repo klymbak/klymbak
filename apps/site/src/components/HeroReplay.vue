@@ -96,6 +96,8 @@ function afterApproval(decision: ApprovalDecision, by: string): Step[] {
 const messages = reactive<ChatMessage[]>([]);
 const playing = ref(false);
 const waiting = ref(false);
+// Until the first replay the button pulses, so the window doesn't read as a screenshot.
+const played = ref(false);
 let generation = 0;
 let decide: ((decision: ApprovalDecision) => void) | undefined;
 
@@ -141,6 +143,7 @@ async function replay() {
   const token = ++generation;
   messages.splice(0);
   playing.value = true;
+  played.value = true;
   await run(BEFORE_APPROVAL, token, false);
   if (token !== generation) return;
   waiting.value = true;
@@ -170,8 +173,8 @@ onBeforeUnmount(() => {
     </div>
     <figcaption class="replay__caption">
       <span v-if="waiting" class="replay__cue">Your turn: approve or deny the refund ↑</span>
-      <span v-else class="replay__note">The real <code>@klymbak/vue</code> components, replaying a session.</span>
-      <button type="button" class="replay__play" :disabled="playing && !waiting" @click="replay">
+      <span v-else class="replay__note">Live <code>@klymbak/vue</code> components. Replay the run and approve the refund yourself.</span>
+      <button type="button" class="replay__play" :class="{ 'replay__play--hint': !played }" :disabled="playing && !waiting" @click="replay">
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor" /></svg>
         {{ playing ? "Playing…" : "Replay the run" }}
       </button>
@@ -259,22 +262,44 @@ onBeforeUnmount(() => {
 .replay__play {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   margin-left: auto;
-  padding: 6px 12px;
-  border: 1.5px solid var(--ink);
+  padding: 8px 16px;
+  border: 1.5px solid var(--signal);
   border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--signal);
+  color: var(--signal-ink);
   font: inherit;
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   white-space: nowrap;
   cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.replay__play:not(:disabled):hover {
+  transform: translateY(-1px);
 }
 .replay__play:disabled {
   opacity: 0.55;
   cursor: default;
+}
+.replay__play--hint {
+  animation: replay-pulse 1.8s ease-out infinite;
+}
+@keyframes replay-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--signal) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--signal) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .replay__play--hint {
+    animation: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 35%, transparent);
+  }
 }
 @media (max-width: 560px) {
   .replay {
