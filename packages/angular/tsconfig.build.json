@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "customConditions": []
+  },
+  "angularCompilerOptions": {
+    // Partial compilation: apps link the components with their own Angular version (21 or later).
+    "compilationMode": "partial"
+  },
+  "exclude": ["src/**/*.test.ts", "src/test-setup.ts"]
+}

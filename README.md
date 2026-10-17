@@ -9,6 +9,7 @@ This repository is a complete, working reference build:
 - **`@klymbak/server`**: an agent harness for Node built on the MIT-licensed [pi](https://github.com/earendil-works/pi) agent loop. It adds typed tools, MCP servers, lifecycle hooks, human approvals, specialist subagents, scheduled tasks, sessions, and an HTTP + SSE API.
 - **`@klymbak/vue`**: Vue 3 components: a full workspace, a single chat, or a floating widget. They include streaming, tool cards, approval prompts, subagent traces, generative UI (tables, charts, stat tiles), a model/provider picker and schedules.
 - **`@klymbak/react`**: the same workspace, chat and floating widget for React 18 and 19, on the same store and stylesheet.
+- **`@klymbak/angular`**: the same again for Angular 21 and 22, as standalone components with signals.
 - **`@klymbak/strapi`**: a Strapi 5 plugin. The assistant works with content as the signed-in admin, within their role's permissions, from a page in the admin, a side panel in the edit view and a bulk action in the list view.
 - **A realistic demo**: the back office of "Acme Outfitters", an outdoor-gear store with SQLite data, 16 tools, a separate carrier **MCP server**, policy hooks, three subagents and scheduled briefings.
 - **An explainer site** that walks a client through the six steps of bringing an agent into their product.
@@ -33,6 +34,7 @@ cp apps/acme-api/.env.example apps/acme-api/.env   # add at least one API key, o
 pnpm dev                                           # API on :8787, console on :5173
 pnpm dev:site                                      # explainer site on :5174
 pnpm dev:react                                     # API + React playground on :5175
+pnpm dev:angular                                   # API + Angular playground on :5176
 pnpm dev:strapi                                    # Strapi 5 blog with the plugin on :1337 (see apps/strapi-demo)
 ```
 
@@ -83,7 +85,7 @@ flowchart LR
 
 **What pi provides** (MIT): the agent loop (`Agent`), tool execution with `beforeToolCall`/`afterToolCall`, steering and follow-up queues, 40+ model providers with streaming, cost tracking and thinking levels, and a dependency-free MCP client.
 
-**What this repo adds on top**: tool definitions with approvals, roles and UI output; Claude-Code-style lifecycle hooks; an approval broker; subagent delegation with nested event streams; a cron scheduler for unattended runs; persistent sessions; a wire protocol with a shared reducer; a framework-agnostic client store; and the Vue and React UIs.
+**What this repo adds on top**: tool definitions with approvals, roles and UI output; Claude-Code-style lifecycle hooks; an approval broker; subagent delegation with nested event streams; a cron scheduler for unattended runs; persistent sessions; a wire protocol with a shared reducer; a framework-agnostic client store; and the Vue, React and Angular UIs.
 
 ```
 packages/
@@ -92,14 +94,16 @@ packages/
   client/     framework-agnostic browser side: the API client, the chat store, formatting, Markdown, the stylesheet
   vue/        Vue 3 components over the client store
   react/      React components over the client store
+  angular/    Angular components over the client store
   strapi/     Strapi 5 plugin: the agent in-process, content tools that act as the signed-in admin, admin UI
 apps/
-  acme-api/      demo back end: SQLite store, 16 tools, policy hooks, subagents, schedules
-  carrier-mcp/   demo MCP server (stdio): shipment tracking, quotes, return labels
-  acme-console/  demo front end: AgentWorkspace with Acme branding and a custom tool renderer
-  react-console/ React playground against the same demo API
-  strapi-demo/   Strapi 5 blog (articles, authors, categories) with the plugin installed
-  site/          explainer site
+  acme-api/        demo back end: SQLite store, 16 tools, policy hooks, subagents, schedules
+  carrier-mcp/     demo MCP server (stdio): shipment tracking, quotes, return labels
+  acme-console/    demo front end: AgentWorkspace with Acme branding and a custom tool renderer
+  react-console/   React playground against the same demo API
+  angular-console/ Angular playground against the same demo API
+  strapi-demo/     Strapi 5 blog (articles, authors, categories) with the plugin installed
+  site/            explainer site
 ```
 
 ---
@@ -153,7 +157,7 @@ import "@klymbak/vue/style.css";
 </template>
 ```
 
-Or install it once with `app.use(Klymbak, { baseUrl: "/api/agent", headers: () => ({ authorization: … }) })` and use the components anywhere. Re-skin with CSS variables (`--kl-accent`, `--kl-radius`, `--kl-font`, …); the demo console's [theme.css](apps/acme-console/src/theme.css) is the whole branding layer.
+Or install it once with `app.use(Klymbak, { baseUrl: "/api/agent", headers: () => ({ authorization: … }) })` and use the components anywhere. React and Angular work the same way: `<KlymbakProvider baseUrl="/api/agent">` in [`@klymbak/react`](packages/react), `provideKlymbak({ baseUrl: "/api/agent" })` and `<kl-agent-workspace />` in [`@klymbak/angular`](packages/angular). Re-skin with CSS variables (`--kl-accent`, `--kl-radius`, `--kl-font`, …); the demo console's [theme.css](apps/acme-console/src/theme.css) is the whole branding layer.
 
 To chat about what is on screen, pass it as `context` (`<AgentChat context="Order #1042 is open" />`, or `store.setContext(…)`): it goes to the model with every message and never shows in the transcript.
 
@@ -260,7 +264,7 @@ Sessions persist through an `AgentStorage` adapter (`memoryStorage()`, `fileStor
 ## Development
 
 ```bash
-pnpm test        # protocol, harness (with pi's scripted faux provider), HTTP API, scheduler, client store, Vue and React components, the Strapi plugin
+pnpm test        # protocol, harness (with pi's scripted faux provider), HTTP API, scheduler, client store, Vue, React and Angular components, the Strapi plugin
 pnpm typecheck
 pnpm build       # libraries to dist/, demo console and site to static files
 pnpm test:strapi # builds the Strapi plugin and demo, then runs the content tools as different roles in a real Strapi

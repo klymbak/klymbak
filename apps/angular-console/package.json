@@ -1,0 +1,27 @@
+{
+  "name": "angular-console",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Development playground for @klymbak/angular against the Acme demo API.",
+  "type": "module",
+  "scripts": {
+    "dev": "ng serve",
+    "build": "ng build",
+    "typecheck": "ngc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@angular/common": "21.2.25",
+    "@angular/compiler": "21.2.25",
+    "@angular/core": "21.2.25",
+    "@angular/platform-browser": "21.2.25",
+    "@klymbak/angular": "workspace:*",
+    "@klymbak/client": "workspace:*",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@angular/build": "21.2.27",
+    "@angular/cli": "21.2.27",
+    "@angular/compiler-cli": "21.2.25",
+    "typescript": "~5.9.3"
+  }
+}

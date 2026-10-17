@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "experimentalDecorators": true,
+    "types": [],
+    "declaration": false,
+    "sourceMap": false
+  },
+  "angularCompilerOptions": {
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true
+  },
+  // The workspace packages are compiled with the app from source, so the dev server reloads when they change.
+  // That takes "prebundle": false in angular.json (prebundling resolves @klymbak/angular to its dist/) and
+  // "hmr": false (component HMR on the library's components froze the page; a full reload is fine here).
+  "include": ["src/**/*.ts", "../../packages/angular/src/**/*.ts", "../../packages/client/src/**/*.ts", "../../packages/protocol/src/**/*.ts"],
+  "exclude": ["../../packages/*/src/**/*.test.ts", "../../packages/angular/src/test-setup.ts"]
+}

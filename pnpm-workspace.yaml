@@ -8,6 +8,9 @@ onlyBuiltDependencies:
 
 ignoredBuiltDependencies:
   - '@google/genai'
+  - '@parcel/watcher'
   - '@swc/core'
   - core-js-pure
+  - lmdb
+  - msgpackr-extract
   - protobufjs

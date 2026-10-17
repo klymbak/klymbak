@@ -11,6 +11,7 @@
     "dev": "concurrently -k -n api,console -c blue,green \"pnpm --filter acme-api dev\" \"pnpm --filter acme-console dev\"",
     "dev:site": "pnpm --filter site dev",
     "dev:react": "concurrently -k -n api,react -c blue,cyan \"pnpm --filter acme-api dev\" \"pnpm --filter react-console dev\"",
+    "dev:angular": "concurrently -k -n api,angular -c blue,red \"pnpm --filter acme-api dev\" \"pnpm --filter angular-console dev\"",
     "dev:strapi": "pnpm --filter \"@klymbak/strapi...\" build && pnpm --filter strapi-demo dev",
     "build": "pnpm -r --workspace-concurrency=1 build",
     "typecheck": "pnpm -r typecheck",
