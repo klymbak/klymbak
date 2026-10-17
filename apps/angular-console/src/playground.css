@@ -1,0 +1,37 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+}
+html,
+body,
+app-playground {
+  height: 100%;
+  margin: 0;
+}
+.playground {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  background: #f5f7fa;
+}
+.playground[data-theme="dark"] {
+  background: #0f141b;
+  color: #e6ebf2;
+}
+.playground__bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgb(128 128 128 / 0.25);
+  font-size: 14px;
+}
+.playground__main {
+  min-height: 0;
+}
+.playground__page {
+  padding: 24px;
+}
+app-playground {
+  display: block;
+}

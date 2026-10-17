@@ -11,6 +11,12 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
   - [x] Toasts animate out, not just in
   - [x] While streaming, only the changing message re-renders (`touchedMessages` in the protocol, `getMessageRevision` on the store)
   - [x] A live run end to end in the playground against Qwen 3.6 35B-A3B in LM Studio: streaming, tool cards, an approval denied with a reason, two subagents in parallel
+- **`@klymbak/angular`**: `AgentWorkspace`, `AgentChat`, `AgentWidget` and every building block as standalone Angular components with signals, for Angular 21 and 22 (built and tested zoneless, Angular's default), with a playground in `apps/angular-console` (`pnpm dev:angular`). Written as native bindings rather than the Vue components compiled to web components, as planned under Platform: the same API as React and Vue (inputs, `(action)`, content slots, Angular components as renderers, `provideKlymbak()`), and no Vue runtime inside Angular apps.
+  - [x] Compiled by `ngc` in partial mode and published from the package folder like the others (`dist/`, `.js` imports); apps link it with their own Angular. Built with Angular 21, the oldest version it supports; its CLI wants TypeScript 5.9, pinned in the package and the playground until 21 is dropped.
+  - [x] The store reaches templates as a signal (`injectAgentState()`), and while streaming only the changing message renders again (an OnPush row per message, keyed on `getMessageRevision`)
+  - [x] Toasts animate out with `animate.leave`, the widget panel with Vue's transition classes, like the other bindings
+  - [x] Tests in Vitest with Analog's Vite plugin (AOT), a Vitest project of their own in `pnpm test`
+  - [x] A live run in the playground against Qwen 3.6 35B-A3B in LM Studio: streaming, a table with row actions, an approval denied with a reason and then approved, the widget, dark mode, a chart. It found a bug the tests now cover: zoneless Angular renders after events, so Enter right after typing left the sent text in the box.
 - **`@klymbak/strapi`**: Klymbak as a Strapi 5 plugin (5.47+, tested on 5.58), with a demo blog in `apps/strapi-demo` (`pnpm dev:strapi`). A plugin rather than a fork: Strapi releases weekly, and a plugin works in every Strapi project under our own license.
   - [x] **Server**: `@klymbak/server` runs inside the plugin; conversations and schedules live in Strapi's database (two hidden plugin content types).
   - [x] **Mounting on Koa**: admin routes at `/klymbak/agent/*` rebuild a `Request` from `ctx.request.body`, call `agent.fetch()` and stream the `Response` back through Koa. They sit behind Strapi's admin authentication and a `plugin::klymbak.use` permission; `ctx.state.user` becomes the agent's user.
@@ -48,7 +54,7 @@ Ruled out: Directus (already ships its own AI assistant, and its MSCL license fo
 ## Platform
 
 - Run the React tests against React 19 as well as 18
-- Angular: try compiling the Vue components to a web component (`defineCustomElement`) before writing bindings
+- Run the Angular tests against Angular 22 as well as 21
 - A .NET 10 server implementing the same HTTP/SSE protocol
 - A Postgres storage adapter and per-tenant model budgets
 - MCP OAuth flows in the integrations panel (pi-mcp already implements the client side)

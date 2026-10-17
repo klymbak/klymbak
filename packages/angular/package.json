@@ -1,0 +1,54 @@
+{
+  "name": "@klymbak/angular",
+  "version": "0.1.0",
+  "description": "Angular components for chat-native admin panels: streaming chat, tool cards, approvals, subagent traces, generative UI, model picker.",
+  "license": "MIT",
+  "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
+  "homepage": "https://github.com/klymbak/klymbak/tree/main/packages/angular#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klymbak/klymbak.git",
+    "directory": "packages/angular"
+  },
+  "bugs": { "url": "https://github.com/klymbak/klymbak/issues" },
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "exports": {
+    ".": {
+      "@klymbak/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": {
+      "@klymbak/source": "./src/style.css",
+      "default": "./dist/style.css"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "ngc -p tsconfig.build.json && vite build",
+    "typecheck": "ngc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@angular/common": "^21.0.0 || ^22.0.0",
+    "@angular/core": "^21.0.0 || ^22.0.0",
+    "@angular/platform-browser": "^21.0.0 || ^22.0.0"
+  },
+  "dependencies": {
+    "@klymbak/client": "workspace:*",
+    "@klymbak/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@analogjs/vite-plugin-angular": "2.8.1",
+    "@angular/build": "21.2.27",
+    "@angular/common": "21.2.25",
+    "@angular/compiler": "21.2.25",
+    "@angular/compiler-cli": "21.2.25",
+    "@angular/core": "21.2.25",
+    "@angular/platform-browser": "21.2.25",
+    "happy-dom": "^20.0.0",
+    "rxjs": "7.8.2",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.0"
+  }
+}

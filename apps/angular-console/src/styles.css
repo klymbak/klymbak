@@ -1,0 +1,4 @@
+/* @klymbak/angular/style.css is this stylesheet, bundled. The CLI resolves stylesheets without the
+   @klymbak/source condition, so the playground takes it from @klymbak/client and needs no build first. */
+@import "@klymbak/client/style.css";
+@import "./playground.css";
