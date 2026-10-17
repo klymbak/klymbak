@@ -20,7 +20,7 @@
       "import": "./dist/index.js"
     },
     "./style.css": {
-      "@klymbak/source": "./src/empty.css",
+      "@klymbak/source": "./src/style.css",
       "default": "./dist/style.css"
     }
   },

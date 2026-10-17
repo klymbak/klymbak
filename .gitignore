@@ -9,3 +9,4 @@ apps/acme-api/data/
 .DS_Store
 .vite/
 .angular/
+.wrangler/

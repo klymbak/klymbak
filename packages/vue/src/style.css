@@ -1,0 +1,2 @@
+/* The stylesheet when the library runs from source (the @klymbak/source condition). The build bundles it into dist/style.css. */
+@import "@klymbak/client/style.css";

@@ -3,7 +3,8 @@ const repo = import.meta.env.VITE_REPO_URL ?? "https://github.com/klymbak/klymba
 
 /** Edit these to point at your own address, repo and hosted demo. */
 export const links = {
-  demo: import.meta.env.VITE_DEMO_URL ?? "http://localhost:5173",
+  // A production build without VITE_DEMO_URL has no demo to link to, so the demo buttons are hidden.
+  demo: import.meta.env.VITE_DEMO_URL ?? (import.meta.env.DEV ? "http://localhost:5173" : undefined),
   repo,
   strapi: `${repo}/tree/main/packages/strapi#readme`,
   email,
