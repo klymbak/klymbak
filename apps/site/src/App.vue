@@ -84,8 +84,8 @@ async function copyEmail() {
           shows results as tables and charts, and asks before it changes anything.
         </p>
         <div class="hero__ctas">
-          <a class="btn btn--primary" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
-          <a class="btn btn--ghost" href="#steps">See the six steps</a>
+          <a v-if="links.demo" class="btn btn--primary" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
+          <a class="btn" :class="links.demo ? 'btn--ghost' : 'btn--primary'" href="#steps">See the six steps</a>
         </div>
         <ul class="hero__facts">
           <li><strong>Pilot</strong> in three weeks, on one real workflow</li>
@@ -304,7 +304,7 @@ async function copyEmail() {
         <p>Tell me which screens your team lives in. I'll show you what the first three weeks would look like.</p>
         <div class="hero__ctas">
           <a class="btn btn--primary" :href="links.contact">I want an AI agent in my admin panel</a>
-          <a class="btn btn--ghost cta__ghost" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
+          <a v-if="links.demo" class="btn btn--ghost cta__ghost" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
         </div>
         <p class="cta__email">
           Or write to <a class="cta__address" :href="`mailto:${links.email}`">{{ links.email }}</a>

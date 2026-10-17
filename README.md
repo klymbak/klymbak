@@ -283,7 +283,9 @@ docker build -t klymbak-demo .
 docker run -p 8787:8787 -e ANTHROPIC_API_KEY=… klymbak-demo
 ```
 
-The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Set `VITE_DEMO_URL`, `VITE_REPO_URL` and `VITE_CONTACT_EMAIL` at build time.
+The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Set `VITE_DEMO_URL`, `VITE_REPO_URL` and `VITE_CONTACT_EMAIL` at build time; without `VITE_DEMO_URL` the demo buttons are hidden.
+
+It runs on Cloudflare Workers at klymbak.ai (`apps/site/wrangler.jsonc`). Connect the repo under Workers → Import a repository with the build command `pnpm install --frozen-lockfile && pnpm --filter site build` and the deploy command `cd apps/site && npx wrangler deploy`, or run the same two steps locally after `npx wrangler login`.
 
 ## Roadmap
 
