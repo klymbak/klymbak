@@ -53,7 +53,8 @@
     "dev": "concurrently -k -n server,admin \"vite build --mode server --watch\" \"vite build --mode admin --watch\"",
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p admin/tsconfig.json --noEmit",
     "test:integration": "vitest run",
-    "verify": "strapi-plugin verify"
+    "verify": "strapi-plugin verify",
+    "docs:index": "node scripts/update-docs-index.mjs"
   },
   "dependencies": {
     "@klymbak/react": "workspace:*",

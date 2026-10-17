@@ -29,7 +29,7 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
 - Publish to npm and submit to the Strapi Marketplace
 - Media uploads (the content tools reference uploaded files only), and Blocks images written from Markdown
 - Translations of the admin UI strings (`registerTrads`)
-- An offline copy of the docs index for servers that can't reach docs.strapi.io
+- [x] An offline copy of the docs index (`server/src/docs-index.json`, 297 pages, refreshed by `pnpm --filter @klymbak/strapi docs:index`): the search falls back to it when docs.strapi.io can't be reached and tries the site again after 10 minutes, and a page that can't be read still gives its summary. A copy fetched earlier wins over the shipped one.
 - [x] **Skills** in `@klymbak/server` for procedures and house rules: `skills` in the runtime config, `loadSkills(dir)` for folders in Anthropic's `SKILL.md` format, each skill's name and description in the prompt, its text and documents loaded on demand by `use_skill`, `roles` per skill, and a Skills section in the Tools panel (React and Vue). In the Strapi plugin a `skills` folder option (and `skills` in `extend`); the demo ships `write-article` and `pre-publish-checklist`. Every host gets them, not only Strapi.
 
 ## Later: more hosts

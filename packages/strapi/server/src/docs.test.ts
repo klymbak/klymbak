@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { cleanPage, DocsIndex, docsTools, pageExcerpt, pagePath, parseIndex, stem } from "./docs.ts";
 
 // Real lines from https://docs.strapi.io/llms.txt (October 2026).
@@ -126,11 +126,45 @@ describe("docs tools", () => {
     expect(await read.execute({ page: "../../etc/passwd" }, ctx)).toEqual({ text: expect.stringMatching(/isn't a Strapi docs page/), isError: true });
   });
 
+  const offline = (async () => {
+    throw new Error("getaddrinfo ENOTFOUND docs.strapi.io");
+  }) as typeof fetch;
+
   it("tells the model when the docs can't be reached", async () => {
-    const [search] = docsTools({ fetch: (async () => { throw new Error("getaddrinfo ENOTFOUND docs.strapi.io"); }) as typeof fetch });
+    const [search] = docsTools({ fetch: offline, offlineIndex: false });
     expect(await search!.execute({ query: "roles" }, ctx)).toEqual({
       text: expect.stringMatching(/^Couldn't read the Strapi docs at https:\/\/docs\.strapi\.io \(getaddrinfo ENOTFOUND/),
       isError: true,
     });
+  });
+
+  it("searches the copy of the index shipped with the plugin when the site can't be reached", async () => {
+    const [search, read] = docsTools({ fetch: offline });
+    const result = (await search!.execute({ query: "let authors publish" }, ctx)) as string;
+    expect(result).toMatch(/^Strapi docs pages for "let authors publish" \(from the copy of the docs index that ships with the plugin \(\d{4}-\d{2}-\d{2}\)/);
+    expect(result).toContain("- cms/features/rbac: Role-Based Access Control (RBAC).");
+
+    // Pages need the site; the model still gets the page's summary.
+    expect(await read!.execute({ page: "cms/features/rbac" }, ctx)).toEqual({
+      text: expect.stringMatching(/^Couldn't read the Strapi docs.*The docs index describes this page as: Role-Based Access Control \(RBAC\)\. /),
+      isError: true,
+    });
+  });
+
+  it("prefers an index it fetched earlier to the shipped copy", async () => {
+    let up = true;
+    const fetch = (async (url: string) => {
+      if (!up) throw new Error("ECONNRESET");
+      return new URL(url).pathname === "/llms.txt" ? new Response(LLMS_TXT) : new Response("Not found", { status: 404 });
+    }) as typeof globalThis.fetch;
+    const [search] = docsTools({ fetch, offlineIndex: { fetched: "2020-01-01", lines: ["- [Old page](https://docs.strapi.io/old.md): Old."] } });
+    await search!.execute({ query: "roles" }, ctx);
+    up = false;
+    const now = Date.now();
+    const later = vi.spyOn(Date, "now").mockReturnValue(now + 25 * 60 * 60_000);
+    const result = (await search!.execute({ query: "roles" }, ctx)) as string;
+    later.mockRestore();
+    expect(result).toContain("cms/features/rbac");
+    expect(result).not.toContain("ships with the plugin");
   });
 });

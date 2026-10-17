@@ -147,7 +147,7 @@ Models know Strapi from their training, often an older version. So the assistant
 - **This project**, at the start of each conversation: Strapi version and license, whether it runs under `strapi develop` (only then can the Content-type Builder change content types), locales and the default one, installed plugins, the person's role, and the content types they can read with what they may do. A conversation keeps the facts it started with; start a new one after changing locales or roles.
 - **Strapi's documentation**, through `search_strapi_docs` and `read_strapi_docs`. The search runs inside Strapi over the index Strapi publishes for AI tools ([llms.txt](https://docs.strapi.io/llms.txt): every page's title and a one-line summary); pages are then fetched as Markdown. Nothing from the conversation leaves your server: only the index (refreshed daily) and the pages read are downloaded from docs.strapi.io. Long pages come back as an outline, then one section at a time.
 
-The server needs to reach docs.strapi.io. Without it, the tools say so and the assistant answers from the project facts alone. Set `docs: false` to remove them.
+When the server can't reach docs.strapi.io, the search uses a copy of the index that ships with the plugin (`pnpm --filter @klymbak/strapi docs:index` refreshes it before a release), and the assistant answers from the summaries and the project facts, saying it couldn't read the page itself. Set `docs: false` to remove the tools.
 
 ### Strapi's MCP server
 
