@@ -197,6 +197,28 @@ export interface ScheduleDefinition {
 }
 
 // ---------------------------------------------------------------------------
+// Skills
+// ---------------------------------------------------------------------------
+
+/**
+ * Written instructions for one kind of task: a procedure, a checklist, house rules. Only the
+ * name and description are in the prompt; the agent loads the rest with use_skill when a task
+ * calls for it. loadSkills() reads them from SKILL.md folders (Anthropic's Agent Skills format).
+ */
+export interface SkillDefinition {
+  /** Lowercase letters, digits and single hyphens, at most 64 characters: "write-article". */
+  name: string;
+  /** What the skill covers and when to use it, at most 1024 characters. Always in the prompt. */
+  description: string;
+  /** The skill itself, in Markdown. */
+  instructions: string;
+  /** Only people with one of these roles see it. Default: everyone. */
+  roles?: string[];
+  /** Further documents the instructions refer to, by relative path: { "reference/tone.md": "…" }. */
+  files?: Record<string, string>;
+}
+
+// ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
 
@@ -301,6 +323,8 @@ export interface AgentRuntimeConfig {
   mcpServers?: Record<string, McpServerConfig>;
   hooks?: Hook[];
   subagents?: SubagentDefinition[];
+  /** Procedures and house rules the agent loads on demand. See loadSkills(). */
+  skills?: SkillDefinition[];
   /** Built-in schedules. Pass `false` to disable scheduling entirely. */
   schedules?: ScheduleDefinition[] | false;
   storage?: import("./storage.ts").AgentStorage;

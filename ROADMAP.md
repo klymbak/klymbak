@@ -30,7 +30,7 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
 - Media uploads (the content tools reference uploaded files only), and Blocks images written from Markdown
 - Translations of the admin UI strings (`registerTrads`)
 - An offline copy of the docs index for servers that can't reach docs.strapi.io
-- Skills in `@klymbak/server` for procedures and house rules (how we write an article, a pre-publish checklist): each skill's name and "use when" line in the prompt, its text loaded on demand by a tool, in Anthropic's `SKILL.md` format. Every host gets them, not only Strapi.
+- [x] **Skills** in `@klymbak/server` for procedures and house rules: `skills` in the runtime config, `loadSkills(dir)` for folders in Anthropic's `SKILL.md` format, each skill's name and description in the prompt, its text and documents loaded on demand by `use_skill`, `roles` per skill, and a Skills section in the Tools panel (React and Vue). In the Strapi plugin a `skills` folder option (and `skills` in `extend`); the demo ships `write-article` and `pre-publish-checklist`. Every host gets them, not only Strapi.
 
 ## Later: more hosts
 

@@ -63,6 +63,11 @@ export interface SubagentInfo {
   model?: ModelRef;
 }
 
+export interface SkillInfo {
+  name: string;
+  description: string;
+}
+
 export interface McpServerInfo {
   name: string;
   transport: "stdio" | "http";
@@ -110,6 +115,8 @@ export interface AgentConfigInfo {
   defaultModel?: ModelRef;
   tools: ToolInfo[];
   subagents: SubagentInfo[];
+  /** Procedures and house rules the agent loads when a task calls for them. */
+  skills: SkillInfo[];
   mcpServers: McpServerInfo[];
   features: {
     schedules: boolean;

@@ -8,6 +8,7 @@ import type {
   McpServerConfig,
   ModelsConfig,
   ScheduleDefinition,
+  SkillDefinition,
   SubagentDefinition,
   ToolDefinition,
 } from "@klymbak/server";
@@ -36,6 +37,8 @@ export interface KlymbakExtension {
   tools?: ToolDefinition<any>[];
   hooks?: Hook[];
   subagents?: SubagentDefinition[];
+  /** Skills defined in code, alongside the ones in the `skills` folder. */
+  skills?: SkillDefinition[];
   schedules?: ScheduleDefinition[] | false;
   mcpServers?: Record<string, McpServerConfig>;
   storage?: AgentStorage;
@@ -63,6 +66,12 @@ export interface KlymbakConfig {
    * role permissions (fields, locales and conditions included). Default true.
    */
   contentTools?: boolean;
+  /**
+   * A folder of skills, relative to the project root, e.g. "skills": one folder per skill with a
+   * SKILL.md (Anthropic's Agent Skills format) for procedures and house rules such as how you
+   * write an article or what to check before publishing. Read at startup.
+   */
+  skills?: string;
   /** Tools that search and read the Strapi docs on docs.strapi.io, for questions about Strapi itself. Default true. */
   docs?: boolean;
   /** Connect Strapi's MCP server as well. Off by default. */
@@ -77,7 +86,7 @@ export interface KlymbakConfig {
   runtimeMcp?: boolean;
   /** IANA timezone for dates and schedules. Default: the server's. */
   timezone?: string;
-  /** Adds tools, hooks, subagents and schedules. Runs once, at bootstrap. */
+  /** Adds tools, hooks, subagents, skills and schedules. Runs once, at bootstrap. */
   extend?: (context: { strapi: Core.Strapi }) => Awaitable<KlymbakExtension>;
 }
 
@@ -94,7 +103,7 @@ function check(condition: unknown, message: string): asserts condition {
 export function validateConfig(config: KlymbakConfig): void {
   check(isObject(config), "the config must be an object.");
   check(config.models === undefined || isObject(config.models), "`models` must be an object, e.g. { providers: [\"anthropic\"] }.");
-  for (const key of ["instructions", "systemPrompt", "timezone"] as const) {
+  for (const key of ["instructions", "systemPrompt", "timezone", "skills"] as const) {
     check(config[key] === undefined || typeof config[key] === "string", `\`${key}\` must be a string.`);
   }
   check(config.contentTools === undefined || typeof config.contentTools === "boolean", "`contentTools` must be true or false.");

@@ -20,6 +20,7 @@ const config: AgentConfigInfo = {
   defaultModel: { provider: "p", id: "m" },
   tools: [],
   subagents: [],
+  skills: [],
   mcpServers: [],
   features: { schedules: false, steering: true, runtimeMcp: false, attachments: false },
 };

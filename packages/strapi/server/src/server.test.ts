@@ -206,6 +206,7 @@ describe("config and identity", () => {
     expect(() => validateConfig({ mcp: { token: "" } })).toThrow(/admin token/);
     expect(() => validateConfig({ tools: [] } as never)).toThrow(/belongs in `extend`/);
     expect(() => validateConfig({ storage: "redis" } as never)).toThrow(/storage/);
+    expect(() => validateConfig({ skills: ["skills"] } as never)).toThrow(/`skills` must be a string/);
   });
 
   it("maps a Strapi admin to the agent's user, with super admins as Klymbak admins", () => {

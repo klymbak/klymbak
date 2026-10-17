@@ -308,6 +308,18 @@ describe("with field-level permissions", () => {
   });
 });
 
+describe("skills", () => {
+  it("loads the project's skill folder, with the documents a skill refers to", async () => {
+    const editor = actingAs(await createAdmin("Sid", "strapi-editor"));
+    const checklist = await editor.call("use_skill", { name: "pre-publish-checklist" });
+    expect(checklist.text).toContain("# Skill: pre-publish-checklist");
+    expect(checklist.text).toContain("call publish_entry");
+    const writing = await editor.call("use_skill", { name: "write-article" });
+    expect(writing.text).toContain("reference/tone.md");
+    expect((await editor.call("use_skill", { name: "write-article", file: "reference/tone.md" })).text).toContain("No exclamation marks");
+  });
+});
+
 describe("access", () => {
   it("refuses to act for a deactivated admin", async () => {
     const inactive = actingAs(await createAdmin("Ivy", "strapi-super-admin", { isActive: false }));

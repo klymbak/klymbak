@@ -15,6 +15,7 @@ export { auditTrail, maskText, redactPii, requireApproval } from "./hooks.ts";
 export type { AuditEntry } from "./hooks.ts";
 export { AgentError } from "./errors.ts";
 export { HARNESS_GUIDELINES } from "./prompt.ts";
+export { loadSkills, parseSkill } from "./skills.ts";
 export type * from "./types.ts";
 
 // Schema helpers, so tool authors need no extra dependency.

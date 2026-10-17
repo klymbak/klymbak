@@ -62,12 +62,14 @@ export {
   auditTrail,
   defineTool,
   lmStudio,
+  loadSkills,
   ollama,
   openAICompatible,
+  parseSkill,
   redactPii,
   requireApproval,
   StringEnum,
   Type,
   ui,
 } from "@klymbak/server";
-export type { AgentUser, Hook, ScheduleDefinition, SubagentDefinition, ToolDefinition } from "@klymbak/server";
+export type { AgentUser, Hook, ScheduleDefinition, SkillDefinition, SubagentDefinition, ToolDefinition } from "@klymbak/server";

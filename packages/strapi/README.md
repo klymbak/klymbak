@@ -62,6 +62,7 @@ With the default content tools it works with every content type shown in the Con
 | `publish_entry`, `unpublish_entry`, `discard_draft` | Draft & Publish | yes |
 | `delete_entry` | Deletes an entry or one locale of it | yes, high risk |
 | `search_strapi_docs`, `read_strapi_docs` | Finds and reads pages of the Strapi docs, for questions about Strapi itself | no |
+| `use_skill` | Loads one of your [skills](#skills), when you have some | no |
 
 Fields a role can't edit are dropped by Strapi's permission sanitizer, and the assistant is told which ones, so it never claims a change that didn't happen. Media can be referenced by id but not uploaded.
 
@@ -72,6 +73,7 @@ Fields a role can't edit are dropped by Strapi's permission sanitizer, and the a
 | `models` | every built-in provider with credentials | Which models people can pick: `providers`, `custom` (`lmStudio()`, `ollama()`, `openAICompatible()`), `allow` globs, `default` |
 | `app` | "Assistant" | Name, description and starter prompts |
 | `instructions` | | Added to the built-in instructions: house style, required fields, glossary… |
+| `skills` | | A folder of skills, relative to the project root: see [Skills](#skills) |
 | `systemPrompt` | | Replaces the built-in instructions |
 | `contentTools` | `true` | The in-process content tools above |
 | `docs` | `true` | The Strapi docs tools: see [Questions about Strapi](#questions-about-strapi) |
@@ -79,7 +81,7 @@ Fields a role can't edit are dropped by Strapi's permission sanitizer, and the a
 | `storage` | `"database"` | `"memory"` for throwaway setups, or your own adapter through `extend` |
 | `maxTurns`, `approvalTimeoutMs`, `timezone` | 24, 15 min, the server's | |
 | `runtimeMcp` | `false` | Let super admins connect more MCP servers from the Tools panel |
-| `extend` | | `({ strapi }) => ({ tools, hooks, subagents, schedules, mcpServers, storage, systemUser })` |
+| `extend` | | `({ strapi }) => ({ tools, hooks, subagents, skills, schedules, mcpServers, storage, systemUser })` |
 
 Strapi merges plugin config with lodash's `defaultsDeep`, which copies plain objects and loses the symbol keys tool schemas rely on. That's why anything holding code goes in `extend`, which runs once at bootstrap:
 
@@ -113,6 +115,30 @@ export default ({ env }) => ({
 ```
 
 The tools, hooks and subagents API is `@klymbak/server`'s; see its [README](../../README.md#concepts).
+
+### Skills
+
+`instructions` is always in the prompt, so keep it short. Longer procedures go in skills, which the assistant loads only when a task needs them. With `skills: "skills"`, each folder under `skills/` in your project is one skill:
+
+```
+skills/
+  write-article/
+    SKILL.md
+    reference/tone.md
+  pre-publish-checklist/
+    SKILL.md
+```
+
+```markdown
+---
+name: pre-publish-checklist
+description: The checks an article must pass before it goes live. Use when asked to publish an article, or whether a draft is ready.
+---
+
+Read the draft with get_entry, then check each point…
+```
+
+The prompt lists each skill's name and description. The assistant reads the rest with `use_skill`, including documents the skill refers to, such as `reference/tone.md`. Skills are read at startup, so restart Strapi after editing them. Skills defined in code go in `extend` (`skills: [{ name, description, instructions, roles? }]`), where `roles` takes Strapi role codes such as `strapi-editor`. The demo has the two skills above.
 
 ### Questions about Strapi
 

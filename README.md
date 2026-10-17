@@ -213,6 +213,19 @@ subagents: [{ name: "analyst", description: "Sales trends and ad-hoc SQL", syste
 
 The main agent gets a `delegate_task` tool. Specialists get a fresh context and a narrower tool set, run in parallel when delegated together, use the same approval flow, and stream their steps nested under the delegating card.
 
+### Skills
+
+```ts
+import { loadSkills } from "@klymbak/server";
+
+skills: [
+  ...(await loadSkills("./skills")), // skills/<name>/SKILL.md, plus any documents it refers to
+  { name: "refund-policy", description: "When and how much we refund. Use for any refund request.", instructions: "…", roles: ["support"] },
+]
+```
+
+Procedures and house rules: how we write an article, what to check before publishing, the refund policy. They use Anthropic's [Agent Skills](https://agentskills.io) format, a folder per skill with a `SKILL.md` (frontmatter `name` and `description`, then Markdown). Only each skill's name and description go into the prompt. The agent loads a skill's text with the `use_skill` tool when a task matches, and reads the documents it refers to (Markdown, text, CSV, JSON or YAML in the folder) the same way. `roles` limits who sees a skill. Scripts in a skill folder are ignored: nothing runs them.
+
 ### Scheduled tasks
 
 Define them in config (`schedules: [{ id, name, cron, prompt, agent?, audience? }]`), create them in the **Schedules** panel, or ask the agent ("every weekday at 8, …"). Each run is an unattended session owned by the schedule's owner. People in its audience see the result and get a notification.

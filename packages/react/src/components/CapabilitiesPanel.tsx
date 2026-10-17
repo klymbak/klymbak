@@ -74,6 +74,22 @@ export function CapabilitiesPanel() {
         </section>
       )}
 
+      {config.skills.length > 0 && (
+        <section className="kl-caps__section">
+          <h4>
+            <KlIcon name="file" size={14} /> Skills <span className="kl-faint">{config.skills.length}</span>
+          </h4>
+          {config.skills.map((skill) => (
+            <div key={skill.name} className="kl-cap">
+              <div className="kl-cap__top">
+                <span className="kl-cap__name">{skill.name}</span>
+              </div>
+              <p className="kl-cap__desc">{skill.description}</p>
+            </div>
+          ))}
+        </section>
+      )}
+
       {groups.map((group) => (
         <section key={group.key} className="kl-caps__section">
           <h4>
