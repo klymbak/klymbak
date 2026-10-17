@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, typecheck and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # pnpm's version comes from packageManager in package.json.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  strapi:
+    name: Strapi plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build the plugin and its dependencies
+        run: pnpm --filter "@klymbak/strapi..." build
+      - name: Verify the package for publishing
+        run: pnpm --filter @klymbak/strapi verify
+      # Generates the content-type typings (git-ignored), compiles the server code, then builds
+      # the admin panel with the plugin in it.
+      - name: Build the demo app
+        run: pnpm --filter strapi-demo build:server && pnpm --filter strapi-demo build:admin
+      - name: Run the content tools as different roles
+        run: pnpm --filter @klymbak/strapi test:integration

@@ -24,8 +24,9 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
 
 ## Next for the Strapi plugin
 
-- Publish to npm and submit to the Strapi Marketplace; run `strapi-plugin verify` in CI
-- An integration test that boots Strapi headless and runs the content tools as different roles (done by hand so far)
+- [x] CI on every push and pull request (`.github/workflows/ci.yml`): build, typecheck, unit tests, `strapi-plugin verify`, the demo's admin panel build, and the integration test. Verify wanted `bugs` as an object in package.json; all six packages now use that form.
+- [x] An integration test (`pnpm test:strapi`) that boots the demo headless on a fresh database and runs the content tools as a super admin, an Author and a custom role with field-level permissions. Breaking the role-condition filter in `find_entries` makes it fail, as it should.
+- Publish to npm and submit to the Strapi Marketplace
 - Media uploads (the content tools reference uploaded files only), and Blocks images written from Markdown
 - Translations of the admin UI strings (`registerTrads`)
 - An offline copy of the docs index for servers that can't reach docs.strapi.io

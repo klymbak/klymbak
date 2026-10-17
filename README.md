@@ -250,7 +250,10 @@ Sessions persist through an `AgentStorage` adapter (`memoryStorage()`, `fileStor
 pnpm test        # protocol, harness (with pi's scripted faux provider), HTTP API, scheduler, client store, Vue and React components, the Strapi plugin
 pnpm typecheck
 pnpm build       # libraries to dist/, demo console and site to static files
+pnpm test:strapi # builds the Strapi plugin and demo, then runs the content tools as different roles in a real Strapi
 ```
+
+CI (`.github/workflows/ci.yml`) runs these on every push and pull request, plus `strapi-plugin verify` and the demo's admin panel build with the plugin in it.
 
 In development the workspace packages resolve to their TypeScript sources through a custom export condition (`@klymbak/source`), so there is no build step between editing the library and seeing it in the demo.
 

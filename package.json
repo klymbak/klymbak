@@ -15,6 +15,7 @@
     "build": "pnpm -r --workspace-concurrency=1 build",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
+    "test:strapi": "pnpm --filter \"@klymbak/strapi...\" build && pnpm --filter strapi-demo build:server && pnpm --filter @klymbak/strapi test:integration",
     "start": "pnpm --filter acme-api start",
     "dev:all": "concurrently -k -n api,console,site -c blue,green,magenta \"pnpm --filter acme-api dev\" \"pnpm --filter acme-console dev\" \"pnpm --filter site dev\"",
     "seed": "pnpm --filter acme-api seed"
