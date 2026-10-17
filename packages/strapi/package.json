@@ -10,7 +10,7 @@
     "url": "git+https://github.com/klymbak/klymbak.git",
     "directory": "packages/strapi"
   },
-  "bugs": "https://github.com/klymbak/klymbak/issues",
+  "bugs": { "url": "https://github.com/klymbak/klymbak/issues" },
   "keywords": ["strapi", "strapi-plugin", "strapi-5", "ai", "agent", "assistant", "mcp", "klymbak"],
   "strapi": {
     "kind": "plugin",
@@ -51,7 +51,10 @@
   "scripts": {
     "build": "vite build --mode server && vite build --mode admin && tsc -p server/tsconfig.build.json",
     "dev": "concurrently -k -n server,admin \"vite build --mode server --watch\" \"vite build --mode admin --watch\"",
-    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p admin/tsconfig.json --noEmit"
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p admin/tsconfig.json --noEmit",
+    "test:integration": "vitest run",
+    "verify": "strapi-plugin verify",
+    "docs:index": "node scripts/update-docs-index.mjs"
   },
   "dependencies": {
     "@klymbak/react": "workspace:*",
@@ -70,6 +73,7 @@
     "@klymbak/protocol": "workspace:*",
     "@strapi/design-system": "2.2.4",
     "@strapi/icons": "2.2.4",
+    "@strapi/sdk-plugin": "6.1.1",
     "@strapi/strapi": "5.58.0",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",

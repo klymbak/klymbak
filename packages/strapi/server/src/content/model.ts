@@ -83,13 +83,13 @@ export function describeAttribute(name: string, attribute: Attribute): string {
     case "dynamiczone":
       return `${name}: dynamic zone, a list of blocks, each { "__component": one of ${attribute.components?.join(", ")}, ...its fields }${suffix}`;
     case "media":
-      return `${name}: ${attribute.multiple ? "media files" : "media file"} (${attribute.allowedTypes?.join(", ") ?? "any"})${suffix}. Pass uploaded file ids; uploads are not possible here.`;
+      return `${name}: ${attribute.multiple ? "media files" : "media file"} (${attribute.allowedTypes?.join(", ") ?? "any"})${suffix}. Pass Media Library file ids; upload_media uploads an image attached in the chat.`;
     case "enumeration":
       return `${name}: one of ${attribute.enum?.map((v) => JSON.stringify(v)).join(", ")}${suffix}`;
     case "richtext":
       return `${name}: Markdown text${suffix}`;
     case "blocks":
-      return `${name}: rich text. Read and write it as Markdown${suffix}`;
+      return `${name}: rich text. Read and write it as Markdown; images must be in the Media Library, written as ![alt](url)${suffix}`;
     case "uid":
       return `${name}: URL slug${attribute.targetField ? ` made from ${attribute.targetField}` : ""}${suffix}. Lowercase letters, digits and dashes.`;
     case "customField":

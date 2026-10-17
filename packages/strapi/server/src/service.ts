@@ -1,4 +1,5 @@
-import { createAgentServer, memoryStorage, type AgentServer, type AgentUser, type AppInfo, type Logger } from "@klymbak/server";
+import path from "node:path";
+import { createAgentServer, loadSkills, memoryStorage, type AgentServer, type AgentUser, type AppInfo, type Logger } from "@klymbak/server";
 import type { Core } from "@strapi/strapi";
 import { toAgentUser, type StrapiAdminUser } from "./auth.ts";
 import { runtimeOptions, type ResolvedConfig } from "./config.ts";
@@ -53,6 +54,7 @@ export function agentService({ strapi }: { strapi: Core.Strapi }) {
       const server = strapi.config.get("server") as { host?: string; port?: number };
       mcpServers.strapi = strapiMcpServer(config.mcp, server, { contentTools: config.contentTools });
     }
+    const skills = [...(config.skills ? await loadSkills(path.resolve(strapi.dirs.app.root, config.skills)) : []), ...(extension.skills ?? [])];
     const prompt = [STRAPI_PROMPT, config.mcp && config.contentTools ? MCP_PROMPT : undefined, config.docs ? DOCS_PROMPT : undefined, config.instructions];
 
     return createAgentServer({
@@ -63,6 +65,7 @@ export function agentService({ strapi }: { strapi: Core.Strapi }) {
       tools: [...(config.contentTools ? contentTools(strapi) : []), ...(config.docs ? docsTools() : []), ...(extension.tools ?? [])],
       hooks: [projectContext(strapi, { contentTypes: config.contentTools }), ...(extension.hooks ?? [])],
       subagents: extension.subagents,
+      skills,
       schedules: extension.schedules,
       mcpServers,
       storage: extension.storage ?? (config.storage === "memory" ? memoryStorage() : databaseStorage(strapi)),

@@ -1,13 +1,17 @@
 import { defineTool, Type, ui, type ToolDefinition, type ToolOutput } from "@klymbak/server";
+import shippedIndex from "./docs-index.json";
 
 /**
  * Strapi's documentation, read live from docs.strapi.io: its llms.txt index (every page's title
  * and one-line summary) is searched here, and pages are fetched as Markdown. Nothing from the
- * conversation is sent: the search runs in this process.
+ * conversation is sent: the search runs in this process. When the site can't be reached, the search
+ * uses the copy of the index that ships with the plugin (scripts/update-docs-index.mjs refreshes it).
  */
 export const DOCS_URL = "https://docs.strapi.io";
 
 const TTL_MS = 24 * 60 * 60_000;
+/** With only the shipped copy of the index, try the site again after this long. */
+const OFFLINE_RETRY_MS = 10 * 60_000;
 const TIMEOUT_MS = 15_000;
 const MAX_CACHED_PAGES = 40;
 /** Longer pages return their outline first, then one section at a time. */
@@ -250,11 +254,19 @@ function cut(text: string, limit: number): string {
 
 class DocsError extends Error {}
 
+/** A saved copy of llms.txt: its page lines, and the day they were fetched. */
+export interface OfflineIndex {
+  fetched: string;
+  lines: string[];
+}
+
 export interface DocsOptions {
   /** Defaults to https://docs.strapi.io. */
   baseUrl?: string;
   /** For tests. */
   fetch?: typeof fetch;
+  /** The index to search when the site can't be reached. Default: the copy shipped with the plugin. */
+  offlineIndex?: OfflineIndex | false;
 }
 
 export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
@@ -270,21 +282,31 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
     return response.text();
   };
 
-  let index: { docs: DocsIndex; at: number } | undefined;
-  let loading: Promise<DocsIndex> | undefined;
-  /** Fetched on first use and kept for a day; a stale copy beats none when the site is unreachable. */
-  async function loadIndex(): Promise<DocsIndex> {
-    if (index && Date.now() - index.at < TTL_MS) return index.docs;
+  const offlineIndex = options.offlineIndex ?? (shippedIndex as OfflineIndex);
+  let offlineDocs: DocsIndex | undefined;
+  const offline = () => (offlineIndex ? (offlineDocs ??= new DocsIndex(parseIndex(offlineIndex.lines.join("\n")))) : undefined);
+  /** `offline` is the shipped copy's date, when that is what the search uses. */
+  type LoadedIndex = { docs: DocsIndex; at: number; offline?: string };
+  let index: LoadedIndex | undefined;
+  let loading: Promise<LoadedIndex> | undefined;
+  /**
+   * Fetched on first use and kept for a day. When the site is unreachable, an older fetched copy
+   * beats the shipped one, and the shipped one beats none.
+   */
+  async function loadIndex(): Promise<LoadedIndex> {
+    if (index && Date.now() - index.at < (index.offline ? OFFLINE_RETRY_MS : TTL_MS)) return index;
     loading ??= fetchText(`${base}/llms.txt`)
       .then((text) => {
         const docs = new DocsIndex(parseIndex(text));
         if (!docs.pages.length) throw new DocsError("its page index (llms.txt) was empty");
         index = { docs, at: Date.now() };
-        return docs;
+        return index;
       })
       .catch((error: unknown) => {
-        if (index) return index.docs;
-        throw error;
+        if (index && !index.offline) return index;
+        if (!offlineIndex) throw error;
+        index = { docs: offline()!, at: Date.now(), offline: offlineIndex.fetched };
+        return index;
       })
       .finally(() => {
         loading = undefined;
@@ -303,8 +325,15 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
     return text;
   }
 
-  const unreachable = (error: unknown): ToolOutput => ({
-    text: `Couldn't read the Strapi docs at ${base} (${error instanceof Error ? error.message : String(error)}). Answer from what you know about this project if you can, and say that you couldn't check the docs.`,
+  /** With the page the model asked for, its summary from the index, which may be all there is. */
+  const unreachable = (error: unknown, page?: DocPage): ToolOutput => ({
+    text: [
+      `Couldn't read the Strapi docs at ${base} (${error instanceof Error ? error.message : String(error)}).`,
+      page ? `The docs index describes this page as: ${page.title}. ${page.summary}` : "",
+      "Answer from what you know about this project if you can, and say that you couldn't check the docs.",
+    ]
+      .filter(Boolean)
+      .join(" "),
     isError: true,
   });
 
@@ -319,16 +348,19 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
       limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 10, description: "How many pages to return. Default 6." })),
     }),
     execute: async ({ query, limit }) => {
-      let docs: DocsIndex;
+      let loaded: LoadedIndex;
       try {
-        docs = await loadIndex();
+        loaded = await loadIndex();
       } catch (error) {
         return unreachable(error);
       }
-      const found = docs.search(query, limit ?? 6);
+      const found = loaded.docs.search(query, limit ?? 6);
       if (!found.length) return `No Strapi docs page matched "${query}". Try other words, such as the feature's name.`;
+      const source = loaded.offline
+        ? `from the copy of the docs index that ships with the plugin (${loaded.offline}), since ${base} can't be reached, so read_strapi_docs will likely fail too and the summaries may be all there is`
+        : "read one with read_strapi_docs";
       return [
-        `Strapi docs pages for "${query}" (read one with read_strapi_docs):`,
+        `Strapi docs pages for "${query}" (${source}):`,
         ...found.map((page) => `- ${page.path}: ${page.title}. ${page.summary}`),
       ].join("\n");
     },
@@ -356,7 +388,7 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
         if (error instanceof DocsError && error.message === "not found") {
           return { text: `There is no Strapi docs page "${path}". Use search_strapi_docs to find one.`, isError: true };
         }
-        return unreachable(error);
+        return unreachable(error, (index?.docs ?? offline())?.find(path));
       }
       const url = `${base}/${path}`;
       return {

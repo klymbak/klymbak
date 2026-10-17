@@ -54,6 +54,8 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         'lmstudio/qwen/qwen3.8-27b',
       ]),
     },
+    // House style and the pre-publish checklist, loaded by the assistant when a task calls for them.
+    skills: 'skills',
     // Strapi's own MCP server, called with one admin token, alongside the in-process content tools.
     mcp: mcpToken ? { token: mcpToken } : false,
   };

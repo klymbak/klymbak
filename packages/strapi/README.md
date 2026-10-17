@@ -61,9 +61,13 @@ With the default content tools it works with every content type shown in the Con
 | `create_entry`, `update_entry` | Writes drafts; rich text as Markdown (converted for Blocks fields), relations by documentId | yes |
 | `publish_entry`, `unpublish_entry`, `discard_draft` | Draft & Publish | yes |
 | `delete_entry` | Deletes an entry or one locale of it | yes, high risk |
+| `upload_media` | Uploads an image attached in the chat to the Media Library | yes |
 | `search_strapi_docs`, `read_strapi_docs` | Finds and reads pages of the Strapi docs, for questions about Strapi itself | no |
+| `use_skill` | Loads one of your [skills](#skills), when you have some | no |
 
-Fields a role can't edit are dropped by Strapi's permission sanitizer, and the assistant is told which ones, so it never claims a change that didn't happen. Media can be referenced by id but not uploaded.
+Fields a role can't edit are dropped by Strapi's permission sanitizer, and the assistant is told which ones, so it never claims a change that didn't happen.
+
+Images attached in the chat go to the Media Library through `upload_media`, as the signed-in admin and with their upload permission. Only PNG, JPEG, GIF and WebP files are accepted, recognized by their content rather than their declared type, and your `upload.security` allow and deny lists apply. The assistant can't fetch files from links. In Blocks fields a Markdown image pointing at a Media Library file, `![Alt](/uploads/owl.jpg)`, becomes an image block. Any other image becomes a link.
 
 ## Options
 
@@ -72,6 +76,7 @@ Fields a role can't edit are dropped by Strapi's permission sanitizer, and the a
 | `models` | every built-in provider with credentials | Which models people can pick: `providers`, `custom` (`lmStudio()`, `ollama()`, `openAICompatible()`), `allow` globs, `default` |
 | `app` | "Assistant" | Name, description and starter prompts |
 | `instructions` | | Added to the built-in instructions: house style, required fields, glossary… |
+| `skills` | | A folder of skills, relative to the project root: see [Skills](#skills) |
 | `systemPrompt` | | Replaces the built-in instructions |
 | `contentTools` | `true` | The in-process content tools above |
 | `docs` | `true` | The Strapi docs tools: see [Questions about Strapi](#questions-about-strapi) |
@@ -79,7 +84,7 @@ Fields a role can't edit are dropped by Strapi's permission sanitizer, and the a
 | `storage` | `"database"` | `"memory"` for throwaway setups, or your own adapter through `extend` |
 | `maxTurns`, `approvalTimeoutMs`, `timezone` | 24, 15 min, the server's | |
 | `runtimeMcp` | `false` | Let super admins connect more MCP servers from the Tools panel |
-| `extend` | | `({ strapi }) => ({ tools, hooks, subagents, schedules, mcpServers, storage, systemUser })` |
+| `extend` | | `({ strapi }) => ({ tools, hooks, subagents, skills, schedules, mcpServers, storage, systemUser })` |
 
 Strapi merges plugin config with lodash's `defaultsDeep`, which copies plain objects and loses the symbol keys tool schemas rely on. That's why anything holding code goes in `extend`, which runs once at bootstrap:
 
@@ -114,6 +119,30 @@ export default ({ env }) => ({
 
 The tools, hooks and subagents API is `@klymbak/server`'s; see its [README](../../README.md#concepts).
 
+### Skills
+
+`instructions` is always in the prompt, so keep it short. Longer procedures go in skills, which the assistant loads only when a task needs them. With `skills: "skills"`, each folder under `skills/` in your project is one skill:
+
+```
+skills/
+  write-article/
+    SKILL.md
+    reference/tone.md
+  pre-publish-checklist/
+    SKILL.md
+```
+
+```markdown
+---
+name: pre-publish-checklist
+description: The checks an article must pass before it goes live. Use when asked to publish an article, or whether a draft is ready.
+---
+
+Read the draft with get_entry, then check each point…
+```
+
+The prompt lists each skill's name and description. The assistant reads the rest with `use_skill`, including documents the skill refers to, such as `reference/tone.md`. Skills are read at startup, so restart Strapi after editing them. Skills defined in code go in `extend` (`skills: [{ name, description, instructions, roles? }]`), where `roles` takes Strapi role codes such as `strapi-editor`. The demo has the two skills above.
+
 ### Questions about Strapi
 
 Models know Strapi from their training, often an older version. So the assistant gets two kinds of knowledge:
@@ -121,7 +150,7 @@ Models know Strapi from their training, often an older version. So the assistant
 - **This project**, at the start of each conversation: Strapi version and license, whether it runs under `strapi develop` (only then can the Content-type Builder change content types), locales and the default one, installed plugins, the person's role, and the content types they can read with what they may do. A conversation keeps the facts it started with; start a new one after changing locales or roles.
 - **Strapi's documentation**, through `search_strapi_docs` and `read_strapi_docs`. The search runs inside Strapi over the index Strapi publishes for AI tools ([llms.txt](https://docs.strapi.io/llms.txt): every page's title and a one-line summary); pages are then fetched as Markdown. Nothing from the conversation leaves your server: only the index (refreshed daily) and the pages read are downloaded from docs.strapi.io. Long pages come back as an outline, then one section at a time.
 
-The server needs to reach docs.strapi.io. Without it, the tools say so and the assistant answers from the project facts alone. Set `docs: false` to remove them.
+When the server can't reach docs.strapi.io, the search uses a copy of the index that ships with the plugin (`pnpm --filter @klymbak/strapi docs:index` refreshes it before a release), and the assistant answers from the summaries and the project facts, saying it couldn't read the page itself. Set `docs: false` to remove the tools.
 
 ### Strapi's MCP server
 
@@ -167,4 +196,4 @@ pnpm --filter @klymbak/strapi dev      # in another terminal: rebuild the plugin
 
 The demo (`apps/strapi-demo`) is a small blog on Strapi's example content model, seeded on first start with articles (published, draft, and published with newer draft changes), authors and categories. Copy `apps/strapi-demo/.env.example` to `.env`, fill in the secrets and a model key (or load a model in LM Studio), run `pnpm dev:strapi`, open <http://localhost:1337/admin> and create the first admin. Server-side plugin changes need a Strapi restart; admin changes reload in the browser.
 
-`pnpm test` covers the Koa bridge (with a streaming response), the database storage, Blocks ↔ Markdown, the content model helpers, the MCP tool rules, config validation, the project facts and the docs search and pages. The content tools themselves need a running Strapi: they were checked by hand against the demo, as a super admin and as an Author.
+`pnpm test` covers the Koa bridge (with a streaming response), the database storage, Blocks ↔ Markdown, the content model helpers, the MCP tool rules, config validation, the project facts and the docs search and pages. `pnpm test:strapi` (at the repo root) builds the plugin and the demo, boots the demo headless on a fresh SQLite database and calls the content tools as a super admin, an Author and a custom role with field-level permissions: Draft & Publish statuses, filters through relations, validation errors, entries the role can't see staying out of results and approval cards, fields it can't read or change, role changes applying on the next call, uploads (content-checked and permission-checked) and the demo's skills. `pnpm --filter @klymbak/strapi verify` runs `strapi-plugin verify` on the built package. CI runs both.

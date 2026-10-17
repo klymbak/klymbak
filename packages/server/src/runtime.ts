@@ -36,6 +36,7 @@ import {
   turnContext,
 } from "./prompt.ts";
 import { Scheduler } from "./scheduler.ts";
+import { SKILL_TOOL, skillsFor, skillsSection, skillTool, validateSkills } from "./skills.ts";
 import {
   canSeeSession,
   memoryStorage,
@@ -50,6 +51,7 @@ import type {
   Hook,
   HookContext,
   Logger,
+  SkillDefinition,
   SubagentDefinition,
   ToolDefinition,
 } from "./types.ts";
@@ -117,6 +119,7 @@ export class AgentRuntime {
   readonly timezone: string;
   readonly hooks: Hook[];
   readonly subagents: SubagentDefinition[];
+  readonly skills: SkillDefinition[];
   readonly approvals: ApprovalBroker;
   readonly storage: AgentStorage;
   readonly systemUser: AgentUser;
@@ -124,6 +127,7 @@ export class AgentRuntime {
   readonly scheduler?: Scheduler;
   models!: ModelRegistry;
 
+  private readonly skillTool?: ToolDefinition<any>;
   private readonly handles = new Map<string, SessionHandle>();
   private readonly subscribers = new Set<{ user: AgentUser; fn: (event: NotificationEvent) => void }>();
   private starting?: Promise<void>;
@@ -134,6 +138,9 @@ export class AgentRuntime {
     this.timezone = config.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
     this.hooks = config.hooks ?? [];
     this.subagents = config.subagents ?? [];
+    this.skills = config.skills ?? [];
+    validateSkills(this.skills);
+    if (this.skills.length) this.skillTool = skillTool(this.skills);
     this.approvals = new ApprovalBroker(config.approvalTimeoutMs ?? 15 * 60_000);
     this.storage = config.storage ?? memoryStorage();
     this.systemUser = config.systemUser ?? { id: "system", name: "Scheduler", roles: ["admin"] };
@@ -142,6 +149,7 @@ export class AgentRuntime {
 
     for (const tool of config.tools ?? []) {
       if ((config.tools ?? []).filter((t) => t.name === tool.name).length > 1) throw new Error(`Duplicate tool name "${tool.name}".`);
+      if (this.skillTool && tool.name === SKILL_TOOL) throw new Error(`The tool name "${SKILL_TOOL}" is taken by skills.`);
     }
   }
 
@@ -168,12 +176,16 @@ export class AgentRuntime {
   // -------------------------------------------------------------------------
 
   allTools(): ToolDefinition<any>[] {
-    return [...(this.config.tools ?? []), ...(this.scheduler?.tools() ?? []), ...this.mcp.tools()];
+    return [...(this.config.tools ?? []), ...(this.skillTool ? [this.skillTool] : []), ...(this.scheduler?.tools() ?? []), ...this.mcp.tools()];
   }
 
   toolsFor(user: AgentUser, options: { headless?: boolean } = {}): ToolDefinition<any>[] {
+    const noSkills = !skillsFor(this.skills, user).length;
     return this.allTools().filter(
-      (tool) => userCanUse(tool, user.roles) && !(options.headless && SCHEDULING_TOOLS.has(tool.name)),
+      (tool) =>
+        userCanUse(tool, user.roles) &&
+        !(options.headless && SCHEDULING_TOOLS.has(tool.name)) &&
+        !(noSkills && tool === this.skillTool),
     );
   }
 
@@ -191,6 +203,7 @@ export class AgentRuntime {
       HARNESS_GUIDELINES,
       environmentSection(user, this.timezone),
       delegationSection(this.subagents),
+      skillsSection(skillsFor(this.skills, user)),
       this.scheduler && !headless && SCHEDULING_SECTION,
       headless && HEADLESS_SECTION,
       ...extra,
@@ -203,6 +216,7 @@ export class AgentRuntime {
       HARNESS_GUIDELINES,
       environmentSection(user, this.timezone),
       `## Your role\nYou are the "${definition.name}" specialist. Finish with a clear, complete answer: it is all the requesting agent will see.`,
+      this.toolsForSubagent(user, definition, headless).some((tool) => tool.name === SKILL_TOOL) && skillsSection(skillsFor(this.skills, user)),
       headless && HEADLESS_SECTION,
       ...extra,
     );
@@ -233,6 +247,7 @@ export class AgentRuntime {
         tools: this.toolsForSubagent(user, s).map((t) => t.name),
         model: s.model ? parseModelRef(s.model) : undefined,
       })),
+      skills: skillsFor(this.skills, user).map(({ name, description }) => ({ name, description })),
       mcpServers: this.mcp.info(),
       features: {
         schedules: Boolean(this.scheduler),

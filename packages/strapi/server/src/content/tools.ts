@@ -13,6 +13,7 @@ import {
   type GetModel,
   type Model,
 } from "./model.ts";
+import { imageLookup, uploadMediaTool } from "./media.ts";
 import { entryMedia, normalizeInput, removedFields, shapeEntry } from "./shape.ts";
 
 /** Emitted by "Open" buttons; the admin UI navigates to the entry in the Content Manager. */
@@ -440,7 +441,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     name: "create_entry",
     label: "Create entry",
     description:
-      "Creates an entry. For Draft & Publish types it is created as a draft; it is not published. Give field values in `data` as described by describe_content_type: rich text as Markdown, relations as documentIds, components as objects, dynamic zones as a list of { __component, ...fields }. Leave out what you don't know rather than inventing it.",
+      "Creates an entry. For Draft & Publish types it is created as a draft; it is not published. Give field values in `data` as described by describe_content_type: rich text as Markdown (Media Library images as ![alt](url)), media fields as file ids, relations as documentIds, components as objects, dynamic zones as a list of { __component, ...fields }. Leave out what you don't know rather than inventing it.",
     parameters: Type.Object({
       contentType: contentTypeParam,
       data: anyObject("Field values."),
@@ -461,7 +462,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
         if (isSingleType(model) && (await findVersion(model, undefined, locale, {}))) {
           throw new ContentToolError(`${model.info.displayName} is a single type and already has its entry: use update_entry.`);
         }
-        const { data, ignored } = normalizeInput(model, args.data, getModel);
+        const { data, ignored } = normalizeInput(model, args.data, getModel, await imageLookup(strapi, actor, args.data));
         const sanitized = await pc.sanitizeCreateInput(data);
         const denied = removedFields(data, sanitized);
         const created = (await documents(model.uid).create({
@@ -486,7 +487,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     name: "update_entry",
     label: "Update entry",
     description:
-      "Changes fields of an entry (only the fields you pass; the rest stay as they are). For Draft & Publish types it changes the draft; publish_entry makes it live. Rich text as Markdown, relations as documentIds or { connect, disconnect, set }. A component or dynamic zone you pass replaces the whole value, so read the entry first and send it back complete. For single types, leave out documentId. Passing a locale the entry doesn't have yet creates that translation.",
+      "Changes fields of an entry (only the fields you pass; the rest stay as they are). For Draft & Publish types it changes the draft; publish_entry makes it live. Rich text as Markdown (Media Library images as ![alt](url)), media fields as file ids, relations as documentIds or { connect, disconnect, set }. A component or dynamic zone you pass replaces the whole value, so read the entry first and send it back complete. For single types, leave out documentId. Passing a locale the entry doesn't have yet creates that translation.",
     parameters: Type.Object({
       contentType: contentTypeParam,
       documentId: documentIdParam,
@@ -516,7 +517,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
         } else if (pc.cannot.update(current)) {
           throw forbidden(`update this ${model.info.displayName}`);
         }
-        const { data, ignored } = normalizeInput(model, args.data, getModel);
+        const { data, ignored } = normalizeInput(model, args.data, getModel, await imageLookup(strapi, actor, args.data));
         const sanitized = current ? await pc.sanitizeUpdateInput(current)(data) : await pc.sanitizeCreateInput(data);
         const denied = removedFields(data, sanitized);
         if (!Object.keys(sanitized).length) {
@@ -637,7 +638,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     done: "draft discarded",
   });
 
-  return [listContentTypes, describeContentType, findEntries, getEntry, createEntry, updateEntry, deleteEntry, publishEntry, unpublishEntry, discardDraft];
+  return [listContentTypes, describeContentType, findEntries, getEntry, createEntry, updateEntry, deleteEntry, publishEntry, unpublishEntry, discardDraft, uploadMediaTool(strapi)];
 }
 
 function humanize(name: string): string {

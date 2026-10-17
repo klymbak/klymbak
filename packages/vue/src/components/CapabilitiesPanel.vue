@@ -57,6 +57,14 @@ async function connect() {
       </div>
     </section>
 
+    <section v-if="config.skills.length" class="kl-caps__section">
+      <h4><KlIcon name="file" :size="14" /> Skills <span class="kl-faint">{{ config.skills.length }}</span></h4>
+      <div v-for="skill in config.skills" :key="skill.name" class="kl-cap">
+        <div class="kl-cap__top"><span class="kl-cap__name">{{ skill.name }}</span></div>
+        <p class="kl-cap__desc">{{ skill.description }}</p>
+      </div>
+    </section>
+
     <section v-for="group in groups" :key="group.key" class="kl-caps__section">
       <h4><KlIcon :name="group.icon" :size="14" /> {{ group.title }} <span class="kl-faint">{{ group.tools.length }}</span></h4>
       <div v-for="tool in group.tools" :key="tool.name" class="kl-cap">

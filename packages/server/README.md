@@ -7,6 +7,7 @@ Agent harness for chat-native admin panels, built on the [pi](https://github.com
 - **Hooks** modelled on Claude Code: `sessionStart`, `userPromptSubmit`, `preToolUse`, `postToolUse`, `stop`, `runEnd`, `onEvent`
 - **Human approvals** with deny reasons, "always allow" and expiry; refused automatically in unattended runs
 - **Subagents** via a `delegate_task` tool, streamed as nested transcripts
+- **Skills** in Anthropic's `SKILL.md` format (`loadSkills`): procedures and house rules, loaded with a `use_skill` tool when a task calls for them
 - **Scheduled tasks** (cron) that run unattended and notify their audience
 - **Any model**: every pi-ai provider plus OpenAI-compatible endpoints (`lmStudio()`, `ollama()`, `openAICompatible()`)
 - **Sessions, steering, context-window management** and an **HTTP + SSE API** (`createAgentServer`), mountable in Hono, Express or any fetch runtime

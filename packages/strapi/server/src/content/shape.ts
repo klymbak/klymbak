@@ -1,4 +1,4 @@
-import { blocksToMarkdown, isBlocks, markdownToBlocks } from "./blocks.ts";
+import { blocksToMarkdown, isBlocks, markdownToBlocks, type ImageLookup } from "./blocks.ts";
 import { SYSTEM_FIELDS, editableAttributes, type Attribute, type GetModel, type Model } from "./model.ts";
 
 type Entry = Record<string, unknown>;
@@ -74,16 +74,16 @@ export interface NormalizedInput {
   ignored: string[];
 }
 
-function normalizeValue(attribute: Attribute, value: unknown, getModel: GetModel, path: string, ignored: string[]): unknown {
+function normalizeValue(attribute: Attribute, value: unknown, getModel: GetModel, path: string, ignored: string[], images?: ImageLookup): unknown {
   if (value === null || value === undefined) return value;
   switch (attribute.type) {
     case "blocks":
-      return typeof value === "string" ? markdownToBlocks(value) : value;
+      return typeof value === "string" ? markdownToBlocks(value, images) : value;
     case "component": {
       const component = attribute.component ? getModel(attribute.component) : undefined;
       if (!component) return value;
       const each = (item: unknown, index?: number) =>
-        isRecord(item) ? normalizeFields(component, item, getModel, index === undefined ? `${path}.` : `${path}[${index}].`, ignored) : item;
+        isRecord(item) ? normalizeFields(component, item, getModel, index === undefined ? `${path}.` : `${path}[${index}].`, ignored, images) : item;
       return Array.isArray(value) ? value.map(each) : each(value);
     }
     case "dynamiczone":
@@ -92,7 +92,7 @@ function normalizeValue(attribute: Attribute, value: unknown, getModel: GetModel
             const uid = isRecord(item) ? item.__component : undefined;
             const component = typeof uid === "string" ? getModel(uid) : undefined;
             if (!component || !isRecord(item)) return item;
-            return { __component: uid, ...normalizeFields(component, item, getModel, `${path}[${index}].`, ignored) };
+            return { __component: uid, ...normalizeFields(component, item, getModel, `${path}[${index}].`, ignored, images) };
           })
         : value;
     default:
@@ -100,7 +100,7 @@ function normalizeValue(attribute: Attribute, value: unknown, getModel: GetModel
   }
 }
 
-function normalizeFields(model: Model, input: Entry, getModel: GetModel, prefix: string, ignored: string[]): Entry {
+function normalizeFields(model: Model, input: Entry, getModel: GetModel, prefix: string, ignored: string[], images?: ImageLookup): Entry {
   const editable = new Map(editableAttributes(model));
   const data: Entry = {};
   for (const [key, value] of Object.entries(input)) {
@@ -110,19 +110,20 @@ function normalizeFields(model: Model, input: Entry, getModel: GetModel, prefix:
       ignored.push(`${prefix}${key} (${SYSTEM_FIELDS.has(key) ? "set by Strapi" : "no such field"})`);
       continue;
     }
-    data[key] = normalizeValue(attribute, value, getModel, `${prefix}${key}`, ignored);
+    data[key] = normalizeValue(attribute, value, getModel, `${prefix}${key}`, ignored, images);
   }
   return data;
 }
 
 /**
- * Prepares model-written data for Strapi: Markdown becomes Blocks for rich-text fields, and
- * fields that don't exist or that Strapi manages are dropped and reported.
+ * Prepares model-written data for Strapi: Markdown becomes Blocks for rich-text fields (with image
+ * blocks for the Media Library images `images` finds), and fields that don't exist or that Strapi
+ * manages are dropped and reported.
  */
-export function normalizeInput(model: Model, input: unknown, getModel: GetModel): NormalizedInput {
+export function normalizeInput(model: Model, input: unknown, getModel: GetModel, images?: ImageLookup): NormalizedInput {
   const ignored: string[] = [];
   if (!isRecord(input)) return { data: {}, ignored };
-  return { data: normalizeFields(model, input, getModel, "", ignored), ignored };
+  return { data: normalizeFields(model, input, getModel, "", ignored, images), ignored };
 }
 
 /** Top-level fields present in `before` but missing from `after`: what a sanitizer removed. */
