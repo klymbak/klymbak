@@ -3,7 +3,8 @@
  * write it as text. Covers what the Blocks editor produces: paragraphs, headings, lists, quotes,
  * code, images and links, with bold, italic, underline, strikethrough and inline code.
  *
- * Image blocks point at uploaded media, so Markdown images become links on the way in.
+ * Image blocks point at uploaded media: on the way in, a Markdown image becomes an image block
+ * when it points at a Media Library file, and a link otherwise.
  */
 
 export interface TextNode {
@@ -42,7 +43,13 @@ export type Block =
   | { type: "quote"; children: Inline[] }
   | { type: "code"; language?: string; children: TextNode[] }
   | ListBlock
-  | { type: "image"; image: { url: string; alternativeText?: string | null; [key: string]: unknown }; children: TextNode[] };
+  | { type: "image"; image: BlockImage; children: TextNode[] };
+
+/** The uploaded file an image block shows, as Strapi's Blocks editor stores it. */
+export type BlockImage = { url: string; alternativeText?: string | null; [key: string]: unknown };
+
+/** Finds the Media Library file behind a Markdown image's URL. */
+export type ImageLookup = (url: string) => BlockImage | undefined;
 
 export function isBlocks(value: unknown): value is Block[] {
   return Array.isArray(value) && value.every((node) => node && typeof node === "object" && typeof (node as Block).type === "string");
@@ -145,7 +152,7 @@ const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
 const IMAGE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
 const BLOCK_START = /^(#{1,6}\s|>|```)/;
 
-export function markdownToBlocks(markdown: string): Block[] {
+export function markdownToBlocks(markdown: string, images?: ImageLookup): Block[] {
   const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
   const blocks: Block[] = [];
   let i = 0;
@@ -176,7 +183,12 @@ export function markdownToBlocks(markdown: string): Block[] {
 
     const image = line.trim().match(IMAGE);
     if (image) {
-      blocks.push({ type: "paragraph", children: [{ type: "link", url: image[2]!, children: [{ type: "text", text: image[1] || image[2]! }] }] });
+      const file = images?.(image[2]!);
+      blocks.push(
+        file
+          ? { type: "image", image: { ...file, alternativeText: image[1] || file.alternativeText || null }, children: [{ type: "text", text: "" }] }
+          : { type: "paragraph", children: [{ type: "link", url: image[2]!, children: [{ type: "text", text: image[1] || image[2]! }] }] },
+      );
       i++;
       continue;
     }

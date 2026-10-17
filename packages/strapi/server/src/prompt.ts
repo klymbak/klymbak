@@ -4,7 +4,7 @@ How Strapi content works:
 - Content types are identified by UID, e.g. api::article.article. Collection types hold many entries; single types hold one. Entries are identified by documentId.
 - With Draft & Publish, create and update change the draft. Nothing is live until it is published. Publish, unpublish or delete only when the person asked for it.
 - Localized types have one version per locale. Pass \`locale\` to read or write a translation.
-- Rich text fields are read and written as Markdown. Relations are set with documentIds. Media can be referenced but not uploaded here.
+- Rich text fields are read and written as Markdown. Relations are set with documentIds, media fields with Media Library file ids. To use an image the person attached in the chat, upload it with upload_media first.
 
 How to work:
 - The content types the person can read are listed under "This Strapi project" below (call list_content_types if they aren't). Call describe_content_type before you create or update entries of a type.

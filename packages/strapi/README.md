@@ -61,10 +61,13 @@ With the default content tools it works with every content type shown in the Con
 | `create_entry`, `update_entry` | Writes drafts; rich text as Markdown (converted for Blocks fields), relations by documentId | yes |
 | `publish_entry`, `unpublish_entry`, `discard_draft` | Draft & Publish | yes |
 | `delete_entry` | Deletes an entry or one locale of it | yes, high risk |
+| `upload_media` | Uploads an image attached in the chat to the Media Library | yes |
 | `search_strapi_docs`, `read_strapi_docs` | Finds and reads pages of the Strapi docs, for questions about Strapi itself | no |
 | `use_skill` | Loads one of your [skills](#skills), when you have some | no |
 
-Fields a role can't edit are dropped by Strapi's permission sanitizer, and the assistant is told which ones, so it never claims a change that didn't happen. Media can be referenced by id but not uploaded.
+Fields a role can't edit are dropped by Strapi's permission sanitizer, and the assistant is told which ones, so it never claims a change that didn't happen.
+
+Images attached in the chat go to the Media Library through `upload_media`, as the signed-in admin and with their upload permission. Only PNG, JPEG, GIF and WebP files are accepted, recognized by their content rather than their declared type, and your `upload.security` allow and deny lists apply. The assistant can't fetch files from links. In Blocks fields a Markdown image pointing at a Media Library file, `![Alt](/uploads/owl.jpg)`, becomes an image block. Any other image becomes a link.
 
 ## Options
 
@@ -193,4 +196,4 @@ pnpm --filter @klymbak/strapi dev      # in another terminal: rebuild the plugin
 
 The demo (`apps/strapi-demo`) is a small blog on Strapi's example content model, seeded on first start with articles (published, draft, and published with newer draft changes), authors and categories. Copy `apps/strapi-demo/.env.example` to `.env`, fill in the secrets and a model key (or load a model in LM Studio), run `pnpm dev:strapi`, open <http://localhost:1337/admin> and create the first admin. Server-side plugin changes need a Strapi restart; admin changes reload in the browser.
 
-`pnpm test` covers the Koa bridge (with a streaming response), the database storage, Blocks ↔ Markdown, the content model helpers, the MCP tool rules, config validation, the project facts and the docs search and pages. `pnpm test:strapi` (at the repo root) builds the plugin and the demo, boots the demo headless on a fresh SQLite database and calls the content tools as a super admin, an Author and a custom role with field-level permissions: Draft & Publish statuses, filters through relations, validation errors, entries the role can't see staying out of results and approval cards, fields it can't read or change, and role changes applying on the next call. `pnpm --filter @klymbak/strapi verify` runs `strapi-plugin verify` on the built package. CI runs both.
+`pnpm test` covers the Koa bridge (with a streaming response), the database storage, Blocks ↔ Markdown, the content model helpers, the MCP tool rules, config validation, the project facts and the docs search and pages. `pnpm test:strapi` (at the repo root) builds the plugin and the demo, boots the demo headless on a fresh SQLite database and calls the content tools as a super admin, an Author and a custom role with field-level permissions: Draft & Publish statuses, filters through relations, validation errors, entries the role can't see staying out of results and approval cards, fields it can't read or change, role changes applying on the next call, uploads (content-checked and permission-checked) and the demo's skills. `pnpm --filter @klymbak/strapi verify` runs `strapi-plugin verify` on the built package. CI runs both.

@@ -94,8 +94,9 @@ function actingAs(admin: Admin) {
     return found;
   };
   return {
-    async call(name: string, args: Record<string, unknown>): Promise<Result> {
-      const output = await tool(name).execute(args, ctx);
+    /** `overrides` replace parts of the context, e.g. a conversation with an image attached. */
+    async call(name: string, args: Record<string, unknown>, overrides: Record<string, unknown> = {}): Promise<Result> {
+      const output = await tool(name).execute(args, { ...ctx, ...overrides });
       return typeof output === "string" ? { text: output, isError: false } : { text: output.text ?? JSON.stringify(output.data), isError: output.isError === true };
     },
     approval: (name: string, args: Record<string, unknown>) => tool(name).approval(args, ctx),
@@ -305,6 +306,57 @@ describe("with field-level permissions", () => {
       isError: true,
       text: expect.stringContaining("edit Article entries"),
     });
+  });
+});
+
+describe("media", () => {
+  // A 1×1 PNG, and an SVG (which can carry scripts) declared as a PNG.
+  const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+  const SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>').toString("base64");
+  /** A conversation in which the person attached these images. */
+  const attached = (...images: string[]) => ({
+    runtime: {
+      getSession: async () => ({
+        messages: [{ role: "user", parts: [{ type: "text", text: "Use this" }, ...images.map((data) => ({ type: "image", mimeType: "image/png", data }))] }],
+      }),
+    },
+  });
+
+  it("uploads an attached image as the person, for use as a cover", async () => {
+    const admin = await createAdmin("Mia", "strapi-super-admin");
+    const mia = actingAs(admin);
+    const result = await mia.call("upload_media", { name: "owl.jpg", alternativeText: "An owl" }, attached(PNG));
+    expect(result.isError, result.text).toBe(false);
+    const id = Number(/file id (\d+)/.exec(result.text)![1]);
+    const file = await strapi.db.query("plugin::upload.file").findOne({ where: { id }, populate: ["createdBy"] });
+    expect(file).toMatchObject({ name: "owl.png", alternativeText: "An owl", mime: "image/png", width: 1, height: 1 });
+    expect(file.createdBy.id).toBe(admin.id);
+
+    const documentId = await mia.createArticle({ title: "Owls at dusk", slug: "owls-at-dusk", cover: id });
+    const { entry } = JSON.parse((await mia.call("get_entry", { contentType: ARTICLE, documentId })).text);
+    expect(entry.cover).toMatchObject({ name: "owl.png", url: file.url });
+
+    await mia.call("delete_entry", { contentType: ARTICLE, documentId });
+  });
+
+  // Uploads land in the app's public/uploads. The test database starts without files, so every
+  // file in it is one of these tests', and removing it deletes it from disk too.
+  afterAll(async () => {
+    for (const file of await strapi.db.query("plugin::upload.file").findMany({})) await strapi.plugin("upload").service("upload").remove(file);
+  });
+
+  it("takes only raster images, judged by their content rather than their declared type", async () => {
+    const mia = actingAs(await createAdmin("Max", "strapi-super-admin"));
+    expect(await mia.call("upload_media", {}, attached(SVG))).toMatchObject({ isError: true, text: "Only PNG, JPEG, GIF and WebP images can be uploaded." });
+    expect(await mia.call("upload_media", { image: 3 }, attached(PNG, PNG))).toMatchObject({ isError: true, text: expect.stringContaining("pick one from 1 to 2") });
+    expect(await mia.call("upload_media", {}, attached())).toMatchObject({ isError: true, text: expect.stringContaining("No image was attached") });
+  });
+
+  it("needs the role's permission to upload", async () => {
+    const { id: roleId } = await strapi.service("admin::role").create({ name: "Reader", code: "reader", description: "Reads articles." });
+    await strapi.service("admin::role").assignPermissions(roleId, [{ action: "plugin::content-manager.explorer.read", subject: ARTICLE, properties: {}, conditions: [] }]);
+    const reader = actingAs(await createAdmin("Rae", "reader"));
+    expect(await reader.call("upload_media", {}, attached(PNG))).toMatchObject({ isError: true, text: expect.stringContaining("upload files to the Media Library") });
   });
 });
 

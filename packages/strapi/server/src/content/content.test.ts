@@ -74,6 +74,22 @@ describe("Blocks ↔ Markdown", () => {
     ]);
   });
 
+  it("makes Markdown images of Media Library files image blocks, and keeps other images links", () => {
+    const owl = { url: "/uploads/owl.jpg", name: "owl.jpg", alternativeText: null, width: 800, height: 600, mime: "image/jpeg" };
+    const lookup = (url: string) => (url === owl.url ? owl : undefined);
+    const blocks = markdownToBlocks("Before.\n\n![An owl](/uploads/owl.jpg)\n\n![Elsewhere](https://example.com/x.jpg)", lookup);
+    expect(blocks).toEqual([
+      { type: "paragraph", children: [{ type: "text", text: "Before." }] },
+      { type: "image", image: { ...owl, alternativeText: "An owl" }, children: [{ type: "text", text: "" }] },
+      { type: "paragraph", children: [{ type: "link", url: "https://example.com/x.jpg", children: [{ type: "text", text: "Elsewhere" }] }] },
+    ]);
+    expect(blocksToMarkdown(blocks)).toBe("Before.\n\n![An owl](/uploads/owl.jpg)\n\n[Elsewhere](https://example.com/x.jpg)");
+
+    // Also inside components and dynamic zones.
+    const { data } = normalizeInput(article, { sections: [{ __component: "shared.text", body: "![](/uploads/owl.jpg)" }] }, getModel, lookup);
+    expect(data).toEqual({ sections: [{ __component: "shared.text", body: [{ type: "image", image: owl, children: [{ type: "text", text: "" }] }] }] });
+  });
+
   it("keeps an empty paragraph for empty text, as Strapi requires one", () => {
     expect(markdownToBlocks("  \n")).toEqual([{ type: "paragraph", children: [{ type: "text", text: "" }] }]);
   });
