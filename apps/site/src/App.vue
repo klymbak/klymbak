@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
+import logo from "../../../docs/brand/klymbak-logo.svg";
 import ArchitectureDiagram from "./components/ArchitectureDiagram.vue";
 import CodeBlock from "./components/CodeBlock.vue";
 import HeroReplay from "./components/HeroReplay.vue";
-import { capabilities, faq, links, pilot, steps } from "./content";
+import StrapiSketch from "./components/StrapiSketch.vue";
+import { capabilities, faq, links, pilot, steps, strapiConfig, strapiFacts, strapiPlaces } from "./content";
 
 type Theme = "auto" | "light" | "dark";
 const theme = ref<Theme>("auto");
@@ -49,14 +51,15 @@ async function copyEmail() {
   <header class="top">
     <div class="wrap top__inner">
       <a class="brand" href="#top" aria-label="Klymbak home">
-        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-          <rect width="32" height="32" rx="7" fill="var(--signal)" />
-          <path d="M8 10h16M8 16h16M8 22h9l4 4v-4h3" stroke="var(--signal-ink)" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span>klymbak</span>
+        <img :src="logo" width="30" height="30" alt="" />
+        <span class="brand__text">
+          <span class="brand__name">klymbak</span>
+          <span class="brand__note">AI agent package for admin panels</span>
+        </span>
       </a>
       <nav class="top__nav" aria-label="Sections">
         <a href="#steps">Six steps</a>
+        <a href="#strapi">Strapi plugin</a>
         <a href="#inside">What's inside</a>
         <a href="#pilot">Pilot</a>
         <a href="#faq">FAQ</a>
@@ -66,7 +69,7 @@ async function copyEmail() {
         <svg v-else-if="theme === 'light'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
         <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" /></svg>
       </button>
-      <a class="btn btn--primary top__cta" :href="links.hire" target="_blank" rel="noopener">Hire me</a>
+      <a class="btn btn--primary top__cta" :href="links.contact">I want this<span class="top__cta-more">&nbsp;in my admin panel</span></a>
     </div>
   </header>
 
@@ -87,7 +90,7 @@ async function copyEmail() {
         <ul class="hero__facts">
           <li><strong>Pilot</strong> in three weeks, on one real workflow</li>
           <li><strong>Any model</strong>: Claude, GPT, Gemini or your own hardware</li>
-          <li><strong>Open stack</strong>: Vue 3 + Node, on the MIT-licensed pi agent harness</li>
+          <li><strong>Open stack</strong>: Vue, React or Angular + Node, on the MIT-licensed pi agent harness</li>
         </ul>
       </div>
       <div class="hero__demo">
@@ -146,7 +149,7 @@ async function copyEmail() {
     <!-- Steps ---------------------------------------------------------------------->
     <section id="steps" class="section wrap" aria-labelledby="steps-title">
       <div class="section__head">
-        <p class="label">The process</p>
+        <p class="label">What happens next</p>
         <div>
           <h2 id="steps-title">Six steps to bring an agent into your product.</h2>
           <p class="section__lede">You keep your systems, your login and your data. The agent goes on top of what you already run, one workflow at a time.</p>
@@ -167,7 +170,7 @@ async function copyEmail() {
               </ul>
               <p class="step__deliverable"><span class="label">You get</span> {{ step.deliverable }}</p>
             </div>
-            <CodeBlock v-if="step.code" :source="step.code.source" :file="step.code.file" />
+            <CodeBlock v-if="step.code" :files="step.code" />
           </div>
         </li>
       </ol>
@@ -180,12 +183,46 @@ async function copyEmail() {
         <div>
           <h2 id="arch-heading">Plain web tech, in your infrastructure.</h2>
           <p class="section__lede">
-            The chat is a Vue component. The agent is a Node service you mount next to your API. They talk over HTTPS and server-sent events,
-            behind the login you already have.
+            The chat is a Vue, React or Angular component. The agent is a Node service you mount next to your API. They talk over HTTPS and
+            server-sent events, behind the login you already have.
           </p>
         </div>
       </div>
       <ArchitectureDiagram />
+    </section>
+
+    <!-- Strapi ------------------------------------------------------------------------>
+    <section id="strapi" class="section wrap" aria-labelledby="strapi-title">
+      <div class="section__head">
+        <p class="label">A real integration</p>
+        <div>
+          <h2 id="strapi-title">Already inside a real admin panel: Strapi.</h2>
+          <p class="section__lede">
+            <code>@klymbak/strapi</code> is a Strapi 5 plugin built from the same packages. Install it, add a model key, and editors can ask
+            the assistant for what they need in three places in the admin.
+          </p>
+        </div>
+      </div>
+      <ol class="places">
+        <li v-for="place in strapiPlaces" :key="place.id" class="place">
+          <StrapiSketch :view="place.id" />
+          <span class="label">{{ place.where }}</span>
+          <h3>{{ place.title }}</h3>
+          <p>{{ place.text }}</p>
+        </li>
+      </ol>
+      <div class="strapi">
+        <div class="strapi__text">
+          <ul class="strapi__facts">
+            <li v-for="fact in strapiFacts" :key="fact">{{ fact }}</li>
+          </ul>
+          <p class="strapi__links">
+            <a :href="links.strapi" target="_blank" rel="noopener">Plugin docs and source</a>
+            <a href="https://www.npmjs.com/package/@klymbak/strapi" target="_blank" rel="noopener">@klymbak/strapi on npm</a>
+          </p>
+        </div>
+        <CodeBlock :files="[{ file: 'config/plugins.ts', source: strapiConfig }]" />
+      </div>
     </section>
 
     <!-- Capabilities --------------------------------------------------------------------->
@@ -266,11 +303,11 @@ async function copyEmail() {
         <h2>Bring one workflow. Leave with a working agent.</h2>
         <p>Tell me which screens your team lives in. I'll show you what the first three weeks would look like.</p>
         <div class="hero__ctas">
-          <a class="btn btn--primary" :href="links.hire" target="_blank" rel="noopener">Talk about your admin panel</a>
+          <a class="btn btn--primary" :href="links.contact">I want an AI agent in my admin panel</a>
           <a class="btn btn--ghost cta__ghost" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
         </div>
         <p class="cta__email">
-          Or email <span class="cta__address">{{ links.email }}</span>
+          Or write to <a class="cta__address" :href="`mailto:${links.email}`">{{ links.email }}</a>
           <button type="button" @click="copyEmail">{{ copiedEmail ? "Copied" : "Copy" }}</button>
         </p>
       </div>
@@ -303,13 +340,31 @@ async function copyEmail() {
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
+  min-width: 0;
   text-decoration: none;
+}
+.brand img {
+  flex: none;
+  display: block;
+}
+.brand__text {
+  display: grid;
+  min-width: 0;
+}
+.brand__name {
   font-family: var(--font-display);
   font-stretch: 125%;
   font-weight: 800;
   font-size: 1.15rem;
+  line-height: 1.1;
   letter-spacing: -0.02em;
+}
+.brand__note {
+  font-size: 0.74rem;
+  line-height: 1.3;
+  color: var(--ink-faint);
+  white-space: nowrap;
 }
 .top__nav {
   display: flex;
@@ -337,6 +392,8 @@ async function copyEmail() {
   cursor: pointer;
 }
 .top__cta {
+  flex: none;
+  gap: 0;
   height: 38px;
   padding: 0 0.95rem;
   font-size: 0.9rem;
@@ -462,7 +519,8 @@ async function copyEmail() {
   border: 1px solid var(--rule-strong);
 }
 .ba__list,
-.ba__checks {
+.ba__checks,
+.strapi__facts {
   margin: 0;
   padding-left: 1.2rem;
   display: grid;
@@ -476,11 +534,13 @@ async function copyEmail() {
   line-height: 2rem;
   background: repeating-linear-gradient(180deg, transparent 0 calc(2rem - 1px), var(--rule) calc(2rem - 1px) 2rem);
 }
-.ba__checks {
+.ba__checks,
+.strapi__facts {
   list-style: none;
   padding: 0;
 }
-.ba__checks li::before {
+.ba__checks li::before,
+.strapi__facts li::before {
   content: "✓";
   margin-right: 0.55rem;
   color: var(--stamp-green);
@@ -581,6 +641,63 @@ async function copyEmail() {
   padding-top: 0.75rem;
   border-top: 1px dashed var(--rule-strong);
   font-weight: 600;
+}
+
+/* Strapi ---------------------------------------------------------------------------- */
+.places {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.place {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+}
+.place .label {
+  margin-top: 0.6rem;
+}
+.place h3 {
+  font-size: var(--step-1);
+}
+.place p {
+  color: var(--ink-soft);
+  font-size: 0.96rem;
+  max-width: 36ch;
+}
+.strapi {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1.6rem 2.4rem;
+  align-items: start;
+  margin-top: 2.6rem;
+  padding-top: 2.2rem;
+  border-top: 1px solid var(--rule);
+}
+.strapi__text {
+  display: grid;
+  gap: 1.2rem;
+}
+.strapi__facts {
+  gap: 0.55rem;
+}
+.strapi__facts li {
+  display: flex;
+}
+.strapi__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.strapi__links a::after {
+  content: " ↗";
+  font-weight: 400;
+  color: var(--ink-faint);
 }
 
 /* Capabilities ------------------------------------------------------------------------ */
@@ -774,7 +891,6 @@ async function copyEmail() {
 }
 .cta__address {
   font-family: var(--font-mono);
-  user-select: all;
   color: var(--paper);
 }
 .cta__email button {
@@ -801,11 +917,17 @@ async function copyEmail() {
 }
 
 /* Responsive --------------------------------------------------------------------------- */
+@media (max-width: 1120px) {
+  .top__cta-more {
+    display: none;
+  }
+}
 @media (max-width: 1020px) {
   .hero {
     grid-template-columns: minmax(0, 1fr);
   }
-  .step__body--code {
+  .step__body--code,
+  .strapi {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -815,6 +937,13 @@ async function copyEmail() {
   }
   .top__theme {
     margin-left: auto;
+  }
+  .top__cta-more {
+    display: inline;
+  }
+  .places {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
   }
   .ba {
     grid-template-columns: minmax(0, 1fr);
@@ -866,6 +995,19 @@ async function copyEmail() {
   }
   .caps tbody th {
     white-space: normal;
+  }
+}
+@media (max-width: 640px) {
+  .top__inner {
+    gap: 0.8rem;
+  }
+  .top__cta-more {
+    display: none;
+  }
+}
+@media (max-width: 480px) {
+  .brand__note {
+    display: none;
   }
 }
 @media (max-width: 520px) {

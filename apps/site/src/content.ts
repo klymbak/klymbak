@@ -1,9 +1,16 @@
-/** Edit these to point at your own profile, repo and hosted demo. */
+const email = import.meta.env.VITE_CONTACT_EMAIL ?? "ivan@berezhnyk.com";
+const repo = import.meta.env.VITE_REPO_URL ?? "https://github.com/klymbak/klymbak";
+
+/** Edit these to point at your own address, repo and hosted demo. */
 export const links = {
   demo: import.meta.env.VITE_DEMO_URL ?? "http://localhost:5173",
-  hire: import.meta.env.VITE_HIRE_URL ?? "https://www.upwork.com/freelancers/",
-  repo: import.meta.env.VITE_REPO_URL ?? "https://github.com/",
-  email: import.meta.env.VITE_CONTACT_EMAIL ?? "hello@example.com",
+  repo,
+  strapi: `${repo}/tree/main/packages/strapi#readme`,
+  email,
+  // A subject and two prompts, so the first email already says where to start.
+  contact:
+    `mailto:${email}?subject=${encodeURIComponent("An AI agent in our admin panel")}` +
+    `&body=${encodeURIComponent("Our admin panel is built with:\nThe workflow we'd start with:\n")}`,
 };
 
 export interface Step {
@@ -13,7 +20,8 @@ export interface Step {
   points: string[];
   deliverable: string;
   time: string;
-  code?: { file: string; source: string };
+  /** One or more files; several show as tabs. */
+  code?: { file: string; source: string }[];
 }
 
 export const steps: Step[] = [
@@ -32,9 +40,10 @@ export const steps: Step[] = [
     points: ["Typed parameters the model can't get wrong silently", "Tables and charts for people, short text for the model", "MCP servers for Stripe, Zendesk, carriers or your own services"],
     deliverable: "A tool catalogue running against staging",
     time: "Week 1",
-    code: {
-      file: "tools/orders.ts",
-      source: `export const refundOrder = defineTool({
+    code: [
+      {
+        file: "tools/orders.ts",
+        source: `export const refundOrder = defineTool({
   name: "refund_order",
   description: "Refund all or part of an order.",
   parameters: Type.Object({
@@ -49,7 +58,8 @@ export const steps: Step[] = [
     return { text: "Refunded.", ui: ui.alert("success", "Refund issued") };
   },
 });`,
-    },
+      },
+    ],
   },
   {
     id: "guard",
@@ -58,9 +68,10 @@ export const steps: Step[] = [
     points: ["Approvals show the exact amount, recipient and draft", "Role limits, PII masking and blocked actions as hooks", "Audit trail with who asked, what ran and who approved"],
     deliverable: "Security review notes and a written policy file",
     time: "Week 1–2",
-    code: {
-      file: "hooks.ts",
-      source: `export const refundPolicy: Hook = {
+    code: [
+      {
+        file: "hooks.ts",
+        source: `export const refundPolicy: Hook = {
   name: "refund-policy",
   tools: ["refund_order"],
   preToolUse: ({ args, ctx }) => {
@@ -71,7 +82,8 @@ export const steps: Step[] = [
     if (args.amount <= 25) return { decision: "allow" }; // goodwill
   },
 };`,
-    },
+      },
+    ],
   },
   {
     id: "models",
@@ -84,13 +96,14 @@ export const steps: Step[] = [
   {
     id: "embed",
     title: "Drop the chat into your product",
-    body: "A Vue 3 component library: a full workspace, a single chat, or a floating widget that sits next to your current panel, so you don't have to switch everything over on day one. Theme it with a few CSS variables.",
-    points: ["Streaming answers, tool cards and approvals", "Your own Vue components for any tool's results", "Works behind your existing login"],
+    body: "Component packages for Vue 3, React and Angular: a full workspace, a single chat, or a floating widget that sits next to your current panel, so you don't have to switch everything over on day one. Theme it with a few CSS variables.",
+    points: ["Streaming answers, tool cards and approvals", "Your own components for any tool's results", "Works behind your existing login"],
     deliverable: "The agent inside your app, behind your auth",
     time: "Week 2",
-    code: {
-      file: "AdminPage.vue",
-      source: `<script setup lang="ts">
+    code: [
+      {
+        file: "AdminPage.vue",
+        source: `<script setup lang="ts">
 import { AgentWorkspace } from "@klymbak/vue";
 import "@klymbak/vue/style.css";
 </script>
@@ -98,7 +111,30 @@ import "@klymbak/vue/style.css";
 <template>
   <AgentWorkspace base-url="/api/agent" />
 </template>`,
-    },
+      },
+      {
+        file: "AdminPage.tsx",
+        source: `import { AgentWorkspace } from "@klymbak/react";
+import "@klymbak/react/style.css";
+
+export function AdminPage() {
+  return <AgentWorkspace baseUrl="/api/agent" />;
+}`,
+      },
+      {
+        file: "admin-page.ts",
+        source: `import { Component } from "@angular/core";
+import { AgentWorkspace } from "@klymbak/angular";
+// styles.css: @import "@klymbak/angular/style.css";
+
+@Component({
+  selector: "app-admin-page",
+  imports: [AgentWorkspace],
+  template: \`<kl-agent-workspace baseUrl="/api/agent" />\`,
+})
+export class AdminPage {}`,
+      },
+    ],
   },
   {
     id: "automate",
@@ -151,6 +187,30 @@ export const faq: { q: string; a: string }[] = [
   },
   {
     q: "Which stacks do you support?",
-    a: "The reference build is Vue 3 and Node (TypeScript) on the MIT-licensed pi agent harness. The protocol is plain HTTP and server-sent events, so React, Angular or a .NET back end are straightforward additions.",
+    a: "The chat comes as components for Vue 3, React (18 and 19) and Angular (21 and 22), and as a ready-made plugin for Strapi 5. The agent server is Node (TypeScript) on the MIT-licensed pi agent harness. The protocol is plain HTTP and server-sent events, so a .NET back end is a straightforward addition.",
   },
 ];
+
+/** The three places the Strapi plugin puts the assistant in the admin. */
+export const strapiPlaces: { id: "page" | "panel" | "bulk"; where: string; title: string; text: string }[] = [
+  { id: "page", where: "Main menu", title: "A page of its own", text: "Conversations, scheduled tasks and the tool list, one click from the Content Manager." },
+  { id: "panel", where: "Edit view", title: "A side panel on every entry", text: "Ask about the entry that's open. When the assistant changes it, the form refreshes." },
+  { id: "bulk", where: "List view", title: "A bulk action", text: "Select entries, then ask about them: which are missing a description, what to fix before publishing." },
+];
+
+export const strapiFacts: string[] = [
+  "Works as the signed-in admin: field, locale and “only their own entries” permissions apply as in the Content Manager",
+  "Creating, updating, publishing and deleting each wait for an approval",
+  "Knows the project (version, locales, content types) and answers Strapi questions from the official docs",
+  "Conversations and schedules live in Strapi's own database",
+];
+
+export const strapiConfig = `// npm install @klymbak/strapi
+export default () => ({
+  klymbak: {
+    config: {
+      models: { providers: ["anthropic"], default: "anthropic/claude-sonnet-5-5" },
+      instructions: "Every article needs a category and an author.",
+    },
+  },
+});`;
