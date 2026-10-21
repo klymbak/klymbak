@@ -16,9 +16,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const appDir = process.env.KLYMBAK_TEST_APP ? path.resolve(process.env.KLYMBAK_TEST_APP) : fileURLToPath(new URL("../../../apps/strapi-demo/", import.meta.url));
 const databaseFile = `.tmp/integration-${process.pid}.db`;
 const ARTICLE = "api::article.article";
+const AUTHOR = "api::author.author";
 
 const seed = JSON.parse(readFileSync(path.join(appDir, "data/seed.json"), "utf8")) as {
   articles: { title: string; slug: string; status: "draft" | "published" | "modified" }[];
+  authors: { name: string; bio?: string }[];
 };
 
 type Admin = { id: number; firstname: string; roles: { code: string }[] };
@@ -163,6 +165,13 @@ describe("as a super admin", () => {
     expect(entry.category).toMatchObject({ name: "nature" });
     expect(entry.blocks.some((block: { __component: string; body?: unknown }) => block.__component === "shared.rich-text" && typeof block.body === "string")).toBe(true);
     expect(JSON.stringify(entry)).not.toMatch(/"id":/);
+  });
+
+  it("reads a Blocks field as Markdown", async () => {
+    const { name, bio } = seed.authors[0]!;
+    const { documentId } = await strapi.documents(AUTHOR).findFirst({ filters: { name } });
+    const { entry } = JSON.parse((await admin.call("get_entry", { contentType: AUTHOR, documentId })).text);
+    expect(entry.bio).toBe(bio);
   });
 
   it("names the entry on approval cards", async () => {
@@ -337,6 +346,51 @@ describe("media", () => {
     expect(entry.cover).toMatchObject({ name: "owl.png", url: file.url });
 
     await mia.call("delete_entry", { contentType: ARTICLE, documentId });
+  });
+
+  /** Uploads an attached PNG as this admin and returns the Media Library file. */
+  async function upload(as: ReturnType<typeof actingAs>, args: Record<string, unknown>) {
+    const result = await as.call("upload_media", args, attached(PNG));
+    expect(result.isError, result.text).toBe(false);
+    return strapi.db.query("plugin::upload.file").findOne({ where: { id: Number(/file id (\d+)/.exec(result.text)![1]) } });
+  }
+
+  it("makes a Markdown image of an uploaded file an image block in a Blocks field, and reads it back as Markdown", async () => {
+    const noor = actingAs(await createAdmin("Noor", "strapi-super-admin"));
+    const file = await upload(noor, { name: "heron.png", alternativeText: "A heron" });
+    const bio = `Watches birds.\n\n![A heron at dawn](${file.url})\n\n![Elsewhere](https://example.com/heron.png)`;
+    const created = await noor.call("create_entry", { contentType: AUTHOR, data: { name: "Noor Haddad", bio } });
+    expect(created.isError, created.text).toBe(false);
+    const { documentId } = lastLineJson(created.text);
+
+    // As the Blocks editor stores it: the image block carries the file, the other image is a link.
+    const stored = await strapi.documents(AUTHOR).findOne({ documentId });
+    expect(stored.bio).toEqual([
+      { type: "paragraph", children: [{ type: "text", text: "Watches birds." }] },
+      {
+        type: "image",
+        image: expect.objectContaining({ name: file.name, url: file.url, alternativeText: "A heron at dawn", mime: "image/png", width: 1, height: 1 }),
+        children: [{ type: "text", text: "" }],
+      },
+      { type: "paragraph", children: [{ type: "link", url: "https://example.com/heron.png", children: [{ type: "text", text: "Elsewhere" }] }] },
+    ]);
+
+    const { entry } = JSON.parse((await noor.call("get_entry", { contentType: AUTHOR, documentId })).text);
+    expect(entry.bio).toBe(`Watches birds.\n\n![A heron at dawn](${file.url})\n\n[Elsewhere](https://example.com/heron.png)`);
+  });
+
+  it("keeps images links for a role that can't open the Media Library", async () => {
+    const file = await upload(actingAs(await createAdmin("Uma", "strapi-super-admin")), { name: "wren.png" });
+    const { id: roleId } = await strapi.service("admin::role").create({ name: "Bio writer", code: "bio-writer", description: "Writes author bios." });
+    await strapi.service("admin::role").assignPermissions(roleId, [
+      { action: "plugin::content-manager.explorer.create", subject: AUTHOR, properties: { fields: ["name", "bio"] }, conditions: [] },
+      { action: "plugin::content-manager.explorer.read", subject: AUTHOR, properties: { fields: ["name", "bio"] }, conditions: [] },
+    ]);
+    const writer = actingAs(await createAdmin("Bea", "bio-writer"));
+    const created = await writer.call("create_entry", { contentType: AUTHOR, data: { name: "Bea Lund", bio: `![A wren](${file.url})` } });
+    expect(created.isError, created.text).toBe(false);
+    const stored = await strapi.documents(AUTHOR).findOne({ documentId: lastLineJson(created.text).documentId });
+    expect(stored.bio).toEqual([{ type: "paragraph", children: [{ type: "link", url: file.url, children: [{ type: "text", text: "A wren" }] }] }]);
   });
 
   // Uploads land in the app's public/uploads. The test database starts without files, so every

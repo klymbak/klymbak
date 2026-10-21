@@ -25,9 +25,9 @@
     { "name": "story", "slug": "story" }
   ],
   "authors": [
-    { "key": "david", "name": "David Doe", "email": "daviddoe@strapi.io" },
-    { "key": "sarah", "name": "Sarah Baker", "email": "sarahbaker@strapi.io" },
-    { "key": "priya", "name": "Priya Raman", "email": "priya.raman@example.com" }
+    { "key": "david", "name": "David Doe", "email": "daviddoe@strapi.io", "bio": "Writes about the internet, the sea, and the shortcuts that save an hour a week." },
+    { "key": "sarah", "name": "Sarah Baker", "email": "sarahbaker@strapi.io", "bio": "Covers tech and science news, and takes most of the pictures on this blog." },
+    { "key": "priya", "name": "Priya Raman", "email": "priya.raman@example.com", "bio": "Bakes on weekends and looks after the office plants, with mixed results." }
   ],
   "articles": [
     {

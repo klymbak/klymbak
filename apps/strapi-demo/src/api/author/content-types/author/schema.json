@@ -24,6 +24,9 @@
     "email": {
       "type": "string"
     },
+    "bio": {
+      "type": "blocks"
+    },
     "articles": {
       "type": "relation",
       "relation": "oneToMany",
