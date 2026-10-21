@@ -7,7 +7,8 @@ interface Seed {
   global: { siteName: string; siteDescription: string; defaultSeo: { metaTitle: string; metaDescription: string } };
   about: { title: string; blocks: Block[] };
   categories: { name: string; slug: string; description?: string }[];
-  authors: { key: string; name: string; email: string }[];
+  /** `bio` is plain text, stored as one paragraph of Blocks. */
+  authors: { key: string; name: string; email: string; bio?: string }[];
   articles: {
     title: string;
     slug: string;
@@ -37,8 +38,10 @@ async function seedContent(strapi: Core.Strapi) {
   }
 
   const authors = new Map<string, string>();
-  for (const { key, ...author } of seed.authors) {
-    const created = await strapi.documents('api::author.author').create({ data: author });
+  for (const { key, bio, ...author } of seed.authors) {
+    const created = await strapi.documents('api::author.author').create({
+      data: { ...author, bio: bio ? [{ type: 'paragraph', children: [{ type: 'text', text: bio }] }] : undefined },
+    });
     authors.set(key, created.documentId);
   }
 
