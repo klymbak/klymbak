@@ -10,6 +10,7 @@
     "build:single": "vite build --mode single",
     "preview": "vite preview --port 5174",
     "deploy": "wrangler deploy",
+    "deploy:preview": "wrangler preview",
     "typecheck": "vue-tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
