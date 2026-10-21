@@ -1,8 +1,11 @@
 // The explainer site on Cloudflare Workers as static assets, at klymbak.ai.
 // Build first (`pnpm --filter site build`), then `pnpm --filter site run deploy`.
+// Workers Builds runs `wrangler preview` for other branches, which needs a `previews` block;
+// empty, previews use the top-level settings except the route.
 {
   "name": "klymbak-site",
   "compatibility_date": "2026-10-01",
   "assets": { "directory": "./dist" },
-  "routes": [{ "pattern": "klymbak.ai", "custom_domain": true }]
+  "routes": [{ "pattern": "klymbak.ai", "custom_domain": true }],
+  "previews": {}
 }
