@@ -1,7 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Page } from "@strapi/strapi/admin";
 import { AgentWorkspace, createAgentClient, createAgentStore, type AgentStore } from "@klymbak/react";
-import "@klymbak/react/style.css";
 import { agentUrl, PERMISSIONS, useAdminFetch, useAgentActions } from "../agent";
 import { useAgentI18n, useAppTexts, useT } from "../i18n";
 import { StrapiTheme, useStrapiThemeMode } from "../theme";

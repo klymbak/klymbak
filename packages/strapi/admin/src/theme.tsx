@@ -1,5 +1,6 @@
-import type { ReactNode } from "react";
+import { useInsertionEffect, type ReactNode } from "react";
 import { useTheme } from "styled-components";
+import stylesheet from "@klymbak/react/style.css?inline";
 
 type Colors = Record<string, string | undefined>;
 
@@ -57,12 +58,27 @@ export function useStrapiThemeMode(): "light" | "dark" {
 }
 
 /**
+ * Adds Klymbak's stylesheet to the page, once. It travels in the plugin as text: Strapi's production build
+ * links no CSS that the admin's entry imports, so `import "@klymbak/react/style.css"` styled nothing there.
+ */
+function useStylesheet() {
+  useInsertionEffect(() => {
+    if (document.querySelector("style[data-klymbak]")) return;
+    const style = document.createElement("style");
+    style.dataset.klymbak = "";
+    style.textContent = stylesheet;
+    document.head.append(style);
+  }, []);
+}
+
+/**
  * Dresses the Klymbak components inside it in the admin's own colors, font and radius. (Its language
  * reaches them as `locale` and `messages`, from useAgentI18n.) The selector outranks the stylesheet's
  * `.kl-root` and `[data-kl-theme]` rules.
  */
 export function StrapiTheme({ children, className = "" }: { children: ReactNode; className?: string }) {
   const theme = useTheme() as unknown as { colors?: Colors } | undefined;
+  useStylesheet();
   const css = theme?.colors ? `.kl-strapi .kl-root.kl-root{${variables(theme.colors)}}` : "";
   return (
     <div className={`kl-strapi ${className}`.trim()}>

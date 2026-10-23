@@ -3,7 +3,6 @@ import { Box } from "@strapi/design-system";
 import { Sparkle } from "@strapi/icons";
 import * as StrapiAdmin from "@strapi/strapi/admin";
 import { AgentChat, createAgentClient, createAgentStore, type AgentStore } from "@klymbak/react";
-import "@klymbak/react/style.css";
 import { agentUrl, PERMISSIONS, useAdminFetch, useAgentActions } from "../agent";
 import { useAgentI18n, useAppTexts, useT } from "../i18n";
 import { StrapiTheme, useStrapiThemeMode } from "../theme";

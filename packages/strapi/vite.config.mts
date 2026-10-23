@@ -13,7 +13,9 @@ const pkg = JSON.parse(readFileSync(new URL("package.json", import.meta.url), "u
   peerDependencies?: Record<string, string>;
 };
 const externals = Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies });
-const external = (id: string) => isBuiltin(id) || externals.some((dep) => id === dep || id.startsWith(`${dep}/`));
+// Files imported as text (`?inline`) are bundled: the admin carries the stylesheet itself (see theme.tsx).
+const external = (id: string) =>
+  !id.endsWith("?inline") && (isBuiltin(id) || externals.some((dep) => id === dep || id.startsWith(`${dep}/`)));
 
 export default defineConfig(({ mode }) => {
   const admin = mode === "admin";
