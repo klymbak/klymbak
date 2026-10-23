@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, computed, output, signal, viewChild } from "@angular/core";
 import type { SessionSummary } from "@klymbak/protocol";
-import { injectAgentState, injectStoreRef } from "../context.ts";
+import { injectAgentState, injectI18n, injectStoreRef } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 
 const DAY = 86_400_000;
@@ -13,12 +13,20 @@ const DAY = 86_400_000;
   template: `
     @let s = state();
     <div class="kl-sessions">
-      <button type="button" class="kl-btn kl-sessions__new" (click)="startNew()"><svg klIcon name="plus" [size]="14" /> New conversation</button>
+      <button type="button" class="kl-btn kl-sessions__new" (click)="startNew()"><svg klIcon name="plus" [size]="14" /> {{ i18n().t("sessions.new") }}</button>
       @if (s.sessions.length > 8) {
-        <input #search class="kl-input" type="search" placeholder="Search conversations" aria-label="Search conversations" [value]="query()" (input)="query.set(search.value)" />
+        <input
+          #search
+          class="kl-input"
+          type="search"
+          [placeholder]="i18n().t('sessions.search')"
+          [attr.aria-label]="i18n().t('sessions.search')"
+          [value]="query()"
+          (input)="query.set(search.value)"
+        />
       }
       @if (!s.sessions.length) {
-        <p class="kl-sessions__empty">Your conversations will appear here.</p>
+        <p class="kl-sessions__empty">{{ i18n().t("sessions.empty") }}</p>
       }
       @for (group of groups(); track group.label) {
         <nav class="kl-sessions__group" [attr.aria-label]="group.label">
@@ -29,7 +37,7 @@ const DAY = 86_400_000;
                 <input
                   #rename
                   class="kl-input kl-session__rename"
-                  aria-label="Conversation title"
+                  [attr.aria-label]="i18n().t('sessions.titleLabel')"
                   [value]="draft()"
                   (input)="draft.set(rename.value)"
                   (keydown.enter)="commitRename()"
@@ -45,21 +53,26 @@ const DAY = 86_400_000;
                   }
                   <span class="kl-session__title">{{ session.title }}</span>
                   @if (session.unread) {
-                    <span class="kl-session__unread" aria-label="Unread"></span>
+                    <span class="kl-session__unread" [attr.aria-label]="i18n().t('sessions.unread')"></span>
                   }
                 </button>
               }
               @if (confirming() === session.id) {
                 <span class="kl-session__confirm">
-                  <button type="button" class="kl-btn kl-btn--sm kl-btn--danger" (click)="remove(session.id)">Delete</button>
-                  <button type="button" class="kl-btn kl-btn--sm kl-btn--ghost" (click)="confirming.set(null)">Keep</button>
+                  <button type="button" class="kl-btn kl-btn--sm kl-btn--danger" (click)="remove(session.id)">{{ i18n().t("common.delete") }}</button>
+                  <button type="button" class="kl-btn kl-btn--sm kl-btn--ghost" (click)="confirming.set(null)">{{ i18n().t("sessions.keep") }}</button>
                 </span>
               } @else if (renaming() !== session.id) {
                 <span class="kl-session__tools">
-                  <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Rename" (click)="startRename(session)">
+                  <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" [attr.aria-label]="i18n().t('sessions.rename')" (click)="startRename(session)">
                     <svg klIcon name="edit" [size]="13" />
                   </button>
-                  <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Delete" (click)="confirming.set(session.id)">
+                  <button
+                    type="button"
+                    class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+                    [attr.aria-label]="i18n().t('common.delete')"
+                    (click)="confirming.set(session.id)"
+                  >
                     <svg klIcon name="trash" [size]="13" />
                   </button>
                 </span>
@@ -76,6 +89,7 @@ export class SessionList {
   readonly open = output<string>();
   private readonly store = injectStoreRef();
   protected readonly state = injectAgentState();
+  protected readonly i18n = injectI18n();
   protected readonly query = signal("");
   protected readonly renaming = signal<string | null>(null);
   protected readonly draft = signal("");
@@ -89,11 +103,12 @@ export class SessionList {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const today = startOfDay.getTime();
+    const i18n = this.i18n();
     const buckets: { label: string; items: SessionSummary[] }[] = [
-      { label: "Today", items: [] },
-      { label: "Yesterday", items: [] },
-      { label: "Previous 7 days", items: [] },
-      { label: "Older", items: [] },
+      { label: i18n.t("sessions.today"), items: [] },
+      { label: i18n.t("sessions.yesterday"), items: [] },
+      { label: i18n.t("sessions.previous7Days"), items: [] },
+      { label: i18n.t("sessions.older"), items: [] },
     ];
     for (const session of this.state().sessions) {
       if (q && !`${session.title} ${session.preview ?? ""}`.toLowerCase().includes(q)) continue;

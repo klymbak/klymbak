@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { mediaKind, type MediaBlock, type MediaItem } from "@klymbak/protocol";
 import { mediaMeta, mediaName, mediaType, safeUrl } from "@klymbak/client";
+import { useI18n } from "../../context";
 import { cx } from "../../util";
 import { KlIcon } from "../KlIcon";
 
 const PAGE = 12;
 
 export function MediaGallery({ block }: { block: MediaBlock }) {
+  const i18n = useI18n();
   const [expanded, setExpanded] = useState(false);
   // A file whose preview fails to load (deleted, or a path this page can't reach) shows as a file tile.
   const [broken, setBroken] = useState<ReadonlySet<string>>(new Set());
@@ -32,11 +34,11 @@ export function MediaGallery({ block }: { block: MediaBlock }) {
       ) : (
         <span className="kl-media__file">
           <KlIcon name="file" size={28} />
-          {mediaType(item) ?? "File"}
+          {mediaType(item) ?? i18n.t("media.file")}
         </span>
       );
     return url ? (
-      <a className="kl-media__preview" href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${name}`}>
+      <a className="kl-media__preview" href={url} target="_blank" rel="noopener noreferrer" aria-label={i18n.t("media.open", { name })}>
         {content}
       </a>
     ) : (
@@ -49,9 +51,7 @@ export function MediaGallery({ block }: { block: MediaBlock }) {
       {(block.title || block.items.length > 1) && (
         <div className="kl-media__bar">
           <span className="kl-media__title">{block.title}</span>
-          <span className="kl-media__count kl-num">
-            {total.toLocaleString()} {total === 1 ? "file" : "files"}
-          </span>
+          <span className="kl-media__count kl-num">{i18n.t("media.files", { count: total })}</span>
         </div>
       )}
       <ul className="kl-media__grid">
@@ -82,21 +82,17 @@ export function MediaGallery({ block }: { block: MediaBlock }) {
         <div className="kl-media__foot">
           {hidden > 0 ? (
             <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" onClick={() => setExpanded(true)}>
-              Show {hidden} more
+              {i18n.t("common.showMore", { count: hidden })}
             </button>
           ) : (
             expanded &&
             block.items.length > PAGE && (
               <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" onClick={() => setExpanded(false)}>
-                Show fewer
+                {i18n.t("common.showFewer")}
               </button>
             )
           )}
-          {total > block.items.length && (
-            <span className="kl-faint">
-              Showing {block.items.length} of {total.toLocaleString()}
-            </span>
-          )}
+          {total > block.items.length && <span className="kl-faint">{i18n.t("common.showingOf", { shown: block.items.length, total })}</span>}
           {block.caption && <span className="kl-faint kl-media__foot-caption">{block.caption}</span>}
         </div>
       )}

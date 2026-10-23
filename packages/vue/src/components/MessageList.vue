@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch } from "vue";
 import type { ChatMessage } from "@klymbak/protocol";
+import { useI18n } from "../context";
 import MessageItem from "./MessageItem.vue";
 import KlIcon from "./KlIcon.vue";
 
 const props = defineProps<{ messages: readonly ChatMessage[]; running?: boolean; showMeta?: boolean }>();
+const i18n = useI18n();
 
 const scroller = ref<HTMLElement>();
 const pinned = ref(true);
@@ -57,10 +59,10 @@ onMounted(() => scrollToBottom());
     <div class="kl-list__inner">
       <slot v-if="!messages.length" name="empty" />
       <MessageItem v-for="message in messages" :key="message.id" :message="message" :show-meta="showMeta" />
-      <div class="kl-sr-only" aria-live="polite">{{ running ? "The agent is working" : "" }}</div>
+      <div class="kl-sr-only" aria-live="polite">{{ running ? i18n.t("messages.working") : "" }}</div>
     </div>
     <button v-if="!pinned" type="button" class="kl-list__jump kl-btn kl-btn--sm" @click="scrollToBottom(true)">
-      <KlIcon name="arrowDown" :size="12" /> Latest
+      <KlIcon name="arrowDown" :size="12" /> {{ i18n.t("messages.latest") }}
     </button>
   </div>
 </template>

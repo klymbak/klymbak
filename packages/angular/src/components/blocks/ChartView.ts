@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, signal, viewChild } from "@angular/core";
 import type { ChartBlock } from "@klymbak/protocol";
-import { compactNumber, formatValue } from "@klymbak/client";
+import type { I18n } from "@klymbak/client";
+import { injectI18n } from "../../context.ts";
 
 const HEIGHT = 220;
 
@@ -9,12 +10,12 @@ const valueOf = (row: Record<string, unknown>, key: string) => {
   return Number.isFinite(value) ? value : 0;
 };
 
-function formatX(value: unknown, format: ChartBlock["x"]["format"]) {
+function formatX(i18n: I18n, value: unknown, format: ChartBlock["x"]["format"]) {
   if (format === "date" && typeof value === "string") {
     const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
-    if (!Number.isNaN(date.getTime())) return formatValue(date, "date");
+    if (!Number.isNaN(date.getTime())) return i18n.formatValue(date, "date");
   }
-  return formatValue(value, format);
+  return i18n.formatValue(value, format);
 }
 
 const seriesColor = (index: number) => `var(--kl-series-${(index % 4) + 1})`;
@@ -43,7 +44,7 @@ const seriesColor = (index: number) => `var(--kl-series-${(index % 4) + 1})`;
           [attr.width]="width()"
           [attr.height]="HEIGHT"
           role="img"
-          [attr.aria-label]="(b.title ?? 'Chart') + ': ' + b.data.length + ' data points'"
+          [attr.aria-label]="i18n().t('chart.label', { title: b.title ?? i18n().t('chart.defaultTitle'), count: b.data.length })"
           (pointermove)="onMove($event)"
           (pointerleave)="hover.set(null)"
         >
@@ -113,6 +114,7 @@ const seriesColor = (index: number) => `var(--kl-series-${(index % 4) + 1})`;
 })
 export class ChartView {
   readonly block = input.required<ChartBlock>();
+  protected readonly i18n = injectI18n();
   private readonly container = viewChild.required<ElementRef<HTMLElement>>("container");
   protected readonly width = signal(560);
   protected readonly hover = signal<number | null>(null);
@@ -135,6 +137,7 @@ export class ChartView {
   protected readonly chart = computed(() => {
     const block = this.block();
     const width = this.width();
+    const i18n = this.i18n();
     const { series, data } = block;
     const n = data.length;
 
@@ -152,7 +155,7 @@ export class ChartView {
     for (let t = bottom; t <= top + step / 2; t += step) tickValues.push(Math.round(t * 1e6) / 1e6);
 
     const primary = series[0];
-    const tickLabel = (value: number) => compactNumber(value, primary?.format, primary?.currency);
+    const tickLabel = (value: number) => i18n.compactNumber(value, primary?.format, primary?.currency);
 
     const longest = Math.max(...tickValues.map((t) => tickLabel(t).length));
     const margin = { top: 12, right: 14, bottom: 28, left: Math.max(36, longest * 7 + 14) };
@@ -196,7 +199,7 @@ export class ChartView {
       const room = Math.max(1, Math.floor(inner.width / 72));
       const every = Math.ceil(n / room);
       return data
-        .map((row, i) => ({ i, x: xCenter(i), text: formatX(row[block.x.key], block.x.format) }))
+        .map((row, i) => ({ i, x: xCenter(i), text: formatX(i18n, row[block.x.key], block.x.format) }))
         .filter(({ i }) => i % every === 0 || i === n - 1)
         .filter((label, k, all) => k === all.length - 1 || all[all.length - 1]!.i - label.i >= every * 0.6);
     })();
@@ -221,11 +224,12 @@ export class ChartView {
     const hovered = index === null ? undefined : block.data[index];
     if (index === null || !hovered) return null;
     const x = this.chart().xCenter(index);
+    const i18n = this.i18n();
     return {
       x,
       left: x > this.width() * 0.6,
-      title: formatX(hovered[block.x.key], block.x.format),
-      items: block.series.map((s, j) => ({ label: s.label, value: formatValue(hovered[s.key], s.format, s.currency), color: j })),
+      title: formatX(i18n, hovered[block.x.key], block.x.format),
+      items: block.series.map((s, j) => ({ label: s.label, value: i18n.formatValue(hovered[s.key], s.format, s.currency), color: j })),
     };
   });
 

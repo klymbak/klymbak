@@ -10,6 +10,10 @@ export {
 } from "./store.ts";
 export type { AgentState, AgentStore, AgentStoreOptions, Attachment, Toast } from "./store.ts";
 export { observe } from "./observe.ts";
+export { createI18n, formatMessage, loadMessages, locales, matchLocale } from "./i18n.ts";
+export type { I18n, I18nOptions, Locale, Message, MessagePart, MessageValues, Text } from "./i18n.ts";
+export { en } from "./messages.ts";
+export type { MessageId, Messages } from "./messages.ts";
 export { renderMarkdown } from "./markdown.ts";
 export { mediaMeta, mediaName, mediaType, safeUrl } from "./media.ts";
 export * from "./format.ts";

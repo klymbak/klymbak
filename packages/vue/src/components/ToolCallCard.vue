@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { humanize, type ToolPart, type ToolStatus } from "@klymbak/protocol";
-import { useRenderers } from "../context";
+import { useI18n, useRenderers } from "../context";
 import ApprovalPrompt from "./ApprovalPrompt.vue";
 import KlIcon from "./KlIcon.vue";
 import SubagentTrace from "./SubagentTrace.vue";
@@ -9,20 +9,20 @@ import UiBlockView from "./blocks/UiBlockView.vue";
 
 const props = defineProps<{ part: ToolPart; compact?: boolean }>();
 const renderers = useRenderers();
+const i18n = useI18n();
 
-const STATUS: Record<ToolStatus, { label: string; tone: string }> = {
-  streaming: { label: "Preparing", tone: "neutral" },
-  pending: { label: "Queued", tone: "neutral" },
-  awaiting_approval: { label: "Waiting for you", tone: "warning" },
-  running: { label: "Running", tone: "info" },
-  done: { label: "Done", tone: "success" },
-  error: { label: "Failed", tone: "danger" },
-  denied: { label: "Denied", tone: "danger" },
-  blocked: { label: "Blocked", tone: "danger" },
+const TONES: Record<ToolStatus, string> = {
+  streaming: "neutral",
+  pending: "neutral",
+  awaiting_approval: "warning",
+  running: "info",
+  done: "success",
+  error: "danger",
+  denied: "danger",
+  blocked: "danger",
 };
 
 const icon = computed(() => ({ mcp: "plug", builtin: "clock", subagent: "agents", local: "tool" })[props.part.source ?? "local"]);
-const status = computed(() => STATUS[props.part.status]);
 const active = computed(() => ["streaming", "pending", "running"].includes(props.part.status));
 const refused = computed(() => ["error", "denied", "blocked"].includes(props.part.status));
 const customRenderer = computed(() => renderers.tools?.[props.part.name]);
@@ -57,11 +57,7 @@ watch(
   { immediate: true },
 );
 
-const duration = computed(() => {
-  const ms = props.part.durationMs;
-  if (ms === undefined) return "";
-  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
-});
+const duration = computed(() => (props.part.durationMs === undefined ? "" : i18n.duration(props.part.durationMs)));
 </script>
 
 <template>
@@ -72,11 +68,11 @@ const duration = computed(() => {
         <KlIcon v-else :name="icon" :size="14" />
       </span>
       <span class="kl-tool__name">{{ label }}</span>
-      <span v-if="part.server" class="kl-tool__via">via {{ part.server }}</span>
+      <span v-if="part.server" class="kl-tool__via">{{ i18n.t("tool.via", { server: part.server }) }}</span>
       <span v-if="argSummary && !part.subagent" class="kl-tool__args">{{ argSummary }}</span>
       <span class="kl-tool__meta">
         <span v-if="duration" class="kl-faint kl-num">{{ duration }}</span>
-        <span class="kl-pill" :class="`kl-tone-${status.tone}`">{{ status.label }}</span>
+        <span class="kl-pill" :class="`kl-tone-${TONES[part.status]}`">{{ i18n.t(`tool.status.${part.status}`) }}</span>
         <KlIcon class="kl-tool__chevron" :class="{ 'kl-tool__chevron--open': open }" name="chevronDown" :size="14" />
       </span>
     </button>
@@ -102,7 +98,7 @@ const duration = computed(() => {
 
     <div v-if="open" class="kl-tool__details">
       <div v-if="args.length" class="kl-tool__detail">
-        <span class="kl-tool__detail-label">Input</span>
+        <span class="kl-tool__detail-label">{{ i18n.t("tool.input") }}</span>
         <dl class="kl-tool__argList">
           <template v-for="arg in args" :key="arg.key">
             <dt>{{ humanize(arg.key) }}</dt>
@@ -111,12 +107,17 @@ const duration = computed(() => {
         </dl>
       </div>
       <div v-if="part.result?.text && !part.subagent" class="kl-tool__detail">
-        <span class="kl-tool__detail-label">{{ part.result.isError ? "Error" : "What the agent saw" }}</span>
+        <span class="kl-tool__detail-label">{{ i18n.t(part.result.isError ? "tool.error" : "tool.output") }}</span>
         <pre class="kl-tool__output kl-scroll">{{ part.result.text }}</pre>
       </div>
       <div class="kl-tool__detail kl-faint kl-tool__ids">
         <span class="kl-code">{{ part.name }}</span>
-        <span v-if="part.source === 'mcp'">MCP tool from <strong>{{ part.server }}</strong></span>
+        <span v-if="part.source === 'mcp'">
+          <template v-for="(piece, i) in i18n.parts('tool.mcpFrom', { server: part.server ?? '' })" :key="i">
+            <strong v-if="piece.arg === 'server'">{{ piece.text }}</strong>
+            <template v-else>{{ piece.text }}</template>
+          </template>
+        </span>
       </div>
     </div>
   </div>

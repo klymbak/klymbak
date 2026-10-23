@@ -2,34 +2,33 @@
 import { computed } from "vue";
 import type { ChatMessage } from "@klymbak/protocol";
 import { formatTokens } from "@klymbak/client";
+import { useI18n } from "../context";
 import MarkdownContent from "./MarkdownContent.vue";
 import KlIcon from "./KlIcon.vue";
 import ThinkingBlock from "./ThinkingBlock.vue";
 import ToolCallCard from "./ToolCallCard.vue";
 
 const props = defineProps<{ message: ChatMessage; compact?: boolean; showMeta?: boolean }>();
+const i18n = useI18n();
 
 const streaming = computed(() => props.message.status === "streaming");
 const lastIndex = computed(() => props.message.parts.length - 1);
 const isFinalAnswer = computed(() => !props.message.parts.some((p) => p.type === "tool"));
 const hasContent = computed(() => props.message.parts.some((p) => (p.type === "text" ? p.text.trim() : true)));
 
-const ORIGIN: Record<string, string> = {
-  steer: "Added while the agent was working",
-  hook: "Automatic follow-up",
-  schedule: "Scheduled task",
-};
+const ORIGIN = { steer: "message.origin.steer", hook: "message.origin.hook", schedule: "message.origin.schedule" } as const;
+const origin = computed(() => (props.message.origin && props.message.origin !== "user" ? i18n.t(ORIGIN[props.message.origin]) : undefined));
 </script>
 
 <template>
   <div v-if="message.role === 'user'" class="kl-msg kl-msg--user" :class="{ 'kl-msg--compact': compact }">
-    <span v-if="message.origin && ORIGIN[message.origin]" class="kl-msg__origin">
-      <KlIcon :name="message.origin === 'schedule' ? 'clock' : 'sparkle'" :size="12" /> {{ ORIGIN[message.origin] }}
+    <span v-if="origin" class="kl-msg__origin">
+      <KlIcon :name="message.origin === 'schedule' ? 'clock' : 'sparkle'" :size="12" /> {{ origin }}
     </span>
     <div class="kl-msg__bubble">
       <template v-for="(part, i) in message.parts" :key="i">
         <p v-if="part.type === 'text'" class="kl-msg__text">{{ part.text }}</p>
-        <img v-else-if="part.type === 'image'" class="kl-msg__image" :src="`data:${part.mimeType};base64,${part.data}`" alt="Attached image" />
+        <img v-else-if="part.type === 'image'" class="kl-msg__image" :src="`data:${part.mimeType};base64,${part.data}`" :alt="i18n.t('message.attachedImage')" />
       </template>
     </div>
   </div>
@@ -45,13 +44,13 @@ const ORIGIN: Record<string, string> = {
       <MarkdownContent v-else-if="part.type === 'text' && part.text.trim()" :source="part.text" :streaming="streaming && i === lastIndex" />
       <ToolCallCard v-else-if="part.type === 'tool'" :part="part" :compact="compact" />
     </template>
-    <div v-if="streaming && !hasContent" class="kl-msg__waiting"><span class="kl-spinner" /> Working…</div>
+    <div v-if="streaming && !hasContent" class="kl-msg__waiting"><span class="kl-spinner" /> {{ i18n.t("message.working") }}</div>
     <div v-if="message.status === 'error' && message.error" class="kl-notice kl-notice--error">
       <KlIcon name="alert" :size="14" /> <span>{{ message.error }}</span>
     </div>
-    <div v-if="message.status === 'aborted'" class="kl-msg__meta">Stopped</div>
+    <div v-if="message.status === 'aborted'" class="kl-msg__meta">{{ i18n.t("message.stopped") }}</div>
     <div v-else-if="showMeta && isFinalAnswer && message.status === 'done' && message.usage" class="kl-msg__meta kl-num">
-      {{ message.model?.id }} · {{ formatTokens(message.usage.totalTokens) }} tokens<template v-if="message.usage.cost"> · ${{ message.usage.cost.toFixed(4) }}</template>
+      {{ message.model?.id }} · {{ i18n.t("message.tokens", { count: message.usage.totalTokens ?? 0, tokens: formatTokens(message.usage.totalTokens) }) }}<template v-if="message.usage.cost"> · ${{ message.usage.cost.toFixed(4) }}</template>
     </div>
   </div>
 </template>

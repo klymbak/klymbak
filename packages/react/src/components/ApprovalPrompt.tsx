@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ApprovalDecision, ApprovalView } from "@klymbak/protocol";
-import { useOptionalAgentStore } from "../context";
+import { useI18n, useOptionalAgentStore } from "../context";
 import { cx } from "../util";
 import { KlIcon } from "./KlIcon";
 
@@ -8,6 +8,7 @@ const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
 
 export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView; onDecide?: (decision: ApprovalDecision) => void }) {
   const store = useOptionalAgentStore();
+  const i18n = useI18n();
   const [remember, setRemember] = useState(false);
   const [reason, setReason] = useState("");
   const [denying, setDenying] = useState(false);
@@ -34,18 +35,18 @@ export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView;
         <>
           <div className="kl-approval__head">
             <KlIcon name="shield" size={15} />
-            <span>Needs your approval</span>
-            {approval.risk && <span className={`kl-pill kl-tone-${riskTone[approval.risk]}`}>{approval.risk} risk</span>}
+            <span>{i18n.t("approval.needed")}</span>
+            {approval.risk && <span className={`kl-pill kl-tone-${riskTone[approval.risk]}`}>{i18n.t(`approval.risk.${approval.risk}`)}</span>}
           </div>
           <p className="kl-approval__title">{approval.title}</p>
           {approval.description && <p className="kl-approval__desc">{approval.description}</p>}
           {denying && (
             <label className="kl-label kl-approval__reason">
-              Why not? (optional, the agent will read this)
+              {i18n.t("approval.reasonLabel")}
               <input
                 className="kl-input"
                 type="text"
-                placeholder="e.g. Offer a replacement instead"
+                placeholder={i18n.t("approval.reasonPlaceholder")}
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
                 onKeyDown={(event) => {
@@ -56,28 +57,28 @@ export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView;
           )}
           <div className="kl-approval__buttons">
             <button type="button" className="kl-btn kl-btn--primary" disabled={busy} onClick={() => void decide(true)}>
-              <KlIcon name="check" size={14} /> Approve
+              <KlIcon name="check" size={14} /> {i18n.t("approval.approve")}
             </button>
             <button type="button" className="kl-btn" disabled={busy} onClick={() => void decide(false)}>
-              <KlIcon name="x" size={14} /> {denying ? "Confirm deny" : "Deny"}
+              <KlIcon name="x" size={14} /> {i18n.t(denying ? "approval.confirmDeny" : "approval.deny")}
             </button>
             {approval.rememberable && !denying && (
               <label className="kl-approval__remember">
                 <input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} />
-                Don't ask again in this chat
+                {i18n.t("approval.remember")}
               </label>
             )}
           </div>
         </>
       ) : (
         <div className="kl-approval__decided">
-          <span className={`kl-stamp kl-stamp--${approval.status}`}>{approval.status}</span>
+          <span className={`kl-stamp kl-stamp--${approval.status}`}>{i18n.t(`approval.status.${approval.status}`)}</span>
           <div className="kl-approval__summary">
             <span className="kl-approval__title">{approval.title}</span>
             <span className="kl-faint">
-              {approval.decidedBy && `by ${approval.decidedBy}`}
-              {approval.reason && ` · “${approval.reason}”`}
-              {approval.status === "expired" && "Nobody decided in time"}
+              {approval.decidedBy && i18n.t("approval.decidedBy", { name: approval.decidedBy })}
+              {approval.reason && ` · ${i18n.t("approval.reason", { reason: approval.reason })}`}
+              {approval.status === "expired" && i18n.t("approval.expiredNote")}
             </span>
           </div>
         </div>

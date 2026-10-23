@@ -6,6 +6,7 @@ import * as StrapiAdmin from "@strapi/strapi/admin";
 import { AgentChat, createAgentClient, createAgentStore, type AgentStore, type ChatMessage, type ToolPart } from "@klymbak/react";
 import "@klymbak/react/style.css";
 import { agentUrl, PERMISSIONS, useAdminFetch, useAgentActions } from "../agent";
+import { useAgentI18n, useAppTexts, useT } from "../i18n";
 import { StrapiTheme, useStrapiThemeMode } from "../theme";
 
 /** What the Content Manager passes to edit-view side panels. */
@@ -18,7 +19,6 @@ export interface EditViewContext {
   model: string;
 }
 
-const QUICK_PROMPTS = ["Summarize this entry", "What's missing before I publish it?", "Suggest improvements to the text"];
 /** Tools that change an entry, ours and Strapi MCP's: after one, the form shows stale data. */
 const WRITE_TOOL = /^(update_entry|publish_entry|unpublish_entry|discard_draft|strapi_(update|write|publish|unpublish|discard)_.+)$/;
 /** Conversations by entry, so coming back to an entry in this tab reopens its conversation. */
@@ -68,6 +68,8 @@ function EntryAssistant(props: EditViewContext) {
   const fetch = useAdminFetch();
   const theme = useStrapiThemeMode();
   const onAction = useAgentActions();
+  const t = useT();
+  const i18n = useAgentI18n();
   const locale = props.document?.locale ?? undefined;
   const key = `${model}:${documentId ?? "single"}:${locale ?? ""}`;
 
@@ -80,6 +82,8 @@ function EntryAssistant(props: EditViewContext) {
 
   const [store] = useState<AgentStore>(() => createAgentStore({ client: createAgentClient({ baseUrl: agentUrl(), fetch }) }));
   useSyncExternalStore(store.subscribe, store.getVersion);
+  const { description } = useAppTexts(store.state.config?.app);
+  const quickPrompts = [t("entry.prompt.summarize"), t("entry.prompt.missing"), t("entry.prompt.improve")];
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [stale, setStale] = useState(false);
@@ -127,14 +131,14 @@ function EntryAssistant(props: EditViewContext) {
   return (
     <Flex direction="column" alignItems="stretch" gap={3} width="100%">
       <Typography variant="pi" textColor="neutral600">
-        Ask about this {name}. Changes wait for your approval.
+        {t("entry.intro", { name })}
       </Typography>
       {/* No <form>: this panel sits inside the edit view's form, and a nested form's submit never reaches React, so the browser reloads the page. */}
       <Flex direction="column" alignItems="stretch" gap={2}>
         <Textarea
           name="klymbak-prompt"
-          aria-label={`Ask about this ${name}`}
-          placeholder={`Ask about this ${name}…`}
+          aria-label={t("entry.label", { name })}
+          placeholder={t("entry.placeholder", { name })}
           value={draft}
           onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(event.target.value)}
           onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -145,11 +149,11 @@ function EntryAssistant(props: EditViewContext) {
           }}
         />
         <Button type="button" fullWidth startIcon={<Sparkle />} disabled={!draft.trim()} onClick={() => ask(draft)}>
-          Ask
+          {t("entry.ask")}
         </Button>
       </Flex>
       <Flex direction="column" alignItems="stretch" gap={1}>
-        {QUICK_PROMPTS.map((prompt) => (
+        {quickPrompts.map((prompt) => (
           <Button key={prompt} variant="tertiary" size="S" onClick={() => ask(prompt)}>
             {prompt}
           </Button>
@@ -157,13 +161,13 @@ function EntryAssistant(props: EditViewContext) {
       </Flex>
       {store.state.sessionId && !open && (
         <Button variant="secondary" fullWidth onClick={() => setOpen(true)}>
-          Show the conversation
+          {t("entry.showConversation")}
         </Button>
       )}
       {stale && (
         <Box background="warning100" padding={3} hasRadius>
           <Typography variant="pi" textColor="warning700">
-            The assistant changed this entry. Save or discard your edits, then reload to see its changes.
+            {t("entry.stale")}
           </Typography>
         </Box>
       )}
@@ -171,15 +175,23 @@ function EntryAssistant(props: EditViewContext) {
         createPortal(
           <StrapiTheme>
             <div className="kl-root kl-widget kl-widget--right" data-kl-theme={theme}>
-              <div className="kl-widget__panel" role="dialog" aria-label={`Assistant: ${name}`}>
+              <div className="kl-widget__panel" role="dialog" aria-label={t("entry.dialog", { name })}>
                 <AgentChat
                   store={store}
                   theme={theme}
+                  locale={i18n.locale}
+                  messages={i18n.messages}
                   title={title ? `${name}: ${title}` : name}
-                  suggestions={QUICK_PROMPTS}
+                  description={description}
+                  suggestions={quickPrompts}
                   onAction={onAction}
                   headerEnd={
-                    <button type="button" className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Close" onClick={() => setOpen(false)}>
+                    <button
+                      type="button"
+                      className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+                      aria-label={t("entry.close")}
+                      onClick={() => setOpen(false)}
+                    >
                       <Cross width={14} height={14} aria-hidden />
                     </button>
                   }
@@ -196,6 +208,7 @@ function EntryAssistant(props: EditViewContext) {
 /** The edit view's "Assistant" side panel, for people allowed to use the assistant. */
 export function EntryPanel(props: EditViewContext) {
   const { allowedActions, isLoading } = StrapiAdmin.useRBAC(PERMISSIONS);
+  const t = useT();
   if (isLoading || !allowedActions.canUse) return null;
-  return { title: "Assistant", content: <EntryAssistant {...props} /> };
+  return { title: t("plugin.name"), content: <EntryAssistant {...props} /> };
 }

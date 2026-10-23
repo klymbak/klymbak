@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Attachment } from "@klymbak/client";
+import { useI18n } from "../context";
 import { cx } from "../util";
 import { KlIcon } from "./KlIcon";
 
@@ -30,9 +31,10 @@ export interface ComposerHandle {
 }
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
-  { running, disabled, placeholder = "Ask anything, or tell the agent what to do…", acceptImages, onSend, onStop, tools },
+  { running, disabled, placeholder, acceptImages, onSend, onStop, tools },
   ref,
 ) {
+  const i18n = useI18n();
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -110,7 +112,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               <button
                 type="button"
                 className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
-                aria-label={`Remove ${file.name}`}
+                aria-label={i18n.t("composer.removeFile", { name: file.name })}
                 onClick={() => setAttachments((current) => current.filter((_, j) => j !== i))}
               >
                 <KlIcon name="close" size={12} />
@@ -124,9 +126,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         className="kl-composer__input"
         rows={1}
         value={text}
-        placeholder={running ? "Add an instruction while the agent works…" : placeholder}
+        placeholder={running ? i18n.t("composer.placeholderRunning") : (placeholder ?? i18n.t("composer.placeholder"))}
         disabled={disabled}
-        aria-label="Message"
+        aria-label={i18n.t("composer.label")}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={onKeyDown}
         onPaste={onPaste}
@@ -137,8 +139,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           <button
             type="button"
             className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
-            aria-label="Attach an image"
-            title="Attach an image"
+            aria-label={i18n.t("composer.attachImage")}
+            title={i18n.t("composer.attachImage")}
             onClick={() => fileInput.current?.click()}
           >
             <KlIcon name="image" size={15} />
@@ -158,22 +160,20 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         <span className="kl-composer__spacer" />
         {running && (
           <button type="button" className="kl-btn kl-btn--sm" onClick={onStop}>
-            <KlIcon name="stop" size={12} /> Stop
+            <KlIcon name="stop" size={12} /> {i18n.t("composer.stop")}
           </button>
         )}
         <button
           type="submit"
           className="kl-btn kl-btn--primary kl-btn--icon kl-composer__send"
           disabled={!canSend}
-          aria-label={running ? "Send instruction" : "Send"}
+          aria-label={i18n.t(running ? "composer.sendInstruction" : "composer.send")}
         >
           <KlIcon name="send" size={16} />
         </button>
       </div>
       {running && (
-        <p className="kl-composer__hint">
-          The agent is working. Anything you send now is added as an instruction it reads after the current step.
-        </p>
+        <p className="kl-composer__hint">{i18n.t("composer.runningHint")}</p>
       )}
     </form>
   );

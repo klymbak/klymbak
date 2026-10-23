@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from "@angular/core";
 import type { TableBlock, TableColumn, UiAction } from "@klymbak/protocol";
-import { fillTemplate, formatValue, toneClass } from "@klymbak/client";
-import { CHAT_ACTIONS } from "../../context.ts";
+import { fillTemplate, toneClass } from "@klymbak/client";
+import { CHAT_ACTIONS, injectI18n } from "../../context.ts";
 import { displayText } from "../../util.ts";
 import { KlIcon } from "../KlIcon.ts";
 
@@ -25,9 +25,9 @@ type Row = Record<string, unknown>;
       @if (b.title || b.rows.length > 0) {
         <div class="kl-table__bar">
           <span class="kl-table__title">{{ b.title }}</span>
-          <span class="kl-table__count kl-num">{{ total.toLocaleString() }} {{ total === 1 ? "row" : "rows" }}</span>
-          <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" title="Copy as CSV" (click)="copyCsv()">
-            <svg klIcon [name]="copied() ? 'check' : 'copy'" [size]="14" />{{ copied() ? "Copied" : "CSV" }}
+          <span class="kl-table__count kl-num">{{ i18n().t("table.rows", { count: total }) }}</span>
+          <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" [title]="i18n().t('table.copyCsv')" (click)="copyCsv()">
+            <svg klIcon [name]="copied() ? 'check' : 'copy'" [size]="14" />{{ i18n().t(copied() ? "table.copied" : "table.csv") }}
           </button>
         </div>
       }
@@ -46,7 +46,7 @@ type Row = Record<string, unknown>;
                 </th>
               }
               @if (hasRowActions) {
-                <th class="kl-table__actions-head"><span class="kl-sr-only">Actions</span></th>
+                <th class="kl-table__actions-head"><span class="kl-sr-only">{{ i18n().t("table.actions") }}</span></th>
               }
             </tr>
           </thead>
@@ -63,7 +63,7 @@ type Row = Record<string, unknown>;
                     } @else if (column.format === "email") {
                       <span class="kl-table__email">{{ displayText(value) }}</span>
                     } @else {
-                      <ng-container>{{ formatValue(value, column.format, column.currency) }}</ng-container>
+                      <ng-container>{{ i18n().formatValue(value, column.format, column.currency) }}</ng-container>
                     }
                   </td>
                 }
@@ -78,7 +78,7 @@ type Row = Record<string, unknown>;
             }
             @if (!b.rows.length) {
               <tr>
-                <td [attr.colspan]="b.columns.length + (hasRowActions ? 1 : 0)" class="kl-table__empty">No rows</td>
+                <td [attr.colspan]="b.columns.length + (hasRowActions ? 1 : 0)" class="kl-table__empty">{{ i18n().t("table.empty") }}</td>
               </tr>
             }
           </tbody>
@@ -87,12 +87,12 @@ type Row = Record<string, unknown>;
       @if (hidden() > 0 || expanded() || b.caption || total > b.rows.length) {
         <div class="kl-table__foot">
           @if (hidden() > 0) {
-            <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" (click)="expanded.set(true)">Show {{ hidden() }} more</button>
+            <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" (click)="expanded.set(true)">{{ i18n().t("common.showMore", { count: hidden() }) }}</button>
           } @else if (expanded() && b.rows.length > PAGE) {
-            <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" (click)="expanded.set(false)">Show fewer</button>
+            <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" (click)="expanded.set(false)">{{ i18n().t("common.showFewer") }}</button>
           }
           @if (total > b.rows.length) {
-            <span class="kl-faint">Showing {{ b.rows.length }} of {{ total.toLocaleString() }}</span>
+            <span class="kl-faint">{{ i18n().t("common.showingOf", { shown: b.rows.length, total: total }) }}</span>
           }
           @if (b.caption) {
             <span class="kl-faint kl-table__caption">{{ b.caption }}</span>
@@ -114,7 +114,7 @@ export class DataTable {
   protected readonly align = align;
   protected readonly numeric = numeric;
   protected readonly displayText = displayText;
-  protected readonly formatValue = formatValue;
+  protected readonly i18n = injectI18n();
   protected readonly toneClass = toneClass;
 
   protected readonly sorted = computed(() => {

@@ -25,18 +25,33 @@ export { default as KeyValueList } from "./components/blocks/KeyValueList.vue";
 export { default as MediaGallery } from "./components/blocks/MediaGallery.vue";
 
 export { createAgentClient, AgentApiError } from "@klymbak/client";
-export type { AgentClient, AgentClientOptions, StreamOptions, AgentState, Attachment, Toast } from "@klymbak/client";
+export type {
+  AgentClient,
+  AgentClientOptions,
+  StreamOptions,
+  AgentState,
+  Attachment,
+  I18n,
+  Locale,
+  Message,
+  MessageId,
+  Messages,
+  Text,
+  Toast,
+} from "@klymbak/client";
 export { createAgentStore } from "./store";
 export type { AgentStore, AgentStoreOptions } from "./store";
 export {
   Klymbak,
   provideAgentStore,
+  provideI18n,
   useAgentStore,
   useChatActions,
+  useI18n,
   useRenderers,
   provideRenderers,
 } from "./context";
-export type { KlymbakPluginOptions, KlymbakRenderers, ChatActions } from "./context";
-export { configureFormatting, formatValue, describeCron, timeAgo } from "@klymbak/client";
+export type { KlymbakPluginOptions, KlymbakRenderers, ChatActions, I18nSource } from "./context";
+export { configureFormatting, formatValue, describeCron, timeAgo, createI18n, en, formatMessage, loadMessages, locales, matchLocale } from "@klymbak/client";
 export { applyEvent, pendingApprovals, ui } from "@klymbak/protocol";
 export type * from "@klymbak/protocol";

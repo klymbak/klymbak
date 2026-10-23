@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import type { ToolPart, UiAction } from "@klymbak/protocol";
-import { createAgentClient, createAgentStore, type AgentClientOptions, type AgentStore } from "@klymbak/client";
+import { createAgentClient, createAgentStore, createI18n, type AgentClientOptions, type AgentStore, type I18n, type Messages } from "@klymbak/client";
 
 /** Host-app extensions: custom UI blocks and per-tool result renderers. */
 export interface KlymbakRenderers {
@@ -18,12 +18,14 @@ export interface ChatActions {
 const StoreContext = createContext<AgentStore | null>(null);
 const RenderersContext = createContext<KlymbakRenderers>({});
 const ChatActionsContext = createContext<ChatActions>({ sendPrompt: () => undefined, emitAction: () => undefined });
+const I18nContext = createContext<I18n>(createI18n());
 /** True inside a themed .kl-root, so nested components don't re-theme. */
 const RootContext = createContext(false);
 
 export const StoreProvider = StoreContext.Provider;
 export const RenderersProvider = RenderersContext.Provider;
 export const ChatActionsProvider = ChatActionsContext.Provider;
+export const I18nProvider = I18nContext.Provider;
 export const RootProvider = RootContext.Provider;
 
 const noSubscription = () => () => undefined;
@@ -56,8 +58,32 @@ export function useChatActions(): ChatActions {
   return useContext(ChatActionsContext);
 }
 
+/** The words, numbers and dates of the nearest provider or top-level component: English by default. */
+export function useI18n(): I18n {
+  return useContext(I18nContext);
+}
+
 export function useInsideRoot(): boolean {
   return useContext(RootContext);
+}
+
+export interface I18nSource {
+  /** The interface language, a BCP 47 tag such as "fr". Numbers and dates follow it too. */
+  locale?: string;
+  /**
+   * Messages in that language, e.g. the default export of `@klymbak/client/locales/fr`, or a few of your own.
+   * They go over the inherited ones, and anything missing is shown in English. Keep the object stable between renders.
+   */
+  messages?: Partial<Messages>;
+}
+
+/** The I18n for a component with its own `locale` or `messages`, over the inherited one. */
+export function useResolvedI18n({ locale, messages }: I18nSource): I18n {
+  const inherited = useI18n();
+  return useMemo(() => {
+    if (locale === undefined && !messages) return inherited;
+    return createI18n({ locale: locale ?? inherited.locale, messages: messages ? { ...inherited.messages, ...messages } : inherited.messages });
+  }, [inherited, locale, messages]);
 }
 
 export interface StoreSource extends Partial<AgentClientOptions> {
@@ -91,7 +117,7 @@ export function useResolvedStore(source: StoreSource, component: string): AgentS
   return store;
 }
 
-export interface KlymbakProviderProps extends StoreSource {
+export interface KlymbakProviderProps extends StoreSource, I18nSource {
   renderers?: KlymbakRenderers;
   children?: ReactNode;
 }
@@ -100,12 +126,15 @@ export interface KlymbakProviderProps extends StoreSource {
  * Shares one store with every Klymbak component below it, like the Vue plugin. Components also
  * work without it when given a `baseUrl`.
  */
-export function KlymbakProvider({ renderers, children, ...source }: KlymbakProviderProps) {
+export function KlymbakProvider({ renderers, locale, messages, children, ...source }: KlymbakProviderProps) {
   const store = useResolvedStore(source, "KlymbakProvider");
   const inherited = useRenderers();
+  const i18n = useResolvedI18n({ locale, messages });
   return (
     <StoreProvider value={store}>
-      <RenderersProvider value={renderers ? mergeRenderers(inherited, renderers) : inherited}>{children}</RenderersProvider>
+      <RenderersProvider value={renderers ? mergeRenderers(inherited, renderers) : inherited}>
+        <I18nProvider value={i18n}>{children}</I18nProvider>
+      </RenderersProvider>
     </StoreProvider>
   );
 }

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { useTheme } from "styled-components";
-import { configureFormatting } from "@klymbak/react";
 
 type Colors = Record<string, string | undefined>;
 
@@ -57,27 +56,13 @@ export function useStrapiThemeMode(): "light" | "dark" {
   return luminance(theme?.colors?.neutral0) < 0.5 ? "dark" : "light";
 }
 
-let formattingLocale: string | undefined;
-
 /**
- * Dates and numbers in the admin's interface language (Strapi sets it on <html lang>), not the
- * operating system's, which is what the browser's Intl formatters fall back to.
- */
-function useAdminLocale() {
-  const lang = typeof document === "undefined" ? undefined : document.documentElement.lang || undefined;
-  if (lang !== formattingLocale) {
-    formattingLocale = lang;
-    configureFormatting({ locale: lang });
-  }
-}
-
-/**
- * Dresses the Klymbak components inside it in the admin's own colors, font, radius and locale.
- * The selector outranks the stylesheet's `.kl-root` and `[data-kl-theme]` rules.
+ * Dresses the Klymbak components inside it in the admin's own colors, font and radius. (Its language
+ * reaches them as `locale` and `messages`, from useAgentI18n.) The selector outranks the stylesheet's
+ * `.kl-root` and `[data-kl-theme]` rules.
  */
 export function StrapiTheme({ children, className = "" }: { children: ReactNode; className?: string }) {
   const theme = useTheme() as unknown as { colors?: Colors } | undefined;
-  useAdminLocale();
   const css = theme?.colors ? `.kl-strapi .kl-root.kl-root{${variables(theme.colors)}}` : "";
   return (
     <div className={`kl-strapi ${className}`.trim()}>

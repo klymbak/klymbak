@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterEveryRender, booleanAttribute, input, signal, viewChild } from "@angular/core";
 import type { ChatMessage } from "@klymbak/protocol";
-import { agentState, injectOptionalStoreRef } from "../context.ts";
+import { agentState, injectI18n, injectOptionalStoreRef } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 import { MessageItem } from "./MessageItem.ts";
 
@@ -51,10 +51,12 @@ function tailSignature(messages: readonly ChatMessage[]) {
             <kl-message-item [message]="message" [showMeta]="showMeta()" />
           }
         }
-        <div class="kl-sr-only" aria-live="polite">{{ running() ? "The agent is working" : "" }}</div>
+        <div class="kl-sr-only" aria-live="polite">{{ running() ? i18n().t("messages.working") : "" }}</div>
       </div>
       @if (!pinned()) {
-        <button type="button" class="kl-list__jump kl-btn kl-btn--sm" (click)="scrollToBottom(true)"><svg klIcon name="arrowDown" [size]="12" /> Latest</button>
+        <button type="button" class="kl-list__jump kl-btn kl-btn--sm" (click)="scrollToBottom(true)">
+          <svg klIcon name="arrowDown" [size]="12" /> {{ i18n().t("messages.latest") }}
+        </button>
       }
     </div>
   `,
@@ -64,6 +66,7 @@ export class MessageList {
   readonly running = input(false, { transform: booleanAttribute });
   readonly showMeta = input(false, { transform: booleanAttribute });
   private readonly store = injectOptionalStoreRef();
+  protected readonly i18n = injectI18n();
   private readonly scroller = viewChild.required<ElementRef<HTMLElement>>("scroller");
   protected readonly pinned = signal(true);
 

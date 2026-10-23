@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SessionSummary } from "@klymbak/protocol";
-import { useAgentStore } from "../context";
+import { useAgentStore, useI18n } from "../context";
 import { cx } from "../util";
 import { KlIcon } from "./KlIcon";
 
@@ -8,6 +8,7 @@ const DAY = 86_400_000;
 
 export function SessionList({ onOpen }: { onOpen?: (id: string) => void }) {
   const store = useAgentStore();
+  const i18n = useI18n();
   const [query, setQuery] = useState("");
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -26,10 +27,10 @@ export function SessionList({ onOpen }: { onOpen?: (id: string) => void }) {
   startOfDay.setHours(0, 0, 0, 0);
   const today = startOfDay.getTime();
   const buckets: { label: string; items: SessionSummary[] }[] = [
-    { label: "Today", items: [] },
-    { label: "Yesterday", items: [] },
-    { label: "Previous 7 days", items: [] },
-    { label: "Older", items: [] },
+    { label: i18n.t("sessions.today"), items: [] },
+    { label: i18n.t("sessions.yesterday"), items: [] },
+    { label: i18n.t("sessions.previous7Days"), items: [] },
+    { label: i18n.t("sessions.older"), items: [] },
   ];
   for (const session of sessions) {
     if (q && !`${session.title} ${session.preview ?? ""}`.toLowerCase().includes(q)) continue;
@@ -72,19 +73,19 @@ export function SessionList({ onOpen }: { onOpen?: (id: string) => void }) {
           onOpen?.("");
         }}
       >
-        <KlIcon name="plus" size={14} /> New conversation
+        <KlIcon name="plus" size={14} /> {i18n.t("sessions.new")}
       </button>
       {sessions.length > 8 && (
         <input
           className="kl-input"
           type="search"
-          placeholder="Search conversations"
-          aria-label="Search conversations"
+          placeholder={i18n.t("sessions.search")}
+          aria-label={i18n.t("sessions.search")}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
       )}
-      {!sessions.length && <p className="kl-sessions__empty">Your conversations will appear here.</p>}
+      {!sessions.length && <p className="kl-sessions__empty">{i18n.t("sessions.empty")}</p>}
       {groups.map((group) => (
         <nav key={group.label} className="kl-sessions__group" aria-label={group.label}>
           <span className="kl-sessions__label">{group.label}</span>
@@ -94,7 +95,7 @@ export function SessionList({ onOpen }: { onOpen?: (id: string) => void }) {
                 <input
                   ref={renameInput}
                   className="kl-input kl-session__rename"
-                  aria-label="Conversation title"
+                  aria-label={i18n.t("sessions.titleLabel")}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={(event) => {
@@ -111,7 +112,7 @@ export function SessionList({ onOpen }: { onOpen?: (id: string) => void }) {
                     session.source === "schedule" && <KlIcon className="kl-session__icon" name="clock" size={13} />
                   )}
                   <span className="kl-session__title">{session.title}</span>
-                  {session.unread && <span className="kl-session__unread" aria-label="Unread" />}
+                  {session.unread && <span className="kl-session__unread" aria-label={i18n.t("sessions.unread")} />}
                 </button>
               )}
               {confirming === session.id ? (
@@ -124,19 +125,29 @@ export function SessionList({ onOpen }: { onOpen?: (id: string) => void }) {
                       setConfirming(null);
                     }}
                   >
-                    Delete
+                    {i18n.t("common.delete")}
                   </button>
                   <button type="button" className="kl-btn kl-btn--sm kl-btn--ghost" onClick={() => setConfirming(null)}>
-                    Keep
+                    {i18n.t("sessions.keep")}
                   </button>
                 </span>
               ) : (
                 renaming !== session.id && (
                   <span className="kl-session__tools">
-                    <button type="button" className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Rename" onClick={() => startRename(session)}>
+                    <button
+                      type="button"
+                      className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+                      aria-label={i18n.t("sessions.rename")}
+                      onClick={() => startRename(session)}
+                    >
                       <KlIcon name="edit" size={13} />
                     </button>
-                    <button type="button" className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Delete" onClick={() => setConfirming(session.id)}>
+                    <button
+                      type="button"
+                      className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+                      aria-label={i18n.t("common.delete")}
+                      onClick={() => setConfirming(session.id)}
+                    >
                       <KlIcon name="trash" size={13} />
                     </button>
                   </span>

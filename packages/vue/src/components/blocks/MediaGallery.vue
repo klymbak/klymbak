@@ -2,9 +2,11 @@
 import { computed, reactive, ref } from "vue";
 import { mediaKind, type MediaBlock } from "@klymbak/protocol";
 import { mediaMeta, mediaName, mediaType, safeUrl } from "@klymbak/client";
+import { useI18n } from "../../context";
 import KlIcon from "../KlIcon.vue";
 
 const props = defineProps<{ block: MediaBlock }>();
+const i18n = useI18n();
 
 const PAGE = 12;
 const expanded = ref(false);
@@ -24,7 +26,7 @@ const cards = computed(() =>
       kind: url && !broken.has(url) ? mediaKind(item) : "file",
       name: mediaName(item),
       meta: mediaMeta(item),
-      type: mediaType(item) ?? "File",
+      type: mediaType(item) ?? i18n.t("media.file"),
     };
   }),
 );
@@ -34,7 +36,7 @@ const cards = computed(() =>
   <div class="kl-media" :class="{ 'kl-media--single': block.items.length === 1 }">
     <div v-if="block.title || block.items.length > 1" class="kl-media__bar">
       <span class="kl-media__title">{{ block.title }}</span>
-      <span class="kl-media__count kl-num">{{ total.toLocaleString() }} {{ total === 1 ? "file" : "files" }}</span>
+      <span class="kl-media__count kl-num">{{ i18n.t("media.files", { count: total }) }}</span>
     </div>
     <ul class="kl-media__grid">
       <li v-for="(card, i) in cards" :key="`${i}:${card.item.url}`">
@@ -46,7 +48,7 @@ const cards = computed(() =>
             :is="card.url ? 'a' : 'div'"
             v-else
             class="kl-media__preview"
-            v-bind="card.url ? { href: card.url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': `Open ${card.name}` } : {}"
+            v-bind="card.url ? { href: card.url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': i18n.t('media.open', { name: card.name }) } : {}"
           >
             <img v-if="card.kind === 'image'" :src="card.url" :alt="card.item.alt ?? ''" loading="lazy" decoding="async" @error="broken.add(card.url!)" />
             <span v-else class="kl-media__file"><KlIcon name="file" :size="28" />{{ card.type }}</span>
@@ -61,12 +63,12 @@ const cards = computed(() =>
     </ul>
     <div v-if="hidden > 0 || expanded || block.caption || total > block.items.length" class="kl-media__foot">
       <button v-if="hidden > 0" type="button" class="kl-btn kl-btn--ghost kl-btn--sm" @click="expanded = true">
-        Show {{ hidden }} more
+        {{ i18n.t("common.showMore", { count: hidden }) }}
       </button>
       <button v-else-if="expanded && block.items.length > PAGE" type="button" class="kl-btn kl-btn--ghost kl-btn--sm" @click="expanded = false">
-        Show fewer
+        {{ i18n.t("common.showFewer") }}
       </button>
-      <span v-if="total > block.items.length" class="kl-faint">Showing {{ block.items.length }} of {{ total.toLocaleString() }}</span>
+      <span v-if="total > block.items.length" class="kl-faint">{{ i18n.t("common.showingOf", { shown: block.items.length, total }) }}</span>
       <span v-if="block.caption" class="kl-faint kl-media__foot-caption">{{ block.caption }}</span>
     </div>
   </div>

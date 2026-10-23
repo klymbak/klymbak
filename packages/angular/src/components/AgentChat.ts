@@ -25,7 +25,7 @@ import { ModelPicker } from "./ModelPicker.ts";
     "[class.kl-root]": "!insideRoot",
     "[attr.data-kl-theme]": "insideRoot ? null : theme()",
     role: "region",
-    "aria-label": "Agent chat",
+    "[attr.aria-label]": "i18n().t('chat.label')",
     // `title` is an input here, not a tooltip on the whole chat.
     "[attr.title]": "null",
   },
@@ -41,10 +41,12 @@ import { ModelPicker } from "./ModelPicker.ts";
           }
         </div>
         @if (s.running) {
-          <span class="kl-chat__status"><span class="kl-spinner"></span> Working</span>
+          <span class="kl-chat__status"><span class="kl-spinner"></span> {{ i18n().t("chat.working") }}</span>
         }
         <ng-content select="[klHeaderEnd]" />
-        <button type="button" class="kl-btn kl-btn--sm" [disabled]="!s.sessionId" (click)="store.newSession()"><svg klIcon name="plus" [size]="14" /> New chat</button>
+        <button type="button" class="kl-btn kl-btn--sm" [disabled]="!s.sessionId" (click)="store.newSession()">
+          <svg klIcon name="plus" [size]="14" /> {{ i18n().t("chat.newChat") }}
+        </button>
       </header>
     }
 
@@ -52,9 +54,9 @@ import { ModelPicker } from "./ModelPicker.ts";
       <div class="kl-chat__fatal">
         <svg klIcon name="alert" [size]="18" />
         <div>
-          <strong>Can't reach the agent</strong>
-          <p>{{ s.error }}</p>
-          <button type="button" class="kl-btn kl-btn--sm" (click)="store.init()">Try again</button>
+          <strong>{{ i18n().t("chat.unreachable") }}</strong>
+          <p>{{ i18n().text(s.error) }}</p>
+          <button type="button" class="kl-btn kl-btn--sm" (click)="store.init()">{{ i18n().t("chat.retry") }}</button>
         </div>
       </div>
     } @else {
@@ -64,8 +66,8 @@ import { ModelPicker } from "./ModelPicker.ts";
             <div class="kl-welcome">
               <span class="kl-welcome__mark"><svg klIcon name="sparkle" [size]="20" /></span>
               <h2 class="kl-welcome__title">{{ heading() }}</h2>
-              @if (s.config?.app?.description) {
-                <p class="kl-welcome__text">{{ s.config?.app?.description }}</p>
+              @if (welcomeText()) {
+                <p class="kl-welcome__text">{{ welcomeText() }}</p>
               }
               @if (suggestionList().length > 0) {
                 <div class="kl-welcome__suggestions">
@@ -82,7 +84,7 @@ import { ModelPicker } from "./ModelPicker.ts";
 
     <div class="kl-chat__footer">
       @if (s.runError) {
-        <div class="kl-chat__error" role="alert"><svg klIcon name="alert" [size]="14" /> {{ s.runError }}</div>
+        <div class="kl-chat__error" role="alert"><svg klIcon name="alert" [size]="14" /> {{ i18n().text(s.runError) }}</div>
       }
       <kl-composer [running]="s.running" [disabled]="!s.ready" [placeholder]="placeholder()" [acceptImages]="acceptImages()" (send)="send($event)" (stop)="store.abort()">
         <kl-model-picker />
@@ -92,6 +94,8 @@ import { ModelPicker } from "./ModelPicker.ts";
 })
 export class AgentChat extends StoreHost {
   readonly title = input<string>();
+  /** Text under the title on the welcome screen. Defaults to the server's app.description. */
+  readonly description = input<string>();
   /** Starter prompts for an empty conversation. Defaults to the server's app.suggestions. */
   readonly suggestions = input<string[]>();
   readonly placeholder = input<string>();
@@ -108,7 +112,8 @@ export class AgentChat extends StoreHost {
   protected readonly insideRoot = inject(INSIDE_ROOT, { skipSelf: true });
   private readonly composer = viewChild.required(Composer);
   protected readonly state = computed(() => agentState(this.store)(), { equal: () => false });
-  protected readonly heading = computed(() => this.title() ?? this.state().config?.app.name ?? "Assistant");
+  protected readonly heading = computed(() => this.title() ?? this.state().config?.app.name ?? this.i18n().t("chat.defaultTitle"));
+  protected readonly welcomeText = computed(() => this.description() ?? this.state().config?.app.description);
   protected readonly sessionTitle = computed(() => selectCurrentSession(this.state())?.title);
   protected readonly suggestionList = computed(() => this.suggestions() ?? this.state().config?.app.suggestions ?? []);
   protected readonly acceptImages = computed(() => {

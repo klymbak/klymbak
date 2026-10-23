@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
 import type { Attachment } from "@klymbak/client";
+import { useI18n } from "../context";
 import KlIcon from "./KlIcon.vue";
 
-const props = withDefaults(
-  defineProps<{ running?: boolean; disabled?: boolean; placeholder?: string; acceptImages?: boolean }>(),
-  { placeholder: "Ask anything, or tell the agent what to do…" },
-);
+const props = defineProps<{ running?: boolean; disabled?: boolean; placeholder?: string; acceptImages?: boolean }>();
 const emit = defineEmits<{ send: [text: string, attachments: Attachment[]]; stop: [] }>();
+const i18n = useI18n();
 
 const text = ref("");
 const attachments = ref<Attachment[]>([]);
@@ -15,9 +14,7 @@ const input = ref<HTMLTextAreaElement>();
 const fileInput = ref<HTMLInputElement>();
 
 const canSend = computed(() => !props.disabled && (text.value.trim().length > 0 || attachments.value.length > 0));
-const hint = computed(() =>
-  props.running ? "The agent is working. Anything you send now is added as an instruction it reads after the current step." : "",
-);
+const hint = computed(() => (props.running ? i18n.t("composer.runningHint") : ""));
 
 function resize() {
   const el = input.value;
@@ -83,7 +80,12 @@ defineExpose({ focus, setText });
     <div v-if="attachments.length" class="kl-composer__files">
       <span v-for="(file, i) in attachments" :key="i" class="kl-composer__file">
         <img :src="`data:${file.mimeType};base64,${file.data}`" :alt="file.name" />
-        <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" :aria-label="`Remove ${file.name}`" @click="attachments.splice(i, 1)">
+        <button
+          type="button"
+          class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+          :aria-label="i18n.t('composer.removeFile', { name: file.name })"
+          @click="attachments.splice(i, 1)"
+        >
           <KlIcon name="close" :size="12" />
         </button>
       </span>
@@ -93,9 +95,9 @@ defineExpose({ focus, setText });
       v-model="text"
       class="kl-composer__input"
       rows="1"
-      :placeholder="running ? 'Add an instruction while the agent works…' : placeholder"
+      :placeholder="running ? i18n.t('composer.placeholderRunning') : (placeholder ?? i18n.t('composer.placeholder'))"
       :disabled="disabled"
-      aria-label="Message"
+      :aria-label="i18n.t('composer.label')"
       @input="resize"
       @keydown="onKeydown"
       @paste="onPaste"
@@ -106,8 +108,8 @@ defineExpose({ focus, setText });
         v-if="acceptImages"
         type="button"
         class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
-        aria-label="Attach an image"
-        title="Attach an image"
+        :aria-label="i18n.t('composer.attachImage')"
+        :title="i18n.t('composer.attachImage')"
         @click="fileInput?.click()"
       >
         <KlIcon name="image" :size="15" />
@@ -115,9 +117,14 @@ defineExpose({ focus, setText });
       <input ref="fileInput" type="file" accept="image/*" multiple hidden @change="addFiles(($event.target as HTMLInputElement).files ?? [])" />
       <span class="kl-composer__spacer" />
       <button v-if="running" type="button" class="kl-btn kl-btn--sm" @click="emit('stop')">
-        <KlIcon name="stop" :size="12" /> Stop
+        <KlIcon name="stop" :size="12" /> {{ i18n.t("composer.stop") }}
       </button>
-      <button type="submit" class="kl-btn kl-btn--primary kl-btn--icon kl-composer__send" :disabled="!canSend" :aria-label="running ? 'Send instruction' : 'Send'">
+      <button
+        type="submit"
+        class="kl-btn kl-btn--primary kl-btn--icon kl-composer__send"
+        :disabled="!canSend"
+        :aria-label="i18n.t(running ? 'composer.sendInstruction' : 'composer.send')"
+      >
         <KlIcon name="send" :size="16" />
       </button>
     </div>

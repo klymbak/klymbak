@@ -1,16 +1,13 @@
 import { Component, booleanAttribute, input } from "@angular/core";
 import type { ChatMessage, ImagePart } from "@klymbak/protocol";
 import { formatTokens } from "@klymbak/client";
+import { injectI18n } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 import { MarkdownContent } from "./MarkdownContent.ts";
 import { ThinkingBlock } from "./ThinkingBlock.ts";
 import { ToolCallCard } from "./ToolCallCard.ts";
 
-const ORIGIN: Record<string, string> = {
-  steer: "Added while the agent was working",
-  hook: "Automatic follow-up",
-  schedule: "Scheduled task",
-};
+const ORIGIN = { steer: "message.origin.steer", hook: "message.origin.hook", schedule: "message.origin.schedule" } as const;
 
 // Default change detection: a streaming message is updated in place, so the item renders whenever its parent
 // does. MessageList narrows that down to the message whose revision in the store changed.
@@ -22,15 +19,15 @@ const ORIGIN: Record<string, string> = {
     @let m = message();
     @if (m.role === "user") {
       <div class="kl-msg kl-msg--user" [class.kl-msg--compact]="compact()">
-        @if (m.origin && ORIGIN[m.origin]) {
-          <span class="kl-msg__origin"><svg klIcon [name]="m.origin === 'schedule' ? 'clock' : 'sparkle'" [size]="12" /> {{ ORIGIN[m.origin] }}</span>
+        @if (origin(); as origin) {
+          <span class="kl-msg__origin"><svg klIcon [name]="m.origin === 'schedule' ? 'clock' : 'sparkle'" [size]="12" /> {{ origin }}</span>
         }
         <div class="kl-msg__bubble">
           @for (part of m.parts; track $index) {
             @if (part.type === "text") {
               <p class="kl-msg__text">{{ part.text }}</p>
             } @else if (part.type === "image") {
-              <img class="kl-msg__image" [src]="imageUrl(part)" alt="Attached image" />
+              <img class="kl-msg__image" [src]="imageUrl(part)" [alt]="i18n().t('message.attachedImage')" />
             }
           }
         </div>
@@ -55,15 +52,15 @@ const ORIGIN: Record<string, string> = {
           }
         }
         @if (streaming && !hasContent()) {
-          <div class="kl-msg__waiting"><span class="kl-spinner"></span> Working…</div>
+          <div class="kl-msg__waiting"><span class="kl-spinner"></span> {{ i18n().t("message.working") }}</div>
         }
         @if (m.status === "error" && m.error) {
           <div class="kl-notice kl-notice--error"><svg klIcon name="alert" [size]="14" /> <span>{{ m.error }}</span></div>
         }
         @if (m.status === "aborted") {
-          <div class="kl-msg__meta">Stopped</div>
+          <div class="kl-msg__meta">{{ i18n().t("message.stopped") }}</div>
         } @else if (showMeta() && isFinalAnswer() && m.status === "done" && m.usage) {
-          <div class="kl-msg__meta kl-num">{{ m.model?.id }} · {{ formatTokens(m.usage.totalTokens) }} tokens{{ m.usage.cost ? " · $" + m.usage.cost.toFixed(4) : "" }}</div>
+          <div class="kl-msg__meta kl-num">{{ m.model?.id }} · {{ tokens(m.usage.totalTokens) }}{{ m.usage.cost ? " · $" + m.usage.cost.toFixed(4) : "" }}</div>
         }
       </div>
     }
@@ -73,8 +70,16 @@ export class MessageItem {
   readonly message = input.required<ChatMessage>();
   readonly compact = input(false, { transform: booleanAttribute });
   readonly showMeta = input(false, { transform: booleanAttribute });
-  protected readonly ORIGIN = ORIGIN;
-  protected readonly formatTokens = formatTokens;
+  protected readonly i18n = injectI18n();
+
+  protected tokens(count: number | undefined) {
+    return this.i18n().t("message.tokens", { count: count ?? 0, tokens: formatTokens(count) });
+  }
+
+  protected origin() {
+    const origin = this.message().origin;
+    return origin && origin !== "user" ? this.i18n().t(ORIGIN[origin]) : undefined;
+  }
 
   protected imageUrl(part: ImagePart) {
     return `data:${part.mimeType};base64,${part.data}`;

@@ -4,7 +4,8 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AgentConfigInfo, AgentEvent, ChatMessage, MediaBlock, SessionDetail, TableBlock } from "@klymbak/protocol";
 import { createAgentClient, createAgentStore, formatValue, type AgentStore } from "@klymbak/client";
-import { ChatActionsProvider, StoreProvider } from "./context";
+import de from "@klymbak/client/locales/de";
+import { ChatActionsProvider, KlymbakProvider, StoreProvider } from "./context";
 import { AgentChat } from "./components/AgentChat";
 import { AgentWidget } from "./components/AgentWidget";
 import { AgentWorkspace } from "./components/AgentWorkspace";
@@ -253,7 +254,29 @@ describe("AgentWorkspace", () => {
     await click(button(container, "Tools"));
     expect(container.querySelector(".kl-caps__intro")?.textContent).toContain("Ada");
   });
+
+  it("speaks the provider's language, with a component's own messages on top", async () => {
+    const store = testStore();
+    const container = render(
+      <KlymbakProvider store={store} locale="de" messages={de}>
+        <AgentWorkspace messages={overrides} title="Redaktion" description="Fragen Sie mich etwas." />
+      </KlymbakProvider>,
+    );
+    await act(() => store.init());
+    expect(button(container, "Werkzeuge")).toBeDefined();
+    expect(button(container, "Neues Gespräch")).toBeDefined();
+    expect(container.querySelector(".kl-chat")?.getAttribute("aria-label")).toBe("Chat mit dem Agenten");
+    expect(container.querySelector(".kl-composer__input")?.getAttribute("placeholder")).toBe(de["composer.placeholder"]);
+    expect(container.querySelector(".kl-welcome__title")?.textContent).toBe("Redaktion");
+    expect(container.querySelector(".kl-welcome__text")?.textContent).toBe("Fragen Sie mich etwas.");
+
+    await act(async () => store.toast({ tone: "info", title: { id: "toast.taskStarted" }, body: "As is" }, 0));
+    expect(container.querySelector(".kl-toast strong")?.textContent).toBe("Aufgabe gestartet");
+    expect(container.querySelector(".kl-toast p")?.textContent).toBe("As is");
+  });
 });
+
+const overrides = { "chat.newChat": "Neues Gespräch" };
 
 describe("ToastStack", () => {
   it("keeps a dismissed toast in place until it has animated out", async () => {

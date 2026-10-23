@@ -1,23 +1,18 @@
 import { useState, type FormEvent } from "react";
 import type { ScheduleInfo } from "@klymbak/protocol";
-import { describeCron, timeAgo } from "@klymbak/client";
-import { useAgentStore } from "../context";
+import { useAgentStore, useI18n } from "../context";
 import { cx } from "../util";
 import { KlIcon } from "./KlIcon";
 
-const PRESETS = [
-  { label: "Every weekday at 08:00", cron: "0 8 * * 1-5" },
-  { label: "Every Monday at 09:00", cron: "0 9 * * 1" },
-  { label: "Every day at 18:00", cron: "0 18 * * *" },
-  { label: "Every hour", cron: "0 * * * *" },
-  { label: "First day of the month at 09:00", cron: "0 9 1 * *" },
-];
+/** Offered in the form, each described in words by describeCron. */
+const PRESETS = ["0 8 * * 1-5", "0 9 * * 1", "0 18 * * *", "0 * * * *", "0 9 1 * *"];
 
-const EMPTY_FORM = { name: "", cron: PRESETS[0]!.cron, custom: "", prompt: "", agent: "" };
+const EMPTY_FORM = { name: "", cron: PRESETS[0]!, custom: "", prompt: "", agent: "" };
 const statusTone = { completed: "success", error: "danger", aborted: "neutral" } as const;
 
 export function SchedulePanel({ onOpenSession }: { onOpenSession?: (id: string) => void }) {
   const store = useAgentStore();
+  const i18n = useI18n();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -57,94 +52,95 @@ export function SchedulePanel({ onOpenSession }: { onOpenSession?: (id: string) 
 
   return (
     <div className="kl-schedules">
-      <p className="kl-schedules__intro">
-        The agent runs these on its own and notifies you when results are ready. You can also ask in chat: “every Monday at 9, summarize refunds”.
-      </p>
+      <p className="kl-schedules__intro">{i18n.t("schedules.intro")}</p>
 
       {schedules.map((schedule) => (
         <article key={schedule.id} className={cx("kl-schedule", !schedule.enabled && "kl-schedule--paused")}>
           <div className="kl-schedule__top">
             <span className="kl-schedule__name">{schedule.name}</span>
             {canManage(schedule) && (
-              <label className="kl-switch" title={schedule.enabled ? "Pause" : "Resume"}>
+              <label className="kl-switch" title={i18n.t(schedule.enabled ? "schedules.pause" : "schedules.resume")}>
                 <input
                   type="checkbox"
                   checked={schedule.enabled}
                   onChange={() => void store.updateSchedule(schedule.id, { enabled: !schedule.enabled })}
                 />
                 <span className="kl-switch__track" />
-                <span className="kl-sr-only">{schedule.enabled ? "Active" : "Paused"}</span>
+                <span className="kl-sr-only">{i18n.t(schedule.enabled ? "schedules.active" : "schedules.paused")}</span>
               </label>
             )}
           </div>
           <div className="kl-schedule__when">
-            <KlIcon name="clock" size={12} /> {describeCron(schedule.cron)}
+            <KlIcon name="clock" size={12} /> {i18n.describeCron(schedule.cron)}
             {schedule.agent && <span className="kl-pill">{schedule.agent}</span>}
-            {schedule.source !== "config" && <span className="kl-pill kl-tone-info">{schedule.source === "agent" ? "made in chat" : "yours"}</span>}
+            {schedule.source !== "config" && (
+              <span className="kl-pill kl-tone-info">{i18n.t(schedule.source === "agent" ? "schedules.madeInChat" : "schedules.yours")}</span>
+            )}
           </div>
           <p className="kl-schedule__prompt">{schedule.prompt}</p>
           <div className="kl-schedule__foot">
             {schedule.running ? (
               <span className="kl-schedule__running">
-                <span className="kl-spinner" /> Running now
+                <span className="kl-spinner" /> {i18n.t("schedules.runningNow")}
               </span>
             ) : schedule.enabled && schedule.nextRunAt ? (
-              <span className="kl-faint">Next {timeAgo(schedule.nextRunAt)}</span>
+              <span className="kl-faint">{i18n.t("schedules.next", { when: i18n.timeAgo(schedule.nextRunAt) })}</span>
             ) : (
-              <span className="kl-faint">Paused</span>
+              <span className="kl-faint">{i18n.t("schedules.paused")}</span>
             )}
             {schedule.lastRun?.sessionId && (
               <button type="button" className="kl-schedule__last" onClick={() => openResult(schedule)}>
-                <span className={`kl-pill kl-tone-${statusTone[schedule.lastRun.status]}`}>{schedule.lastRun.status}</span> {timeAgo(schedule.lastRun.at)}
+                <span className={`kl-pill kl-tone-${statusTone[schedule.lastRun.status]}`}>{i18n.t(`schedules.status.${schedule.lastRun.status}`)}</span>{" "}
+                {i18n.timeAgo(schedule.lastRun.at)}
               </button>
             )}
           </div>
           <div className="kl-schedule__actions">
             <button type="button" className="kl-btn kl-btn--sm" disabled={schedule.running} onClick={() => void store.runSchedule(schedule.id)}>
-              <KlIcon name="play" size={12} /> Run now
+              <KlIcon name="play" size={12} /> {i18n.t("schedules.runNow")}
             </button>
             {schedule.source !== "config" && canManage(schedule) && (
               <button type="button" className="kl-btn kl-btn--sm kl-btn--ghost kl-btn--danger" onClick={() => void store.deleteSchedule(schedule.id)}>
-                Delete
+                {i18n.t("common.delete")}
               </button>
             )}
           </div>
         </article>
       ))}
 
-      {!schedules.length && <p className="kl-faint">No scheduled tasks yet.</p>}
+      {!schedules.length && <p className="kl-faint">{i18n.t("schedules.empty")}</p>}
 
       {!creating ? (
         <button type="button" className="kl-btn" onClick={() => setCreating(true)}>
-          <KlIcon name="plus" size={14} /> New scheduled task
+          <KlIcon name="plus" size={14} /> {i18n.t("schedules.new")}
         </button>
       ) : (
         <form className="kl-schedule-form" onSubmit={create}>
           <label className="kl-label">
-            Name <input className="kl-input" required placeholder="Weekly refund summary" {...field("name")} />
+            {i18n.t("schedules.name")} <input className="kl-input" required placeholder={i18n.t("schedules.namePlaceholder")} {...field("name")} />
           </label>
           <label className="kl-label">
-            When
+            {i18n.t("schedules.when")}
             <select className="kl-select" {...field("cron")}>
-              {PRESETS.map((preset) => (
-                <option key={preset.cron} value={preset.cron}>
-                  {preset.label}
+              {PRESETS.map((cron) => (
+                <option key={cron} value={cron}>
+                  {i18n.describeCron(cron)}
                 </option>
               ))}
-              <option value="custom">Custom (cron)…</option>
+              <option value="custom">{i18n.t("schedules.custom")}</option>
             </select>
           </label>
           {form.cron === "custom" && (
             <label className="kl-label">
-              Cron expression
+              {i18n.t("schedules.cron")}
               <input className="kl-input kl-code" placeholder="30 7 * * 1-5" {...field("custom")} />
             </label>
           )}
           {agents.length > 0 && (
             <label className="kl-label">
-              Run as
+              {i18n.t("schedules.runAs")}
               <select className="kl-select" {...field("agent")}>
-                <option value="">Main agent</option>
+                <option value="">{i18n.t("schedules.mainAgent")}</option>
                 {agents.map((agent) => (
                   <option key={agent.name} value={agent.name}>
                     {agent.name}
@@ -154,21 +150,15 @@ export function SchedulePanel({ onOpenSession }: { onOpenSession?: (id: string) 
             </label>
           )}
           <label className="kl-label">
-            What should it do?
-            <textarea
-              className="kl-textarea"
-              rows={3}
-              required
-              placeholder="Summarize last week's refunds by reason and flag anything unusual."
-              {...field("prompt")}
-            />
+            {i18n.t("schedules.prompt")}
+            <textarea className="kl-textarea" rows={3} required placeholder={i18n.t("schedules.promptPlaceholder")} {...field("prompt")} />
           </label>
           <div className="kl-schedule__actions">
             <button type="submit" className="kl-btn kl-btn--primary kl-btn--sm" disabled={saving}>
-              Create
+              {i18n.t("schedules.create")}
             </button>
             <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" onClick={() => setCreating(false)}>
-              Cancel
+              {i18n.t("common.cancel")}
             </button>
           </div>
         </form>

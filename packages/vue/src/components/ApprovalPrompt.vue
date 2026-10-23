@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import type { ApprovalView } from "@klymbak/protocol";
-import { useOptionalAgentStore } from "../context";
+import { useI18n, useOptionalAgentStore } from "../context";
 import KlIcon from "./KlIcon.vue";
 
 const props = defineProps<{ approval: ApprovalView }>();
 const emit = defineEmits<{ decide: [decision: { approved: boolean; reason?: string; remember?: boolean }] }>();
 const store = useOptionalAgentStore();
+const i18n = useI18n();
 
 const remember = ref(false);
 const reason = ref("");
@@ -36,36 +37,36 @@ async function decide(approved: boolean) {
     <template v-if="approval.status === 'pending'">
       <div class="kl-approval__head">
         <KlIcon name="shield" :size="15" />
-        <span>Needs your approval</span>
-        <span v-if="approval.risk" class="kl-pill" :class="`kl-tone-${riskTone[approval.risk]}`">{{ approval.risk }} risk</span>
+        <span>{{ i18n.t("approval.needed") }}</span>
+        <span v-if="approval.risk" class="kl-pill" :class="`kl-tone-${riskTone[approval.risk]}`">{{ i18n.t(`approval.risk.${approval.risk}`) }}</span>
       </div>
       <p class="kl-approval__title">{{ approval.title }}</p>
       <p v-if="approval.description" class="kl-approval__desc">{{ approval.description }}</p>
       <label v-if="denying" class="kl-label kl-approval__reason">
-        Why not? (optional, the agent will read this)
-        <input v-model="reason" class="kl-input" type="text" placeholder="e.g. Offer a replacement instead" @keydown.enter="decide(false)" />
+        {{ i18n.t("approval.reasonLabel") }}
+        <input v-model="reason" class="kl-input" type="text" :placeholder="i18n.t('approval.reasonPlaceholder')" @keydown.enter="decide(false)" />
       </label>
       <div class="kl-approval__buttons">
         <button type="button" class="kl-btn kl-btn--primary" :disabled="busy" @click="decide(true)">
-          <KlIcon name="check" :size="14" /> Approve
+          <KlIcon name="check" :size="14" /> {{ i18n.t("approval.approve") }}
         </button>
         <button type="button" class="kl-btn" :disabled="busy" @click="decide(false)">
-          <KlIcon name="x" :size="14" /> {{ denying ? "Confirm deny" : "Deny" }}
+          <KlIcon name="x" :size="14" /> {{ i18n.t(denying ? "approval.confirmDeny" : "approval.deny") }}
         </button>
         <label v-if="approval.rememberable && !denying" class="kl-approval__remember">
           <input v-model="remember" type="checkbox" />
-          Don't ask again in this chat
+          {{ i18n.t("approval.remember") }}
         </label>
       </div>
     </template>
     <div v-else class="kl-approval__decided">
-      <span class="kl-stamp" :class="`kl-stamp--${approval.status}`">{{ approval.status }}</span>
+      <span class="kl-stamp" :class="`kl-stamp--${approval.status}`">{{ i18n.t(`approval.status.${approval.status}`) }}</span>
       <div class="kl-approval__summary">
         <span class="kl-approval__title">{{ approval.title }}</span>
         <span class="kl-faint">
-          <template v-if="approval.decidedBy">by {{ approval.decidedBy }}</template>
-          <template v-if="approval.reason"> · “{{ approval.reason }}”</template>
-          <template v-if="approval.status === 'expired'">Nobody decided in time</template>
+          <template v-if="approval.decidedBy">{{ i18n.t("approval.decidedBy", { name: approval.decidedBy }) }}</template>
+          <template v-if="approval.reason"> · {{ i18n.t("approval.reason", { reason: approval.reason }) }}</template>
+          <template v-if="approval.status === 'expired'">{{ i18n.t("approval.expiredNote") }}</template>
         </span>
       </div>
     </div>

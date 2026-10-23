@@ -1,34 +1,34 @@
 import { Fragment, useEffect, useState } from "react";
 import { humanize, type ToolPart, type ToolStatus } from "@klymbak/protocol";
-import { useRenderers } from "../context";
+import { useI18n, useRenderers } from "../context";
 import { cx } from "../util";
 import { ApprovalPrompt } from "./ApprovalPrompt";
 import { KlIcon } from "./KlIcon";
 import { SubagentTrace } from "./SubagentTrace";
 import { UiBlockView } from "./blocks/UiBlockView";
 
-const STATUS: Record<ToolStatus, { label: string; tone: string }> = {
-  streaming: { label: "Preparing", tone: "neutral" },
-  pending: { label: "Queued", tone: "neutral" },
-  awaiting_approval: { label: "Waiting for you", tone: "warning" },
-  running: { label: "Running", tone: "info" },
-  done: { label: "Done", tone: "success" },
-  error: { label: "Failed", tone: "danger" },
-  denied: { label: "Denied", tone: "danger" },
-  blocked: { label: "Blocked", tone: "danger" },
+const TONES: Record<ToolStatus, string> = {
+  streaming: "neutral",
+  pending: "neutral",
+  awaiting_approval: "warning",
+  running: "info",
+  done: "success",
+  error: "danger",
+  denied: "danger",
+  blocked: "danger",
 };
 
 const ICONS = { mcp: "plug", builtin: "clock", subagent: "agents", local: "tool" } as const;
 
 export function ToolCallCard({ part, compact }: { part: ToolPart; compact?: boolean }) {
   const renderers = useRenderers();
+  const i18n = useI18n();
   const failed = part.status === "error" || part.status === "blocked";
   const [open, setOpen] = useState(failed);
   useEffect(() => {
     if (failed) setOpen(true);
   }, [failed]);
 
-  const status = STATUS[part.status];
   const active = ["streaming", "pending", "running"].includes(part.status);
   const refused = ["error", "denied", "blocked"].includes(part.status);
   const CustomRenderer = renderers.tools?.[part.name];
@@ -49,8 +49,7 @@ export function ToolCallCard({ part, compact }: { part: ToolPart; compact?: bool
     .slice(0, 3)
     .map((a) => `${humanize(a.key).toLowerCase()}: ${a.value}`)
     .join(" · ");
-  const ms = part.durationMs;
-  const duration = ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+  const duration = part.durationMs === undefined ? "" : i18n.duration(part.durationMs);
 
   return (
     <div className={cx("kl-tool", `kl-tool--${part.status}`, compact && "kl-tool--compact")}>
@@ -59,11 +58,11 @@ export function ToolCallCard({ part, compact }: { part: ToolPart; compact?: bool
           {active ? <span className="kl-spinner" /> : <KlIcon name={ICONS[part.source ?? "local"]} size={14} />}
         </span>
         <span className="kl-tool__name">{label}</span>
-        {part.server && <span className="kl-tool__via">via {part.server}</span>}
+        {part.server && <span className="kl-tool__via">{i18n.t("tool.via", { server: part.server })}</span>}
         {argSummary && !part.subagent && <span className="kl-tool__args">{argSummary}</span>}
         <span className="kl-tool__meta">
           {duration && <span className="kl-faint kl-num">{duration}</span>}
-          <span className={`kl-pill kl-tone-${status.tone}`}>{status.label}</span>
+          <span className={`kl-pill kl-tone-${TONES[part.status]}`}>{i18n.t(`tool.status.${part.status}`)}</span>
           <KlIcon className={cx("kl-tool__chevron", open && "kl-tool__chevron--open")} name="chevronDown" size={14} />
         </span>
       </button>
@@ -102,7 +101,7 @@ export function ToolCallCard({ part, compact }: { part: ToolPart; compact?: bool
         <div className="kl-tool__details">
           {args.length > 0 && (
             <div className="kl-tool__detail">
-              <span className="kl-tool__detail-label">Input</span>
+              <span className="kl-tool__detail-label">{i18n.t("tool.input")}</span>
               <dl className="kl-tool__argList">
                 {args.map((arg) => (
                   <Fragment key={arg.key}>
@@ -115,7 +114,7 @@ export function ToolCallCard({ part, compact }: { part: ToolPart; compact?: bool
           )}
           {part.result?.text && !part.subagent && (
             <div className="kl-tool__detail">
-              <span className="kl-tool__detail-label">{part.result.isError ? "Error" : "What the agent saw"}</span>
+              <span className="kl-tool__detail-label">{i18n.t(part.result.isError ? "tool.error" : "tool.output")}</span>
               <pre className="kl-tool__output kl-scroll">{part.result.text}</pre>
             </div>
           )}
@@ -123,7 +122,9 @@ export function ToolCallCard({ part, compact }: { part: ToolPart; compact?: bool
             <span className="kl-code">{part.name}</span>
             {part.source === "mcp" && (
               <span>
-                MCP tool from <strong>{part.server}</strong>
+                {i18n
+                  .parts("tool.mcpFrom", { server: part.server ?? "" })
+                  .map((piece, i) => (piece.arg === "server" ? <strong key={i}>{piece.text}</strong> : piece.text))}
               </span>
             )}
           </div>

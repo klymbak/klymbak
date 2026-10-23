@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { ModelInfo, ThinkingLevel } from "@klymbak/protocol";
-import { useAgentStore } from "../context";
+import { useAgentStore, useI18n } from "../context";
 import { formatContext } from "@klymbak/client";
 import KlIcon from "./KlIcon.vue";
 
 const props = withDefaults(defineProps<{ placement?: "up" | "down" }>(), { placement: "up" });
 const store = useAgentStore();
+const i18n = useI18n();
 
 const open = ref(false);
 const query = ref("");
@@ -56,13 +57,15 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onOutside));
 <template>
   <div ref="root" class="kl-models" @keydown.escape="open = false">
     <button type="button" class="kl-models__button" :aria-expanded="open" aria-haspopup="listbox" @click="toggle">
-      <span class="kl-models__name">{{ current?.name ?? (store.models.value.length ? "Choose a model" : "No models") }}</span>
+      <span class="kl-models__name">{{ current?.name ?? i18n.t(store.models.value.length ? "models.choose" : "models.none") }}</span>
       <span v-if="current" class="kl-models__provider">{{ current.providerName }}</span>
-      <span v-if="current?.reasoning && store.state.thinkingLevel !== 'off'" class="kl-pill kl-tone-accent">think: {{ store.state.thinkingLevel }}</span>
+      <span v-if="current?.reasoning && store.state.thinkingLevel !== 'off'" class="kl-pill kl-tone-accent">
+        {{ i18n.t("models.thinkingPill", { level: i18n.t(`models.level.${store.state.thinkingLevel}`) }) }}
+      </span>
       <KlIcon name="chevronDown" :size="12" />
     </button>
     <div v-if="open" class="kl-models__panel" :class="`kl-models__panel--${props.placement}`" role="listbox">
-      <input ref="search" v-model="query" class="kl-input" type="search" placeholder="Search models" aria-label="Search models" />
+      <input ref="search" v-model="query" class="kl-input" type="search" :placeholder="i18n.t('models.search')" :aria-label="i18n.t('models.search')" />
       <div class="kl-models__groups kl-scroll">
         <div v-for="group in groups" :key="group.provider" class="kl-models__group">
           <span class="kl-models__group-name">{{ group.name }}</span>
@@ -78,20 +81,20 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onOutside));
           >
             <span class="kl-models__option-name">{{ model.name }}</span>
             <span class="kl-models__badges">
-              <span v-if="model.local" class="kl-pill kl-tone-success">local</span>
-              <span v-if="model.reasoning" class="kl-pill kl-tone-accent">reasoning</span>
-              <span v-if="model.input.includes('image')" class="kl-pill">vision</span>
+              <span v-if="model.local" class="kl-pill kl-tone-success">{{ i18n.t("models.local") }}</span>
+              <span v-if="model.reasoning" class="kl-pill kl-tone-accent">{{ i18n.t("models.reasoning") }}</span>
+              <span v-if="model.input.includes('image')" class="kl-pill">{{ i18n.t("models.vision") }}</span>
               <span class="kl-faint kl-num">{{ formatContext(model.contextWindow) }}</span>
             </span>
           </button>
         </div>
         <p v-if="!groups.length" class="kl-models__empty">
-          {{ store.models.value.length ? "No models match." : "No providers are configured on the server. Add an API key or a local model server." }}
+          {{ i18n.t(store.models.value.length ? "models.noMatch" : "models.noProviders") }}
         </p>
       </div>
       <div v-if="levels.length > 1" class="kl-models__thinking">
-        <span>Thinking</span>
-        <div class="kl-segmented" role="radiogroup" aria-label="Thinking level">
+        <span>{{ i18n.t("models.thinking") }}</span>
+        <div class="kl-segmented" role="radiogroup" :aria-label="i18n.t('models.thinkingLevel')">
           <button
             v-for="level in levels"
             :key="level"
@@ -101,7 +104,7 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onOutside));
             :class="{ active: store.state.thinkingLevel === level }"
             @click="store.setThinkingLevel(level)"
           >
-            {{ level }}
+            {{ i18n.t(`models.level.${level}`) }}
           </button>
         </div>
       </div>

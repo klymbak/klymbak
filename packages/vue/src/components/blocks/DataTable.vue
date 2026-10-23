@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { TableBlock, TableColumn } from "@klymbak/protocol";
-import { useChatActions } from "../../context";
-import { fillTemplate, formatValue, toneClass } from "@klymbak/client";
+import { useChatActions, useI18n } from "../../context";
+import { fillTemplate, toneClass } from "@klymbak/client";
 import KlIcon from "../KlIcon.vue";
 
 const props = defineProps<{ block: TableBlock }>();
 const actions = useChatActions();
+const i18n = useI18n();
 
 const PAGE = 10;
 const expanded = ref(false);
@@ -71,10 +72,10 @@ async function copyCsv() {
   <div class="kl-table">
     <div v-if="block.title || block.rows.length" class="kl-table__bar">
       <span class="kl-table__title">{{ block.title }}</span>
-      <span class="kl-table__count kl-num">{{ total.toLocaleString() }} {{ total === 1 ? "row" : "rows" }}</span>
-      <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" :title="'Copy as CSV'" @click="copyCsv">
+      <span class="kl-table__count kl-num">{{ i18n.t("table.rows", { count: total }) }}</span>
+      <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" :title="i18n.t('table.copyCsv')" @click="copyCsv">
         <KlIcon :name="copied ? 'check' : 'copy'" :size="14" />
-        {{ copied ? "Copied" : "CSV" }}
+        {{ i18n.t(copied ? "table.copied" : "table.csv") }}
       </button>
     </div>
     <div class="kl-table__scroll kl-scroll">
@@ -92,7 +93,7 @@ async function copyCsv() {
                 <KlIcon v-if="sortKey === column.key" :name="sortDir === 1 ? 'arrowUp' : 'arrowDown'" :size="12" />
               </button>
             </th>
-            <th v-if="block.rowActions?.length" class="kl-table__actions-head"><span class="kl-sr-only">Actions</span></th>
+            <th v-if="block.rowActions?.length" class="kl-table__actions-head"><span class="kl-sr-only">{{ i18n.t("table.actions") }}</span></th>
           </tr>
         </thead>
         <tbody>
@@ -105,7 +106,7 @@ async function copyCsv() {
               >{{ row[column.key] }}</span>
               <span v-else-if="column.format === 'code'" class="kl-code">{{ column.key === 'id' && typeof row[column.key] === 'number' ? `#${row[column.key]}` : row[column.key] }}</span>
               <span v-else-if="column.format === 'email'" class="kl-table__email">{{ row[column.key] }}</span>
-              <template v-else>{{ formatValue(row[column.key], column.format, column.currency) }}</template>
+              <template v-else>{{ i18n.formatValue(row[column.key], column.format, column.currency) }}</template>
             </td>
             <td v-if="block.rowActions?.length" class="kl-table__row-actions">
               <button
@@ -120,19 +121,19 @@ async function copyCsv() {
             </td>
           </tr>
           <tr v-if="!block.rows.length">
-            <td :colspan="block.columns.length + (block.rowActions?.length ? 1 : 0)" class="kl-table__empty">No rows</td>
+            <td :colspan="block.columns.length + (block.rowActions?.length ? 1 : 0)" class="kl-table__empty">{{ i18n.t("table.empty") }}</td>
           </tr>
         </tbody>
       </table>
     </div>
     <div v-if="hidden > 0 || expanded || block.caption || total > block.rows.length" class="kl-table__foot">
       <button v-if="hidden > 0" type="button" class="kl-btn kl-btn--ghost kl-btn--sm" @click="expanded = true">
-        Show {{ hidden }} more
+        {{ i18n.t("common.showMore", { count: hidden }) }}
       </button>
       <button v-else-if="expanded && block.rows.length > PAGE" type="button" class="kl-btn kl-btn--ghost kl-btn--sm" @click="expanded = false">
-        Show fewer
+        {{ i18n.t("common.showFewer") }}
       </button>
-      <span v-if="total > block.rows.length" class="kl-faint">Showing {{ block.rows.length }} of {{ total.toLocaleString() }}</span>
+      <span v-if="total > block.rows.length" class="kl-faint">{{ i18n.t("common.showingOf", { shown: block.rows.length, total }) }}</span>
       <span v-if="block.caption" class="kl-faint kl-table__caption">{{ block.caption }}</span>
     </div>
   </div>
