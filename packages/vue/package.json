@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/vue",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Vue 3 components for chat-native admin panels: streaming chat, tool cards, approvals, subagent traces, generative UI, model picker, schedules.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
