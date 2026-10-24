@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { ToolInfo } from "@klymbak/protocol";
+import { promptLabel } from "@klymbak/client";
 import { useAgentStore, useI18n } from "../context";
 import KlIcon from "./KlIcon.vue";
 
@@ -22,6 +23,15 @@ const groups = computed(() => {
   ];
   return sections.filter((s) => s.tools.length);
 });
+
+/** Resources and templates, shown a few at a time: a server can list hundreds. */
+const RESOURCES_SHOWN = 10;
+const resources = computed(() => [
+  ...(config.value?.resources ?? []).map((r) => ({ key: `${r.server}\n${r.uri}`, name: r.name, server: r.server, description: r.description, uri: r.uri })),
+  ...(config.value?.resourceTemplates ?? []).map((tpl) => ({ key: `${tpl.server}\n${tpl.uriTemplate}`, name: tpl.name, server: tpl.server, description: tpl.description, uri: tpl.uriTemplate })),
+]);
+const allResources = ref(false);
+const shownResources = computed(() => (allResources.value ? resources.value : resources.value.slice(0, RESOURCES_SHOWN)));
 
 const intro = computed(() =>
   config.value
@@ -75,6 +85,34 @@ async function connect() {
         <div class="kl-cap__top"><span class="kl-cap__name">{{ skill.name }}</span></div>
         <p class="kl-cap__desc">{{ skill.description }}</p>
       </div>
+    </section>
+
+    <section v-if="config.prompts.length" class="kl-caps__section">
+      <h4><KlIcon name="chat" :size="14" /> {{ i18n.t("caps.prompts") }} <span class="kl-faint">{{ config.prompts.length }}</span></h4>
+      <p class="kl-caps__hint">{{ i18n.t("caps.promptsHint") }}</p>
+      <div v-for="prompt in config.prompts" :key="`${prompt.server}\n${prompt.name}`" class="kl-cap">
+        <div class="kl-cap__top">
+          <span class="kl-cap__name">/{{ promptLabel(prompt) }}</span>
+          <span class="kl-pill">{{ prompt.server }}</span>
+        </div>
+        <p v-if="prompt.description" class="kl-cap__desc">{{ prompt.description }}</p>
+      </div>
+    </section>
+
+    <section v-if="resources.length" class="kl-caps__section">
+      <h4><KlIcon name="file" :size="14" /> {{ i18n.t("caps.resources") }} <span class="kl-faint">{{ resources.length }}</span></h4>
+      <p class="kl-caps__hint">{{ i18n.t("caps.resourcesHint") }}</p>
+      <div v-for="resource in shownResources" :key="resource.key" class="kl-cap">
+        <div class="kl-cap__top">
+          <span class="kl-cap__name">{{ resource.name }}</span>
+          <span class="kl-pill">{{ resource.server }}</span>
+        </div>
+        <p v-if="resource.description" class="kl-cap__desc">{{ resource.description }}</p>
+        <p class="kl-cap__uri">{{ resource.uri }}</p>
+      </div>
+      <button v-if="resources.length > RESOURCES_SHOWN" type="button" class="kl-btn kl-btn--ghost kl-btn--sm kl-caps__more" @click="allResources = !allResources">
+        {{ allResources ? i18n.t("common.showFewer") : i18n.t("common.showMore", { count: resources.length - RESOURCES_SHOWN }) }}
+      </button>
     </section>
 
     <section v-for="group in groups" :key="group.key" class="kl-caps__section">

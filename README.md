@@ -52,6 +52,7 @@ The demo database is generated on first start, with dates relative to today. Res
 | *How did sales do this week compared with last week?* | Stat tiles + chart rendered from tool output; the model reads only a summary |
 | *jane.cooper@example.com says her tent arrived torn. Sort it out.* | Multi-step investigation, parallel lookups, refund + return label behind approvals |
 | *Where is Liam Novak's order? He says it's stuck.* | The carrier **MCP server**, rendered by a custom Vue component |
+| Type `/`, pick *Delay notice*, or `@` and pick *Return policy* or *Shipment* | The carrier server's **MCP prompts, resources and templates** in the message box, with tracking numbers suggested as you type |
 | *Ask the analyst and the inventory planner in parallel…* | Two **subagents** running concurrently, nested in the transcript |
 | *Every Monday at 9:00, send me a summary of last week's refunds* | The agent creates a **scheduled task** from chat |
 | Switch to **Marcus (Support)** and refund a $448 order | A **policy hook** blocks it: support can refund up to $150 |
@@ -213,6 +214,10 @@ mcpServers: {
 
 Tools appear as `<server>_<tool>`. MCP annotations are honoured (`readOnlyHint`, and `destructiveHint` asks for approval). `approval`, `readOnly`, `include` and `exclude` take a list of tool names or a function, for servers whose tools carry no annotations: `approval: (name) => !/^(list|get)_/.test(name)`. Tool-list changes are picked up live. Structured results render automatically: files (records with a `url` and a MIME type, such as Strapi's media library) as a gallery, other lists of records as tables. You can register a Vue renderer per tool (the demo's shipment timeline). With `runtimeMcp: true`, admins can also connect HTTP MCP servers from the **Tools** panel.
 
+A server's **resources** and **prompts** come to the chat by themselves. Typing `@` in the message box lists the resources: a chosen one shows as a chip, and the server reads it when the message is sent, so the model gets its contents (marked as data, not instructions) and the transcript shows its name. Resource templates (`orders://{id}`) are in the same list and ask for a value for each variable. Typing `/` at the start of a message lists the prompts: choosing one asks for its arguments, and its text opens the message, before anything the person types. When a server supports MCP completions, the fields for arguments and variables suggest values as people type. A resource that can't be read or a missing required value refuses the message before the run starts. The **Tools** panel lists each server's prompts and resources too.
+
+The model can read resources itself: `list_resources` and `read_resource` are there for anyone who may use a server with resources, and a resource link in a tool's result names its server so the model can follow it. Everything follows the server's `roles`, lists stay current when a server says they changed, and `resources: false` or `prompts: false` turns them off for a server.
+
 ### Subagents
 
 ```ts
@@ -292,13 +297,15 @@ Sessions persist through an `AgentStorage` adapter (`memoryStorage()`, `fileStor
 
 | Method | Path | |
 |---|---|---|
-| GET | `/config` | models, tools, subagents, MCP servers, features for the current user |
+| GET | `/config` | models, tools, subagents, MCP servers, resources, resource templates and prompts, features for the current user |
 | GET / POST | `/sessions` | list / create |
 | GET / PATCH / DELETE | `/sessions/:id` | read (with transcript) / rename, change model / delete |
-| POST | `/sessions/:id/runs` | start a run; the response is an SSE stream until `run_end` |
+| POST | `/sessions/:id/runs` | start a run, with MCP `resources` and an `mcpPrompt` if any; the response is an SSE stream until `run_end` |
 | GET | `/sessions/:id/stream` | snapshot + live events (reconnect) |
 | POST | `/sessions/:id/abort`, `/steer`, `/approvals/:approvalId` | stop, steer, decide |
-| GET / POST / PATCH / DELETE | `/schedules[/:id]`, POST `/schedules/:id/run` | scheduled tasks || GET / POST / DELETE | `/mcp[/:name]` | integrations |
+| GET / POST / PATCH / DELETE | `/schedules[/:id]`, POST `/schedules/:id/run` | scheduled tasks |
+| GET / POST / DELETE | `/mcp[/:name]` | integrations |
+| POST | `/mcp/complete` | values a server suggests for a prompt's argument or a resource template's variable |
 | GET | `/events` | notifications (schedule results, approvals waiting, session list) |
 
 </details>

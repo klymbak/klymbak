@@ -121,6 +121,9 @@ describe("store messages", () => {
     subagents: [],
     skills: [],
     mcpServers: [],
+    resources: [],
+    resourceTemplates: [],
+    prompts: [],
     features: { schedules: false, steering: true, runtimeMcp: false, attachments: false },
   };
   const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });

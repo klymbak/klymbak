@@ -8,7 +8,7 @@ import {
   type ScheduleDefinition,
   type SubagentDefinition,
 } from "@klymbak/server";
-import { DATA_DIR } from "./db/database.ts";
+import { DATA_DIR, DB_PATH } from "./db/database.ts";
 import { hooks } from "./hooks.ts";
 import { tools } from "./tools/index.ts";
 import { demoAuth } from "./users.ts";
@@ -130,7 +130,10 @@ export const agent = createAgentServer({
     carrier: {
       // Node runs the TypeScript server directly (type stripping, Node 22.18+).
       command: process.execPath,
-      args: [carrierServer],
+      // Node's SQLite still warns that it's experimental, on stderr where it would land in the log.
+      args: ["--disable-warning=ExperimentalWarning", carrierServer],
+      // The carrier suggests the store's tracking numbers as people type, standing in for its account API.
+      env: { CARRIER_SHIPMENTS_DB: DB_PATH },
       approval: ["create_return_label"],
     },
   },

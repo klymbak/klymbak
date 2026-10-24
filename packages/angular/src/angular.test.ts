@@ -9,6 +9,7 @@ import { CHAT_ACTIONS, injectAgentState, provideAgentStore, provideKlymbak } fro
 import { AgentChat } from "./components/AgentChat.ts";
 import { AgentWidget } from "./components/AgentWidget.ts";
 import { AgentWorkspace } from "./components/AgentWorkspace.ts";
+import { CapabilitiesPanel } from "./components/CapabilitiesPanel.ts";
 import { Composer } from "./components/Composer.ts";
 import { ApprovalPrompt } from "./components/ApprovalPrompt.ts";
 import { MessageItem } from "./components/MessageItem.ts";
@@ -76,6 +77,9 @@ const config: AgentConfigInfo = {
   subagents: [],
   skills: [],
   mcpServers: [],
+  resources: [],
+  resourceTemplates: [],
+  prompts: [],
   features: { schedules: false, steering: true, runtimeMcp: false, attachments: false },
 };
 
@@ -432,8 +436,142 @@ describe("components", () => {
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await view.stable();
-    expect(sent).toHaveBeenCalledWith({ text: "Refund order 1042", attachments: [] });
+    expect(sent).toHaveBeenCalledWith({ text: "Refund order 1042", attachments: [], references: { resources: [], templates: [], prompt: undefined, arguments: {} } });
     expect(field.value).toBe("");
+  });
+
+  it("mentions MCP resources with @, starts with a prompt from / and sends both", async () => {
+    const resources = [
+      { server: "carrier", uri: "carrier://zones", name: "Shipping zones" },
+      { server: "carrier", uri: "carrier://policies/returns", name: "Return policy", description: "When returns are free" },
+    ];
+    const prompts = [{ server: "carrier", name: "delay_notice", title: "Delay notice", arguments: [{ name: "trackingNumber", required: true }] }];
+    const view = await render(Composer, { inputs: { resources, prompts } });
+    const sent = vi.fn();
+    view.fixture.componentInstance.send.subscribe(sent);
+    const box = view.el.querySelector("textarea")!;
+    const options = () => [...view.el.querySelectorAll("[role=option] .kl-mention-menu__name")].map((o) => o.textContent);
+    const key = async (name: string) => {
+      box.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+      await view.stable();
+    };
+
+    box.focus();
+    await type(view, box, "/del");
+    expect(options()).toEqual(["Delay notice"]);
+    await key("Enter");
+    expect(view.el.querySelector(".kl-ref--prompt")?.textContent?.trim()).toBe("/Delay notice");
+    expect(box.value).toBe("");
+    expect(view.el.querySelector<HTMLButtonElement>(".kl-composer__send")!.disabled).toBe(true);
+    expect(document.activeElement).toBe(view.el.querySelector(".kl-composer__arg"));
+    await type(view, view.el.querySelector<HTMLInputElement>(".kl-composer__arg")!, "AC123");
+
+    box.focus();
+    await type(view, box, "Mention @ret");
+    expect(view.el.querySelector("[role=listbox]")?.getAttribute("aria-label")).toBe("Resources");
+    expect(options()).toEqual(["Return policy"]);
+    expect(box.getAttribute("aria-activedescendant")).toBe(view.el.querySelector("[role=option]")!.id);
+    await key("Enter");
+    expect(box.value).toBe("Mention @Return policy ");
+    expect(view.el.querySelector("[role=listbox]")).toBeNull();
+
+    await key("Enter");
+    expect(sent).toHaveBeenCalledWith({
+      text: "Mention @Return policy ",
+      attachments: [],
+      references: { resources: [resources[1]], templates: [], prompt: prompts[0], arguments: { trackingNumber: "AC123" } },
+    });
+    expect(view.el.querySelector(".kl-ref")).toBeNull();
+  });
+
+  it("mentions a resource template, asks for its values with the server's suggestions, and sends it", async () => {
+    const resourceTemplates = [{ server: "carrier", uriTemplate: "carrier://shipments/{trackingNumber}{?events}", name: "Shipment", completes: true }];
+    const complete = vi.fn(async ({ value }: { value: string }) => ["AC123", "AC124"].filter((v) => v.startsWith(value)));
+    const view = await render(Composer, { inputs: { resourceTemplates, complete } });
+    const sent = vi.fn();
+    view.fixture.componentInstance.send.subscribe(sent);
+    const box = view.el.querySelector("textarea")!;
+    const key = async (name: string) => {
+      box.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+      await view.stable();
+    };
+
+    box.focus();
+    await type(view, box, "Where is @sh");
+    expect(view.el.querySelector("[role=option] .kl-mention-menu__detail")?.textContent).toBe("carrier://shipments/{trackingNumber}{?events}");
+    await key("Enter");
+    expect(box.value).toBe("Where is @Shipment ");
+    const [tracking, events] = [...view.el.querySelectorAll<HTMLInputElement>(".kl-composer__arg")];
+    expect([tracking!.placeholder, events!.placeholder]).toEqual(["trackingNumber", "events (optional)"]);
+    expect(document.activeElement).toBe(tracking);
+    expect(view.el.querySelector<HTMLButtonElement>(".kl-composer__send")!.disabled).toBe(true);
+
+    await type(view, tracking!, "AC12");
+    await vi.waitFor(() =>
+      expect(complete).toHaveBeenLastCalledWith({ server: "carrier", template: resourceTemplates[0]!.uriTemplate, argument: "trackingNumber", value: "AC12", context: undefined }),
+    );
+    await vi.waitFor(async () => {
+      await view.stable();
+      const list = view.el.querySelector(`datalist[id="${tracking!.getAttribute("list")}"]`)!;
+      expect([...list.querySelectorAll("option")].map((o) => o.value)).toEqual(["AC123", "AC124"]);
+    });
+
+    await type(view, tracking!, "AC123");
+    await key("Enter");
+    expect(sent.mock.calls[0]![0].references).toMatchObject({ templates: [{ template: resourceTemplates[0], values: { trackingNumber: "AC123" } }] });
+  });
+
+  it("shows the MCP servers' prompts and resources in the Tools panel, a few resources at a time", async () => {
+    const resources = Array.from({ length: 12 }, (_, i) => ({ server: "docs", uri: `docs://page-${i}`, name: `Page ${i}` }));
+    const withMcp: AgentConfigInfo = {
+      ...config,
+      resources,
+      resourceTemplates: [{ server: "carrier", uriTemplate: "carrier://shipments/{trackingNumber}", name: "Shipment" }],
+      prompts: [{ server: "carrier", name: "delay_notice", title: "Delay notice", arguments: [] }],
+    };
+    const store = { state: { config: withMcp }, subscribe: () => () => undefined, getVersion: () => 0 } as unknown as AgentStore;
+    const view = await render(CapabilitiesPanel, { providers: [provideAgentStore(store)] });
+    const section = (title: string) => [...view.el.querySelectorAll(".kl-caps__section")].find((s) => s.querySelector("h4")!.textContent!.trim().startsWith(title))!;
+    expect(section("Prompts").querySelector(".kl-cap__name")?.textContent).toBe("/Delay notice");
+    expect(section("Resources").querySelectorAll(".kl-cap")).toHaveLength(10);
+    await click(view, section("Resources").querySelector(".kl-caps__more"));
+    expect([...section("Resources").querySelectorAll(".kl-cap__uri")].at(-1)!.textContent).toBe("carrier://shipments/{trackingNumber}");
+    expect(section("Resources").querySelector(".kl-caps__more")!.textContent!.trim()).toBe("Show fewer");
+  });
+
+  it("closes the mention menu on Escape and shows a message's resources and prompt as chips", async () => {
+    const view = await render(Composer, { inputs: { resources: [{ server: "s", uri: "s://a", name: "Alpha" }] } });
+    const sent = vi.fn();
+    view.fixture.componentInstance.send.subscribe(sent);
+    const box = view.el.querySelector("textarea")!;
+    const key = async (name: string) => {
+      box.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+      await view.stable();
+    };
+    box.focus();
+    await type(view, box, "@a");
+    expect(view.el.querySelector("[role=listbox]")).not.toBeNull();
+    await key("Escape");
+    expect(view.el.querySelector("[role=listbox]")).toBeNull();
+    await key("Enter");
+    expect(sent.mock.calls[0]![0].text).toBe("@a");
+
+    TestBed.resetTestingModule();
+    const message: ChatMessage = {
+      id: "u",
+      role: "user",
+      createdAt: 1,
+      status: "done",
+      parts: [
+        { type: "prompt", server: "s", name: "delay_notice", title: "Delay notice", arguments: { trackingNumber: "AC123" } },
+        { type: "text", text: "Mention @Alpha" },
+        { type: "resource", server: "s", uri: "s://a", name: "Alpha" },
+      ],
+    };
+    const item = await render(MessageItem, { inputs: { message } });
+    expect([...item.el.querySelectorAll(".kl-ref__name")].map((name) => name.textContent)).toEqual(["/Delay notice", "Alpha"]);
+    expect(item.el.querySelector(".kl-ref__detail")?.textContent).toBe("AC123");
+    expect(item.el.querySelector(".kl-msg__text")?.textContent).toBe("Mention @Alpha");
   });
 
   it("asks for a reason before denying and sends the decision to the store", async () => {

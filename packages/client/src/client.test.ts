@@ -18,6 +18,9 @@ const config: AgentConfigInfo = {
   subagents: [],
   skills: [],
   mcpServers: [],
+  resources: [],
+  resourceTemplates: [],
+  prompts: [],
   features: { schedules: false, steering: true, runtimeMcp: false, attachments: false },
 };
 
@@ -78,6 +81,54 @@ describe("agent store", () => {
     expect(server.calls.find((c) => c.path === "/sessions/s1/runs")?.body).toMatchObject({ prompt: "hi", model: { provider: "p", id: "m" } });
     expect(listener).toHaveBeenCalled();
     store.dispose();
+  });
+
+  it("sends MCP resources and a prompt with a message, and shows them until the server's copy arrives", async () => {
+    const server = fakeServer([
+      { type: "run_start", runId: "r", sessionId: "s1", model: { provider: "p", id: "m" }, at: 1 },
+      { type: "run_end", runId: "r", status: "completed" },
+    ]);
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch: server.fetch }), persist: false });
+    await store.init();
+    const returns = { server: "carrier", uri: "carrier://policies/returns", name: "Return policy", mimeType: "text/markdown" };
+    const notice = { server: "carrier", name: "delay_notice", title: "Delay notice", arguments: [{ name: "trackingNumber", required: true }, { name: "tone" }] };
+
+    const shipment = { server: "carrier", uriTemplate: "carrier://shipments/{trackingNumber}", name: "Shipment" };
+
+    await store.send("", [], {
+      resources: [returns],
+      templates: [{ template: shipment, values: { trackingNumber: " AC 9 " } }],
+      prompt: notice,
+      arguments: { trackingNumber: " AC123 ", tone: " " },
+    });
+    expect(server.calls.find((c) => c.path === "/sessions/s1/runs")?.body).toMatchObject({
+      prompt: "",
+      resources: [
+        { server: "carrier", uri: "carrier://policies/returns" },
+        { server: "carrier", template: "carrier://shipments/{trackingNumber}", variables: { trackingNumber: "AC 9" } },
+      ],
+      mcpPrompt: { server: "carrier", name: "delay_notice", arguments: { trackingNumber: "AC123" } },
+    });
+    expect(store.state.messages[0]!.parts).toEqual([
+      { type: "prompt", server: "carrier", name: "delay_notice", title: "Delay notice", arguments: { trackingNumber: "AC123" } },
+      { type: "resource", ...returns },
+      { type: "resource", server: "carrier", uri: "carrier://shipments/AC%209", name: "Shipment: AC 9", mimeType: undefined },
+    ]);
+    store.dispose();
+  });
+
+  it("asks a server for suggestions, and shows none when that fails", async () => {
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/mcp/complete")) {
+        const body = JSON.parse(String(init!.body)) as { value: string };
+        return body.value === "fail" ? json({ error: "Boom" }, 500) : json({ values: [`${body.value}1`] });
+      }
+      return json([]);
+    });
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch: fetch as unknown as typeof globalThis.fetch }), persist: false });
+    const request = (value: string) => ({ server: "carrier", prompt: "delay_notice", argument: "trackingNumber", value });
+    expect(await store.completeMcp(request("AC"))).toEqual(["AC1"]);
+    expect(await store.completeMcp(request("fail"))).toEqual([]);
   });
 
   it("asks the server for the UI's language and loads the Tools panel again when it changes", async () => {

@@ -21,6 +21,9 @@ import {
   emptyUsage,
   type AgentEvent,
   type ChatMessage,
+  type MessagePart,
+  type PromptPart,
+  type ResourcePart,
   type RunStatus,
   type SessionSource,
   type ThinkingLevel,
@@ -84,9 +87,17 @@ export interface HarnessOptions {
   onPark?(approval: PendingApproval): void;
 }
 
+/** An MCP resource or prompt the person attached: what the model reads, and the part people see instead. */
+export interface HarnessReference {
+  part: ResourcePart | PromptPart;
+  content: (TextContent | ImageContent)[];
+}
+
 export interface HarnessInput {
   text: string;
   images?: { mimeType: string; data: string }[];
+  /** A prompt's text opens the message, before the person's own; resources come after it. */
+  references?: HarnessReference[];
   /** Model-only context appended to the message (must start with <system-context>). */
   context?: string;
   origin?: ChatMessage["origin"];
@@ -125,6 +136,8 @@ export class Harness {
   private stopContinues = 0;
   private parkedInTurn = false;
   private pendingOrigin: ChatMessage["origin"] | undefined;
+  /** How the next user message shows in the transcript, when it differs from what the model reads. */
+  private pendingParts: MessagePart[] | undefined;
   private runUsage: UsageInfo = emptyUsage();
   /** Stops approved calls that `resume` runs outside pi's loop. */
   private resumeAbort?: AbortController;
@@ -166,6 +179,11 @@ export class Harness {
         }
         const text = typeof message.content === "string" ? message.content : contentText(message.content as TextContent[]);
         return this.hookFollowUps.has(text) ? "hook" : "steer";
+      },
+      userParts: () => {
+        const parts = this.pendingParts;
+        this.pendingParts = undefined;
+        return parts;
       },
       onAssistantEnd: (message) => {
         const usage = toUsageInfo(message.usage);
@@ -227,9 +245,18 @@ export class Harness {
     this.begin();
     this.pendingOrigin = input.origin ?? "user";
 
-    const content: (TextContent | ImageContent)[] = [{ type: "text", text: input.text }];
-    for (const image of input.images ?? []) content.push({ type: "image", data: image.data, mimeType: image.mimeType });
+    const references = input.references ?? [];
+    const prompts = references.filter((reference) => reference.part.type === "prompt");
+    const resources = references.filter((reference) => reference.part.type === "resource");
+    const images: ImageContent[] = (input.images ?? []).map((image) => ({ type: "image", data: image.data, mimeType: image.mimeType }));
+    // Some providers reject an empty text block, so a message with something else in it goes without one.
+    const text: TextContent[] = input.text || !(references.length || images.length) ? [{ type: "text", text: input.text }] : [];
+    const content: (TextContent | ImageContent)[] = [...prompts.flatMap((r) => r.content), ...text, ...images, ...resources.flatMap((r) => r.content)];
     if (input.context) content.push({ type: "text", text: input.context });
+    // People see what they attached by name, not the contents the model reads.
+    this.pendingParts = references.length
+      ? [...prompts.map((r) => r.part), ...text, ...images.map(({ data, mimeType }) => ({ type: "image" as const, data, mimeType })), ...resources.map((r) => r.part)]
+      : undefined;
     return this.drive(() => this.agent.prompt({ role: "user", content, timestamp: Date.now() }));
   }
 
@@ -261,6 +288,7 @@ export class Harness {
     this.turn = 0;
     this.stopContinues = 0;
     this.parkedInTurn = false;
+    this.pendingParts = undefined;
     this.runUsage = emptyUsage();
   }
 

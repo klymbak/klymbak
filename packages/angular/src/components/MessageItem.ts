@@ -1,6 +1,6 @@
-import { Component, booleanAttribute, input } from "@angular/core";
+import { Component, booleanAttribute, computed, input } from "@angular/core";
 import type { ChatMessage, ImagePart } from "@klymbak/protocol";
-import { formatTokens } from "@klymbak/client";
+import { formatTokens, referenceParts, referenceView } from "@klymbak/client";
 import { injectI18n } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 import { MarkdownContent } from "./MarkdownContent.ts";
@@ -23,6 +23,19 @@ const ORIGIN = { steer: "message.origin.steer", hook: "message.origin.hook", sch
           <span class="kl-msg__origin"><svg klIcon [name]="m.origin === 'schedule' ? 'clock' : 'sparkle'" [size]="12" /> {{ origin }}</span>
         }
         <div class="kl-msg__bubble">
+          @if (references().length > 0) {
+            <div class="kl-msg__refs">
+              @for (reference of references(); track $index) {
+                <span class="kl-ref" [class.kl-ref--prompt]="reference.icon === 'chat'" [title]="reference.title">
+                  <svg klIcon [name]="reference.icon" [size]="12" />
+                  <span class="kl-ref__name">{{ reference.name }}</span>
+                  @if (reference.detail) {
+                    <span class="kl-ref__detail">{{ reference.detail }}</span>
+                  }
+                </span>
+              }
+            </div>
+          }
           @for (part of m.parts; track $index) {
             @if (part.type === "text") {
               <p class="kl-msg__text">{{ part.text }}</p>
@@ -71,6 +84,7 @@ export class MessageItem {
   readonly compact = input(false, { transform: booleanAttribute });
   readonly showMeta = input(false, { transform: booleanAttribute });
   protected readonly i18n = injectI18n();
+  protected readonly references = computed(() => referenceParts(this.message().parts).map(referenceView));
 
   protected tokens(count: number | undefined) {
     return this.i18n().t("message.tokens", { count: count ?? 0, tokens: formatTokens(count) });

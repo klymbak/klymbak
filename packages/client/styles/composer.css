@@ -1,4 +1,5 @@
 .kl-composer {
+  position: relative;
   display: grid;
   gap: 6px;
   padding: 10px 10px 8px 12px;
@@ -73,4 +74,134 @@
   margin: 0;
   font-size: 11.5px;
   color: var(--kl-text-faint);
+}
+.kl-composer__refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kl-composer__args {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kl-composer__arg {
+  flex: 1 1 160px;
+  min-width: 0;
+  height: 30px;
+}
+
+/* An MCP resource or prompt, in the composer and in the person's message. */
+.kl-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--kl-border);
+  border-radius: 999px;
+  background: var(--kl-surface);
+  color: var(--kl-text);
+  font-size: 12.5px;
+}
+.kl-ref--prompt {
+  border-color: transparent;
+  background: var(--kl-accent-soft);
+}
+.kl-ref .kl-icon {
+  flex: none;
+  color: var(--kl-text-muted);
+}
+.kl-ref__name,
+.kl-ref__detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kl-ref__name {
+  font-weight: 600;
+}
+.kl-ref__detail {
+  color: var(--kl-text-muted);
+}
+.kl-ref .kl-btn {
+  width: 18px;
+  height: 18px;
+  margin-right: -4px;
+  border-radius: 50%;
+}
+
+/* The @ and / menu, above the composer. */
+.kl-mention-menu {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  display: grid;
+  gap: 1px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius);
+  background: var(--kl-surface);
+  box-shadow: var(--kl-shadow-lg);
+}
+.kl-mention-menu__title {
+  padding: 2px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--kl-text-faint);
+}
+.kl-mention-menu__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--kl-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.kl-mention-menu__option--active {
+  background: var(--kl-accent-soft);
+}
+.kl-mention-menu__option .kl-icon {
+  flex: none;
+  color: var(--kl-text-muted);
+}
+.kl-mention-menu__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.kl-mention-menu__name,
+.kl-mention-menu__detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kl-mention-menu__name {
+  font-weight: 600;
+}
+.kl-mention-menu__detail {
+  font-size: 12px;
+  color: var(--kl-text-muted);
+}
+.kl-mention-menu__server {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--kl-text-faint);
+}
+.kl-composer__args-label {
+  flex: none;
+  align-self: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--kl-text-muted);
 }

@@ -100,7 +100,27 @@ export interface ToolPart {
   durationMs?: number;
 }
 
-export type MessagePart = TextPart | ThinkingPart | ImagePart | ToolPart;
+/** An MCP resource the person mentioned with @. The model read its contents; people see its name. */
+export interface ResourcePart {
+  type: "resource";
+  /** The MCP server that lists it. */
+  server: string;
+  uri: string;
+  name: string;
+  mimeType?: string;
+}
+
+/** An MCP prompt the person started the message with, by typing /. The model read its text; people see its name. */
+export interface PromptPart {
+  type: "prompt";
+  /** The MCP server that offers it. */
+  server: string;
+  name: string;
+  title?: string;
+  arguments?: Record<string, string>;
+}
+
+export type MessagePart = TextPart | ThinkingPart | ImagePart | ToolPart | ResourcePart | PromptPart;
 
 export type MessageRole = "user" | "assistant" | "notice";
 

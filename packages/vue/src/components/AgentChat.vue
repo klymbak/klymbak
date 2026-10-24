@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { UiAction } from "@klymbak/protocol";
-import { createAgentClient, type AgentClientOptions, type Attachment, type Messages } from "@klymbak/client";
+import { createAgentClient, type AgentClientOptions, type Attachment, type McpReferences, type Messages } from "@klymbak/client";
 import {
   provideAgentStore,
   provideChatActions,
@@ -103,8 +103,8 @@ const description = computed(() => props.description ?? state.config?.app.descri
 const sessionTitle = computed(() => store.currentSession.value?.title);
 const acceptImages = computed(() => Boolean(store.currentModel.value?.input.includes("image")));
 
-function send(text: string, attachments: Attachment[]) {
-  void store.send(text, attachments);
+function send(text: string, attachments: Attachment[], references: McpReferences) {
+  void store.send(text, attachments, references);
 }
 
 function useSuggestion(text: string) {
@@ -165,6 +165,10 @@ defineExpose({ store, focus: () => composer.value?.focus(), setDraft: (text: str
         :disabled="!state.ready"
         :placeholder="placeholder"
         :accept-images="acceptImages && state.config?.features.attachments"
+        :resources="state.config?.resources"
+        :resource-templates="state.config?.resourceTemplates"
+        :prompts="state.config?.prompts"
+        :complete="store.completeMcp"
         @send="send"
         @stop="store.abort()"
       >

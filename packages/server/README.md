@@ -3,7 +3,7 @@
 Agent harness for chat-native admin panels, built on the [pi](https://github.com/earendil-works/pi) agent loop.
 
 - **Tools** with typed parameters, roles, approvals and generative UI output (`defineTool`, `ui`)
-- **MCP servers** over stdio or Streamable HTTP, with annotations honoured
+- **MCP servers** over stdio or Streamable HTTP, with annotations honoured; their resources and resource templates can be mentioned with `@` in the chat and their prompts started with `/`, with values suggested through MCP completions, and the model reads resources with `list_resources` and `read_resource`
 - **Hooks** modelled on Claude Code: `sessionStart`, `userPromptSubmit`, `preToolUse`, `postToolUse`, `stop`, `runEnd`, `onEvent`
 - **Human approvals** with deny reasons, "always allow" and expiry; in unattended runs they wait, stored with the session, and the decision resumes the run, the approved call acting as whoever approved it
 - **Subagents** via a `delegate_task` tool, streamed as nested transcripts

@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@klymbak/protocol";
-import { formatTokens } from "@klymbak/client";
+import { formatTokens, referenceParts, referenceView } from "@klymbak/client";
 import { useI18n } from "../context";
 import { cx } from "../util";
 import { MarkdownContent } from "./MarkdownContent";
@@ -13,6 +13,7 @@ export function MessageItem({ message, compact, showMeta }: { message: ChatMessa
   const i18n = useI18n();
   if (message.role === "user") {
     const origin = message.origin && message.origin !== "user" ? i18n.t(ORIGIN[message.origin]) : undefined;
+    const references = referenceParts(message.parts).map(referenceView);
     return (
       <div className={cx("kl-msg kl-msg--user", compact && "kl-msg--compact")}>
         {origin && (
@@ -21,6 +22,17 @@ export function MessageItem({ message, compact, showMeta }: { message: ChatMessa
           </span>
         )}
         <div className="kl-msg__bubble">
+          {references.length > 0 && (
+            <div className="kl-msg__refs">
+              {references.map((reference, i) => (
+                <span key={i} className={cx("kl-ref", reference.icon === "chat" && "kl-ref--prompt")} title={reference.title}>
+                  <KlIcon name={reference.icon} size={12} />
+                  <span className="kl-ref__name">{reference.name}</span>
+                  {reference.detail && <span className="kl-ref__detail">{reference.detail}</span>}
+                </span>
+              ))}
+            </div>
+          )}
           {message.parts.map((part, i) =>
             part.type === "text" ? (
               <p key={i} className="kl-msg__text">

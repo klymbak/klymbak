@@ -82,6 +82,10 @@ The new evaluation covers helpdesks and stores and adds these questions:
 
 ## Platform
 
+- [x] **MCP resources and prompts in the chat** (2026-10-25): `@` in the message box lists the connected servers' resources and `/` their prompts, with fields for a prompt's arguments. The server reads the resources and gets the prompt before the run starts, so the model gets their contents and the transcript shows chips, in React, Vue and Angular. They follow the server's `roles` and refresh when a server's lists change. The carrier demo server has two of each. Checked live in the Acme console against Qwen 3.6 35B-A3B: a prompt with its tracking number led to a `track_shipment` call, and a question about the mentioned return policy was answered from its text alone.
+  - [x] Resource templates (`orders://{id}`) in the `@` menu, with a field per variable. The fields of templates and prompts suggest values through the server's `completion/complete`, in a datalist. The carrier demo's *Shipment* template and *Delay notice* prompt suggest the store's tracking numbers.
+  - [x] Prompts and resources in the Tools panel, so people can see what each server offers without typing `@` or `/`
+  - [x] The model reads resources itself: `list_resources` and `read_resource`, for anyone who may use a server with resources. A resource link in a tool's result names its server, so the model can follow it, and `read_resource` takes any URI the server has, like the server's own tools.
 - Run the React tests against React 19 as well as 18
 - Run the Angular tests against Angular 22 as well as 21
 - A .NET 10 server implementing the same HTTP/SSE protocol

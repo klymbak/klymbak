@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
 import type { ToolInfo } from "@klymbak/protocol";
+import { promptLabel } from "@klymbak/client";
 import { useAgentStore, useI18n } from "../context";
 import { KlIcon } from "./KlIcon";
 
 const EMPTY_FORM = { name: "", url: "", token: "" };
+const RESOURCES_SHOWN = 10;
 
 export function CapabilitiesPanel() {
   const store = useAgentStore();
@@ -11,8 +13,16 @@ export function CapabilitiesPanel() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
+  const [allResources, setAllResources] = useState(false);
   const { config } = store.state;
   if (!config) return null;
+
+  // Resources and templates, shown a few at a time: a server can list hundreds.
+  const resources = [
+    ...config.resources.map((r) => ({ key: `${r.server}\n${r.uri}`, name: r.name, server: r.server, description: r.description, uri: r.uri })),
+    ...config.resourceTemplates.map((tpl) => ({ key: `${tpl.server}\n${tpl.uriTemplate}`, name: tpl.name, server: tpl.server, description: tpl.description, uri: tpl.uriTemplate })),
+  ];
+  const shownResources = allResources ? resources : resources.slice(0, RESOURCES_SHOWN);
 
   const tools = config.tools;
   const groups = [
@@ -101,6 +111,48 @@ export function CapabilitiesPanel() {
               <p className="kl-cap__desc">{skill.description}</p>
             </div>
           ))}
+        </section>
+      )}
+
+      {config.prompts.length > 0 && (
+        <section className="kl-caps__section">
+          <h4>
+            <KlIcon name="chat" size={14} /> {i18n.t("caps.prompts")} <span className="kl-faint">{config.prompts.length}</span>
+          </h4>
+          <p className="kl-caps__hint">{i18n.t("caps.promptsHint")}</p>
+          {config.prompts.map((prompt) => (
+            <div key={`${prompt.server}\n${prompt.name}`} className="kl-cap">
+              <div className="kl-cap__top">
+                <span className="kl-cap__name">/{promptLabel(prompt)}</span>
+                <span className="kl-pill">{prompt.server}</span>
+              </div>
+              {prompt.description && <p className="kl-cap__desc">{prompt.description}</p>}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {resources.length > 0 && (
+        <section className="kl-caps__section">
+          <h4>
+            <KlIcon name="file" size={14} /> {i18n.t("caps.resources")} <span className="kl-faint">{resources.length}</span>
+          </h4>
+          <p className="kl-caps__hint">{i18n.t("caps.resourcesHint")}</p>
+          {shownResources.map((resource) => (
+            <div key={resource.key} className="kl-cap">
+              <div className="kl-cap__top">
+                <span className="kl-cap__name">{resource.name}</span>
+                <span className="kl-pill">{resource.server}</span>
+              </div>
+              {resource.description && <p className="kl-cap__desc">{resource.description}</p>}
+              <p className="kl-cap__uri">{resource.uri}</p>
+            </div>
+          ))}
+          {resources.length > RESOURCES_SHOWN && (
+            <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm kl-caps__more" onClick={() => setAllResources((all) => !all)}>
+              {allResources ? i18n.t("common.showFewer") : i18n.t("common.showMore", { count: resources.length - RESOURCES_SHOWN })}
+            </button>
+          )}
         </section>
       )}
 

@@ -10,6 +10,8 @@ import { Klymbak, provideAgentStore, provideChatActions } from "./context";
 import { createAgentStore, type AgentStore } from "./store";
 import AgentWorkspace from "./components/AgentWorkspace.vue";
 import ApprovalPrompt from "./components/ApprovalPrompt.vue";
+import CapabilitiesPanel from "./components/CapabilitiesPanel.vue";
+import Composer from "./components/Composer.vue";
 import DataTable from "./components/blocks/DataTable.vue";
 import MediaGallery from "./components/blocks/MediaGallery.vue";
 import MessageItem from "./components/MessageItem.vue";
@@ -25,6 +27,9 @@ const config: AgentConfigInfo = {
   subagents: [],
   skills: [],
   mcpServers: [],
+  resources: [],
+  resourceTemplates: [],
+  prompts: [],
   features: { schedules: false, steering: true, runtimeMcp: false, attachments: false },
 };
 
@@ -179,6 +184,133 @@ describe("components", () => {
     expect(button("Nouvelle discussion")).toBeDefined();
     expect(wrapper.find(".kl-chat").attributes("aria-label")).toBe("Discussion avec l'agent");
     wrapper.unmount();
+  });
+
+  it("mentions MCP resources with @, starts with a prompt from / and sends both", async () => {
+    const resources = [
+      { server: "carrier", uri: "carrier://zones", name: "Shipping zones" },
+      { server: "carrier", uri: "carrier://policies/returns", name: "Return policy", description: "When returns are free" },
+    ];
+    const prompts = [{ server: "carrier", name: "delay_notice", title: "Delay notice", arguments: [{ name: "trackingNumber", required: true }] }];
+    const wrapper = mount(Composer, { props: { resources, prompts }, attachTo: document.body });
+    const box = wrapper.find("textarea");
+    await box.trigger("focus");
+
+    await box.setValue("/del");
+    expect(wrapper.findAll("[role=option]").map((o) => o.find(".kl-mention-menu__name").text())).toEqual(["Delay notice"]);
+    await box.trigger("keydown", { key: "Enter" });
+    await nextTick();
+    expect(wrapper.find(".kl-ref--prompt").text()).toBe("/Delay notice");
+    expect((box.element as HTMLTextAreaElement).value).toBe("");
+    expect(wrapper.find(".kl-composer__send").attributes("disabled")).toBeDefined();
+    await wrapper.find(".kl-composer__arg").setValue("AC123");
+
+    await box.trigger("focus");
+    await box.setValue("Mention @ret");
+    expect(wrapper.find("[role=listbox]").attributes("aria-label")).toBe("Resources");
+    expect(wrapper.findAll("[role=option]").map((o) => o.find(".kl-mention-menu__name").text())).toEqual(["Return policy"]);
+    expect(box.attributes("aria-activedescendant")).toBe(wrapper.find("[role=option]").attributes("id"));
+    await box.trigger("keydown", { key: "Enter" });
+    await nextTick();
+    expect((box.element as HTMLTextAreaElement).value).toBe("Mention @Return policy ");
+    expect(wrapper.find("[role=listbox]").exists()).toBe(false);
+
+    await box.trigger("keydown", { key: "Enter" });
+    expect(wrapper.emitted("send")?.[0]).toEqual([
+      "Mention @Return policy ",
+      [],
+      { resources: [resources[1]], templates: [], prompt: prompts[0], arguments: { trackingNumber: "AC123" } },
+    ]);
+    expect(wrapper.find(".kl-ref").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("mentions a resource template, asks for its values with the server's suggestions, and sends it", async () => {
+    vi.useFakeTimers();
+    const resourceTemplates = [{ server: "carrier", uriTemplate: "carrier://shipments/{trackingNumber}{?events}", name: "Shipment", completes: true }];
+    const complete = vi.fn(async ({ value }: { value: string }) => ["AC123", "AC124"].filter((v) => v.startsWith(value)));
+    const wrapper = mount(Composer, { props: { resourceTemplates, complete }, attachTo: document.body });
+    const box = wrapper.find("textarea");
+    await box.trigger("focus");
+    await box.setValue("Where is @sh");
+    expect(wrapper.find("[role=option] .kl-mention-menu__detail").text()).toBe("carrier://shipments/{trackingNumber}{?events}");
+    await box.trigger("keydown", { key: "Enter" });
+    await nextTick();
+    expect((box.element as HTMLTextAreaElement).value).toBe("Where is @Shipment ");
+    const [tracking, events] = wrapper.findAll(".kl-composer__arg");
+    expect([tracking!.attributes("placeholder"), events!.attributes("placeholder")]).toEqual(["trackingNumber", "events (optional)"]);
+    expect(document.activeElement).toBe(tracking!.element);
+    expect(wrapper.find(".kl-composer__send").attributes("disabled")).toBeDefined();
+
+    await tracking!.setValue("AC12");
+    await vi.advanceTimersByTimeAsync(200);
+    expect(complete).toHaveBeenLastCalledWith({
+      server: "carrier",
+      template: resourceTemplates[0]!.uriTemplate,
+      argument: "trackingNumber",
+      value: "AC12",
+      context: undefined,
+    });
+    const list = wrapper.find(`datalist#${tracking!.attributes("list")}`);
+    expect(list.findAll("option").map((o) => o.attributes("value"))).toEqual(["AC123", "AC124"]);
+
+    await tracking!.setValue("AC123");
+    await box.trigger("keydown", { key: "Enter" });
+    expect(wrapper.emitted("send")?.[0]?.[2]).toMatchObject({ templates: [{ template: resourceTemplates[0], values: { trackingNumber: "AC123" } }] });
+    vi.useRealTimers();
+    wrapper.unmount();
+  });
+
+  it("shows the MCP servers' prompts and resources in the Tools panel, a few resources at a time", async () => {
+    const resources = Array.from({ length: 12 }, (_, i) => ({ server: "docs", uri: `docs://page-${i}`, name: `Page ${i}` }));
+    const withMcp: AgentConfigInfo = {
+      ...config,
+      resources,
+      resourceTemplates: [{ server: "carrier", uriTemplate: "carrier://shipments/{trackingNumber}", name: "Shipment" }],
+      prompts: [{ server: "carrier", name: "delay_notice", title: "Delay notice", description: "Draft an email about a late parcel", arguments: [] }],
+    };
+    const wrapper = mount({
+      setup() {
+        provideAgentStore({ state: { config: withMcp } } as unknown as AgentStore);
+        return () => h(CapabilitiesPanel);
+      },
+    });
+    const section = (title: string) => wrapper.findAll(".kl-caps__section").find((s) => s.find("h4").text().startsWith(title))!;
+    expect(section("Prompts").find(".kl-cap__name").text()).toBe("/Delay notice");
+    expect(section("Prompts").find(".kl-caps__hint").text()).toBe("Type / at the start of a message to use one.");
+    expect(section("Resources").find("h4").text()).toBe("Resources 13");
+    expect(section("Resources").findAll(".kl-cap")).toHaveLength(10);
+    await section("Resources").find(".kl-caps__more").trigger("click");
+    expect(section("Resources").findAll(".kl-cap__uri").at(-1)!.text()).toBe("carrier://shipments/{trackingNumber}");
+    expect(section("Resources").find(".kl-caps__more").text()).toBe("Show fewer");
+  });
+
+  it("closes the mention menu on Escape and shows a message's resources and prompt as chips", async () => {
+    const wrapper = mount(Composer, { props: { resources: [{ server: "s", uri: "s://a", name: "Alpha" }] } });
+    const box = wrapper.find("textarea");
+    await box.trigger("focus");
+    await box.setValue("@a");
+    expect(wrapper.find("[role=listbox]").exists()).toBe(true);
+    await box.trigger("keydown", { key: "Escape" });
+    expect(wrapper.find("[role=listbox]").exists()).toBe(false);
+    await box.trigger("keydown", { key: "Enter" });
+    expect(wrapper.emitted("send")?.[0]?.[0]).toBe("@a");
+
+    const message: ChatMessage = {
+      id: "u",
+      role: "user",
+      createdAt: 1,
+      status: "done",
+      parts: [
+        { type: "prompt", server: "s", name: "delay_notice", title: "Delay notice", arguments: { trackingNumber: "AC123" } },
+        { type: "text", text: "Mention @Alpha" },
+        { type: "resource", server: "s", uri: "s://a", name: "Alpha" },
+      ],
+    };
+    const item = mount(MessageItem, { props: { message } });
+    expect(item.findAll(".kl-ref__name").map((name) => name.text())).toEqual(["/Delay notice", "Alpha"]);
+    expect(item.find(".kl-ref__detail").text()).toBe("AC123");
+    expect(item.find(".kl-msg__text").text()).toBe("Mention @Alpha");
   });
 
   it("escapes HTML in model output", () => {
