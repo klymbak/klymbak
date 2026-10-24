@@ -25,10 +25,10 @@ ${lines}`;
 }
 
 export const SCHEDULING_SECTION = `## Scheduled tasks
-You can create recurring tasks with schedule_task (cron syntax, in the user's timezone). A scheduled run works unattended: it can read data and notify people, but actions that need approval will be refused, so write those prompts as "check and report".`;
+You can create recurring tasks with schedule_task (cron syntax, in the user's timezone). A scheduled run works unattended: it can read data and notify people, and actions that need approval wait, possibly for hours, until a person decides.`;
 
 export const HEADLESS_SECTION = `## Unattended run
-No one is watching this run. Do the task, then finish with a short report (what you checked, what you found, what needs a person). Actions that need approval will be refused; recommend them in the report instead.`;
+No one is watching this run. Do the task, then finish with a short report (what you checked, what you found, what needs a person). An action that needs approval waits for a person: the run pauses and continues once they decide, which may be hours later. If one is refused instead, don't retry it; recommend it in the report.`;
 
 /**
  * For an unattended run's turn context: no one writes to the model in their language, so it's told which one the

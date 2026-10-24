@@ -181,7 +181,11 @@ Install the [plugin](packages/strapi) instead: `npm install @klymbak/strapi`, ad
 
 ### Human approval
 
-When a tool needs approval, the run pauses and the UI shows a card with the exact action. **Approve**, **Deny with a reason** (the model reads it), or **Don't ask again in this chat**. Approvals expire (default 15 min) and are refused automatically in unattended runs, where the agent is told to recommend the action in its report instead.
+When a tool needs approval, the run pauses and the UI shows a card with the exact action. **Approve**, **Deny with a reason** (the model reads it), or **Don't ask again in this chat**. Approvals expire (default 15 min).
+
+In unattended runs (schedules, and `runHeadless` from your own code) nobody is there to click, so the run ends at the approval and waits. The call is stored with the session, its card shows in the conversation, and everyone who can see the session gets a notification. Approving or denying it, hours later or after a restart, resumes the session as a new run. Denied calls tell the model why. An approved call runs as the person who approved it: the tool's `roles`, the policy hooks and the tool itself see them, with `ctx.headless` false, so it takes someone who may use the tool to approve it. The model then carries on as the run's own user. When one step asks for several approvals, the run resumes once all of them are decided, and new messages in that conversation wait until then. Delegated tasks can't pause inside the parent's call, so subagents still refuse approvals in unattended runs.
+
+Policy hooks run when the run asks, as the run's user with `ctx.headless` true, and again when an approved call runs, as the approver. A limit that depends on who acts, such as "support refunds up to $150", can return `{ decision: "ask" }` while `ctx.headless` is true and leave the check to the approver.
 
 ### Hooks
 
@@ -234,6 +238,25 @@ Procedures and house rules: how we write an article, what to check before publis
 
 Define them in config (`schedules: [{ id, name, cron, prompt, agent?, audience? }]`), create them in the **Schedules** panel, or ask the agent ("every weekday at 8, …"). Each run is an unattended session owned by the schedule's owner. People in its audience see the result and get a notification.
 
+### Jobs from your own code
+
+Besides people in the admin panel and schedules, your app can hand the agent a job from its own code, such as a pending task on the server, a background check or a step in a queue. `runHeadless` runs it unattended:
+
+```ts
+const outcome = await agent.runtime.runHeadless({
+  user: requestedBy,
+  audience: ["support"],
+  title: `Refund request for order #${order.id}`,
+  prompt: "Check whether this order qualifies for a refund, and refund it if it does.",
+  context: JSON.stringify(order),
+});
+// { sessionId, status, text, usage }, once the run ends or stops to wait for an approval
+```
+
+The run is a session like any other. `user` owns it, people with a role in `audience` see it in their list, and it stays unread until someone opens it. `context` reaches the model only, marked as data rather than instructions, since records can carry text anyone wrote. People see the prompt.
+
+`user` is whoever the job acts for. When the job belongs to someone, such as the person who queued it, run it as them, with their permissions. When it belongs to nobody, give it a service identity of its own whose role allows only what the job needs. An action that needs approval waits for someone in the audience (see [Human approval](#human-approval)).
+
 ### Languages
 
 The components come in 12 languages besides English (`locale` and `messages`, see [`@klymbak/client`](packages/client#languages)), and the server writes what people read in their language too: tool names and summaries in the Tools panel, approval titles, refusals, notices and errors. The components send their `locale` as `Accept-Language`, and the server puts it on `ctx.user.locale`, unless `auth` set one already. What the model reads (the prompt, tool descriptions and results) stays English; the model answers in the language people write in.
@@ -275,8 +298,7 @@ Sessions persist through an `AgentStorage` adapter (`memoryStorage()`, `fileStor
 | POST | `/sessions/:id/runs` | start a run; the response is an SSE stream until `run_end` |
 | GET | `/sessions/:id/stream` | snapshot + live events (reconnect) |
 | POST | `/sessions/:id/abort`, `/steer`, `/approvals/:approvalId` | stop, steer, decide |
-| GET / POST / PATCH / DELETE | `/schedules[/:id]`, POST `/schedules/:id/run` | scheduled tasks |
-| GET / POST / DELETE | `/mcp[/:name]` | integrations |
+| GET / POST / PATCH / DELETE | `/schedules[/:id]`, POST `/schedules/:id/run` | scheduled tasks || GET / POST / DELETE | `/mcp[/:name]` | integrations |
 | GET | `/events` | notifications (schedule results, approvals waiting, session list) |
 
 </details>
@@ -311,7 +333,7 @@ It runs on Cloudflare Workers at klymbak.ai (`apps/site/wrangler.jsonc`). Connec
 
 ## Roadmap
 
-The Strapi plugin has shipped. Next is work that starts from an incoming ticket rather than a chat: triggers, approvals that wait for a person, a knowledge base, and helpdesk and store adapters. Which products to integrate with first is being re-evaluated. The full list, and the reasoning behind the order, is in [ROADMAP.md](ROADMAP.md).
+The Strapi plugin has shipped. Next is work that starts from an incoming ticket rather than a chat: approvals that wait for a person, a knowledge base, and helpdesk and store adapters. Which products to integrate with first is being re-evaluated. The full list, and the reasoning behind the order, is in [ROADMAP.md](ROADMAP.md).
 
 ## License
 

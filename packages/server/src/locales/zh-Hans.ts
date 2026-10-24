@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "请先输入消息。",
   "error.idle": "智能体没有在运行，请以普通消息发送。",
   "error.approvalGone": "此批准已不再等待决定。",
+  "error.approvalsPending": "此处有操作正在等待批准。请先批准或拒绝。",
   "error.unknownAgent": "未知的智能体“{agent}”。",
   "error.noScheduler": "此服务器已关闭定时任务功能。",
   "error.scheduleFields": "定时任务需要名称和指令。",

@@ -5,10 +5,11 @@ Agent harness for chat-native admin panels, built on the [pi](https://github.com
 - **Tools** with typed parameters, roles, approvals and generative UI output (`defineTool`, `ui`)
 - **MCP servers** over stdio or Streamable HTTP, with annotations honoured
 - **Hooks** modelled on Claude Code: `sessionStart`, `userPromptSubmit`, `preToolUse`, `postToolUse`, `stop`, `runEnd`, `onEvent`
-- **Human approvals** with deny reasons, "always allow" and expiry; refused automatically in unattended runs
+- **Human approvals** with deny reasons, "always allow" and expiry; in unattended runs they wait, stored with the session, and the decision resumes the run, the approved call acting as whoever approved it
 - **Subagents** via a `delegate_task` tool, streamed as nested transcripts
 - **Skills** in Anthropic's `SKILL.md` format (`loadSkills`): procedures and house rules, loaded with a `use_skill` tool when a task calls for them
 - **Scheduled tasks** (cron) that run unattended and notify their audience
+- **Jobs from your own code** (`runHeadless`): pending tasks and background work that run unattended, with context for the model only
 - **Any model**: every pi-ai provider plus OpenAI-compatible endpoints (`lmStudio()`, `ollama()`, `openAICompatible()`)
 - **People's languages**: tool names, approvals, refusals, notices and errors in each person's language (`ctx.user.locale`, from `Accept-Language`), with `createTranslator` for a tool's own text. Built-in text ships in 12 languages besides English; what the model reads stays English
 - **Sessions, steering, context-window management** and an **HTTP + SSE API** (`createAgentServer`), mountable in Hono, Express or any fetch runtime

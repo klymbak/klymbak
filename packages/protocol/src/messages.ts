@@ -71,6 +71,8 @@ export interface ApprovalView {
   reason?: string;
   /** Approving may also allow this tool for the rest of the conversation. */
   rememberable?: boolean;
+  /** An unattended run ended to wait for this decision; deciding resumes it, however much later. */
+  waits?: boolean;
 }
 
 export interface SubagentView {

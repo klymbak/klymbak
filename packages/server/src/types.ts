@@ -39,7 +39,7 @@ export interface HookContext {
   sessionId: string;
   /** "main" for the top-level agent, otherwise the subagent's name. */
   agent: string;
-  /** True when no person is watching (scheduled and API runs). Approvals are refused. */
+  /** True when no person is watching (scheduled and API runs): a call that needs approval waits for one. */
   headless: boolean;
   source: SessionSource;
   runtime: AgentRuntime;

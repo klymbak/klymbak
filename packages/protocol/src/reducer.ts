@@ -168,8 +168,14 @@ function messageWithTool(messages: ChatMessage[], toolCallId: string): ChatMessa
 function needsFinalizing(message: ChatMessage): boolean {
   return (
     message.status === "streaming" ||
-    message.parts.some((p) => p.type === "tool" && (!TERMINAL_TOOL_STATUSES.has(p.status) || p.subagent !== undefined))
+    message.parts.some((p) => p.type === "tool" && (inFlight(p) || p.subagent !== undefined))
   );
+}
+
+/** Whether a tool call is still under way, so the end of its run should close it. */
+function inFlight(part: ToolPart): boolean {
+  // An unattended run that ended to wait for this decision left it open on purpose.
+  return !TERMINAL_TOOL_STATUSES.has(part.status) && !(part.approval?.waits && part.approval.status === "pending");
 }
 
 /** Closes anything still marked as in-flight after a run ends (aborts, crashes, lost events). */
@@ -180,7 +186,7 @@ export function finalizeTranscript(messages: ChatMessage[], status: RunStatus): 
     }
     for (const part of message.parts) {
       if (part.type !== "tool") continue;
-      if (!TERMINAL_TOOL_STATUSES.has(part.status)) {
+      if (inFlight(part)) {
         part.status = "error";
         part.result ??= {
           text: status === "aborted" ? "Stopped before the tool finished." : "The run ended before the tool finished.",

@@ -212,8 +212,10 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     switch (event.type) {
       case "session_update":
         upsertSession(event.session);
-        if (event.session.id === state.sessionId && !event.session.running && state.running && !streamController) {
-          void openSession(event.session.id);
+        if (event.session.id === state.sessionId && !streamController) {
+          // A run that started elsewhere, such as one an approval resumed: follow it.
+          if (event.session.running && !state.running) attach(event.session.id);
+          else if (!event.session.running && state.running) void openSession(event.session.id);
         }
         break;
       case "session_delete":

@@ -4,6 +4,7 @@ import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type {
   ChatMessage,
   ModelRef,
+  Risk,
   ScheduleRunInfo,
   SessionSource,
   ThinkingLevel,
@@ -28,6 +29,8 @@ export interface SessionRecord {
   unread?: boolean;
   usage?: UsageInfo;
   preview?: string;
+  /** Calls an unattended run left for a person. The session resumes once every one has a decision. */
+  pendingApprovals?: PendingApproval[];
   /** pi transcript: what the model sees. */
   messages: AgentMessage[];
   /** Rendered transcript: what the user sees. */
@@ -35,6 +38,23 @@ export interface SessionRecord {
 }
 
 export type SessionSummaryRecord = Omit<SessionRecord, "messages" | "view">;
+
+/** A tool call waiting for a person's decision, stored so it outlives the run and the server process. */
+export interface PendingApproval {
+  /** The approval's id, as on its card. */
+  id: string;
+  toolCallId: string;
+  tool: string;
+  args: unknown;
+  title: string;
+  description?: string;
+  risk?: Risk;
+  /** The identity the run acts as, which the run resumes as. */
+  user: AgentUser;
+  createdAt: number;
+  /** Set once a person decides. An approved call runs as `by`, with their roles and permissions. */
+  decision?: { approved: boolean; reason?: string; by: AgentUser; at: number };
+}
 
 export interface ScheduleRecord {
   id: string;

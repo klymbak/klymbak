@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "Digite uma mensagem primeiro.",
   "error.idle": "O agente não está em execução, então envie isso como uma mensagem normal.",
   "error.approvalGone": "Esta aprovação não está mais aguardando uma decisão.",
+  "error.approvalsPending": "Uma ação aqui está aguardando aprovação. Aprove ou negue primeiro.",
   "error.unknownAgent": "Agente desconhecido \"{agent}\".",
   "error.noScheduler": "O agendamento está desativado neste servidor.",
   "error.scheduleFields": "Um agendamento precisa de um nome e de uma instrução.",

@@ -192,7 +192,7 @@ Text the server writes follows the admin's language too: tool names and summarie
 
 ### Scheduled tasks
 
-People can create schedules from a conversation ("every Monday at 9, list drafts nobody has touched for a month") or from the Schedules panel. They run unattended, as the person who created them and with their permissions; approvals are refused in unattended runs, so the report recommends changes instead of making them. Schedules defined in `extend` run as `systemUser`: set it to a real admin (`{ id: "1", name: "Content bot", roles: ["strapi-super-admin"] }`) so the content tools can check permissions.
+People can create schedules from a conversation ("every Monday at 9, list drafts nobody has touched for a month") or from the Schedules panel. They run unattended, as the person who created them and with their permissions. A change that needs approval ends the run to wait: the card shows in the conversation, and approving or denying it there resumes the run. An approved change is made as the admin who approved it, with their permissions. Schedules defined in `extend` run as `systemUser`: set it to a real admin (`{ id: "1", name: "Content bot", roles: ["strapi-super-admin"] }`) so the content tools can check permissions.
 
 ### From your own code
 

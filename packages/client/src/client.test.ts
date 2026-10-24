@@ -145,6 +145,63 @@ describe("agent store", () => {
     store.dispose();
   });
 
+  it("follows a run that starts in the open conversation elsewhere, such as one an approval resumed", async () => {
+    const waiting: SessionDetail = {
+      id: "s1",
+      title: "Ticket #42",
+      createdAt: 1,
+      updatedAt: 1,
+      source: "api",
+      running: false,
+      allowedTools: [],
+      messages: [
+        {
+          id: "a",
+          role: "assistant",
+          createdAt: 1,
+          status: "done",
+          parts: [{ type: "tool", toolCallId: "c1", name: "send_reply", status: "awaiting_approval", approval: { id: "ap1", title: "Send reply", status: "pending" } }],
+        },
+      ],
+    };
+    let notify!: (event: unknown) => void;
+    const encoder = new TextEncoder();
+    const notifications = new ReadableStream({
+      start: (controller) => {
+        notify = (event) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      },
+    });
+    const paths: string[] = [];
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace("http://test", "");
+      paths.push(`${init?.method ?? "GET"} ${path}`);
+      if (path === "/config") return json(config);
+      if (path === "/sessions") return json([waiting]);
+      if (path === "/sessions/s1") return json(waiting);
+      if (path === "/sessions/s1/approvals/ap1") return new Response(null, { status: 204 });
+      if (path === "/events") return new Response(notifications, { headers: { "content-type": "text/event-stream" } });
+      if (path === "/sessions/s1/stream") {
+        return sse([
+          { type: "snapshot", session: { ...waiting, running: true } },
+          { type: "tool_update", toolCallId: "c1", patch: { status: "done", approval: { id: "ap1", title: "Send reply", status: "approved" } } },
+          { type: "run_end", runId: "r", status: "completed" },
+        ]);
+      }
+      return json({ error: "nope" }, 404);
+    });
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch: fetch as unknown as typeof globalThis.fetch }), persist: false });
+    await store.init();
+    await store.openSession("s1");
+    await store.decide("ap1", { approved: true });
+    expect(paths).not.toContain("GET /sessions/s1/stream");
+
+    notify({ type: "session_update", session: { ...waiting, running: true, messages: undefined } });
+    await vi.waitFor(() => expect(store.state.messages[0]!.parts[0]).toMatchObject({ status: "done", approval: { status: "approved" } }));
+    expect(paths).toContain("GET /sessions/s1/stream");
+    expect(store.state.running).toBe(false);
+    store.dispose();
+  });
+
   it("reports server errors in plain language", async () => {
     const fetch = vi.fn(async () => new Response("bad gateway", { status: 502 })) as unknown as typeof globalThis.fetch;
     const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch }), persist: false });
