@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/protocol",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Wire protocol shared by @klymbak/server and @klymbak/vue: chat messages, stream events, generative UI blocks.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",

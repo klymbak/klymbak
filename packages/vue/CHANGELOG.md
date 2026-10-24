@@ -1,5 +1,13 @@
 # @klymbak/vue
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [[`30bdac6`](https://github.com/klymbak/klymbak/commit/30bdac63d233ddc2471f0214f648efe579e83619)]:
+  - @klymbak/protocol@0.3.0
+  - @klymbak/client@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

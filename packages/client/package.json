@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic browser client for @klymbak/server: typed API client, chat store with change notifications, formatting and safe Markdown.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
