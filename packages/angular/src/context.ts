@@ -6,9 +6,11 @@ import {
   PLATFORM_ID,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
+  untracked,
   type Provider,
   type Signal,
   type Type,
@@ -145,7 +147,7 @@ export function provideKlymbak({ renderers, autoInit = true, locale, messages, .
     {
       provide: STORE,
       useFactory: (): StoreRef => {
-        const store = createAgentStore({ client: createAgentClient(options) });
+        const store = createAgentStore({ client: createAgentClient({ ...options, locale: locale ?? "en" }) });
         inject(DestroyRef).onDestroy(() => store.dispose());
         if (autoInit && isPlatformBrowser(inject(PLATFORM_ID))) void store.init();
         return () => store;
@@ -208,6 +210,11 @@ export abstract class StoreHost {
   readonly i18n = computed(() => resolveI18n(this.inheritedI18n(), { locale: this.locale(), messages: this.messages() }));
 
   constructor() {
+    // The server writes tool labels, approvals and notices in this language. Effects run before init.
+    effect(() => {
+      const locale = this.i18n().locale;
+      untracked(() => this.store.setLocale(locale ?? "en"));
+    });
     afterNextRender(() => {
       const { store, owned } = this.resolve();
       if (owned || !store.state.ready) void store.init();

@@ -25,6 +25,11 @@ export interface AgentClientOptions {
   headers?: HeaderValues | (() => HeaderValues | Promise<HeaderValues>);
   credentials?: RequestCredentials;
   fetch?: typeof fetch;
+  /**
+   * The language for the server to write in (tool labels, approvals, notices, errors), sent as Accept-Language.
+   * The Klymbak components set it to their `locale`. Without it, the browser sends its own languages.
+   */
+  locale?: string;
 }
 
 export class AgentApiError extends Error {
@@ -50,10 +55,11 @@ export type AgentClient = ReturnType<typeof createAgentClient>;
 export function createAgentClient(options: AgentClientOptions) {
   const base = options.baseUrl.replace(/\/+$/, "");
   const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
+  let locale = options.locale;
 
   async function headers(extra?: HeaderValues): Promise<HeaderValues> {
     const custom = typeof options.headers === "function" ? await options.headers() : options.headers;
-    return { ...custom, ...extra };
+    return { ...(locale ? { "accept-language": locale } : {}), ...custom, ...extra };
   }
 
   async function failure(response: Response): Promise<AgentApiError> {
@@ -106,6 +112,14 @@ export function createAgentClient(options: AgentClientOptions) {
   const enc = encodeURIComponent;
 
   return {
+    /** The language the server writes in (see AgentClientOptions.locale). */
+    get locale() {
+      return locale;
+    },
+    setLocale(value: string | undefined) {
+      locale = value;
+    },
+
     getConfig: () => request<AgentConfigInfo>("GET", "/config"),
 
     listSessions: () => request<SessionSummary[]>("GET", "/sessions"),

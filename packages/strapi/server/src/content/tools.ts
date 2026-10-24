@@ -13,6 +13,7 @@ import {
   type GetModel,
   type Model,
 } from "./model.ts";
+import { t } from "../messages.ts";
 import { imageLookup, uploadMediaTool } from "./media.ts";
 import { entryMedia, normalizeInput, removedFields, shapeEntry } from "./shape.ts";
 
@@ -181,15 +182,20 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     });
   }
 
-  const openAction = (model: Model, entry: Entry, locale?: string): UiAction => ({
-    label: `Open in Content Manager`,
+  // `lang` below is the person's language (ctx.user.locale); `locale` is always a content locale.
+  const openAction = (lang: string | undefined, model: Model, entry: Entry, locale?: string): UiAction => ({
+    label: t(lang, "action.openInContentManager"),
     kind: "event",
     event: OPEN_ENTRY_EVENT,
     payload: { contentType: model.uid, kind: model.kind, documentId: entry.documentId, locale: entry.locale ?? locale },
   });
 
-  const entryName = (model: Model, entry: Entry | null | undefined, label: string) =>
-    entry && typeof entry[label] === "string" && entry[label] ? `"${entry[label]}"` : entry?.documentId ? `(${entry.documentId})` : "";
+  /** 'Article "Hello"', 'Article (abc123)' or 'Article', in the person's language. */
+  const entryPhrase = (lang: string | undefined, type: string, name: string | undefined, id: string | undefined) =>
+    name ? t(lang, "entry.named", { type, name }) : id ? t(lang, "entry.id", { type, id }) : type;
+
+  const entryOf = (lang: string | undefined, model: Model, entry: Entry | null | undefined, label: string) =>
+    entryPhrase(lang, model.info.displayName, typeof entry?.[label] === "string" && entry[label] ? entry[label] : undefined, entry?.documentId);
 
   /** Wraps a tool body: Strapi's errors become a result the model can read and act on. */
   async function guarded(run: () => Promise<ToolOutput>): Promise<ToolOutput> {
@@ -201,10 +207,10 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     }
   }
 
-  function changeSummary(model: Model, data: Entry | undefined): string {
+  function changeSummary(lang: string | undefined, model: Model, data: Entry | undefined): string {
     const editable = new Set(editableAttributes(model).map(([name]) => name));
     const fields = Object.keys(data ?? {}).filter((key) => editable.has(key));
-    return fields.length ? `Fields: ${fields.join(", ")}` : "No fields given.";
+    return fields.length ? t(lang, "approval.fields", { fields: fields.join(", ") }) : t(lang, "approval.noFields");
   }
 
   function notes(ignored: string[], denied: string[]): string[] {
@@ -218,7 +224,8 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
 
   const listContentTypes = defineTool({
     name: "list_content_types",
-    label: "List content types",
+    label: (lang) => t(lang, "tool.listContentTypes.label"),
+    summary: (lang) => t(lang, "tool.listContentTypes.summary"),
     description:
       "Lists the content types you can read in this Strapi project, with their UID, kind, fields and what your role may do with them. Call it first to learn the content model.",
     readOnly: true,
@@ -236,21 +243,26 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
             localized: isLocalized(model),
             mainField: await labelField(model.uid),
             fields: editableAttributes(model).map(([name]) => name),
-            youCan: ["read", ...may],
+            youCan: ["read" as const, ...may],
           });
         }
         if (!rows.length) return "Your role can't read any content types.";
+        const lang = ctx.user.locale;
         return {
           text: JSON.stringify(rows),
           ui: ui.table({
-            title: "Content types",
+            title: t(lang, "contentTypes.title"),
             columns: [
-              { key: "name", label: "Name" },
-              { key: "uid", label: "UID", format: "code" },
-              { key: "kind", label: "Kind", format: "badge" },
-              { key: "permissions", label: "You can" },
+              { key: "name", label: t(lang, "contentTypes.name") },
+              { key: "uid", label: t(lang, "contentTypes.uid"), format: "code" },
+              { key: "kindLabel", label: t(lang, "contentTypes.kind"), format: "badge" },
+              { key: "permissions", label: t(lang, "contentTypes.youCan") },
             ],
-            rows: rows.map((row) => ({ ...row, permissions: row.youCan.join(", ") })),
+            rows: rows.map((row) => ({
+              ...row,
+              kindLabel: t(lang, row.kind === "single" ? "kind.single" : "kind.collection"),
+              permissions: row.youCan.map((action) => t(lang, `can.${action}`)).join(", "),
+            })),
           }),
         };
       }),
@@ -258,7 +270,8 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
 
   const describeContentType = defineTool({
     name: "describe_content_type",
-    label: "Describe content type",
+    label: (lang) => t(lang, "tool.describeContentType.label"),
+    summary: (lang) => t(lang, "tool.describeContentType.summary"),
     description:
       "Shows a content type's fields: types, required ones, enum values, relation targets and component fields. Call it before you create or update entries of that type.",
     readOnly: true,
@@ -284,7 +297,8 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
 
   const findEntries = defineTool({
     name: "find_entries",
-    label: "Find entries",
+    label: (lang) => t(lang, "tool.findEntries.label"),
+    summary: (lang) => t(lang, "tool.findEntries.summary"),
     description:
       'Lists entries of a collection type with Strapi filters, sorting and paging. Filters use Strapi syntax on fields, e.g. { "title": { "$containsi": "pizza" } }, { "category": { "name": { "$eq": "news" } } } or { "$or": [...] }. Operators: $eq $ne $lt $lte $gt $gte $in $notIn $contains $containsi $startsWith $endsWith $null $notNull $between. Long text, rich text and components are left out unless you name them in `fields`; use get_entry for one entry in full. With Draft & Publish each result has a status: draft (never published), published, or modified (live, with newer unpublished changes in the draft).',
     readOnly: true,
@@ -332,15 +346,24 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
         const results = (await withStatus(model, sanitized)).map((entry) => shapeEntry(model, entry, getModel));
 
         const text = JSON.stringify({ contentType: model.uid, page, pageSize, total, results, ...(unknown.length ? { unknownFields: unknown } : {}) });
-        if (!results.length) return { text, ui: ui.alert("info", `No ${model.info.pluralName ?? "entries"} match.`) };
-        return { text, ui: entriesTable(model, results, label, total, args.locale) };
+        const lang = ctx.user.locale;
+        if (!results.length) return { text, ui: ui.alert("info", t(lang, "alert.noEntries", { type: model.info.displayName })) };
+        return { text, ui: entriesTable(lang, model, results, label, total, args.locale) };
       }),
   });
 
-  function entriesTable(model: Model, results: Entry[], label: string, total: number, locale?: string) {
+  /** draft, published or modified in the person's language, and the badge tone for each. */
+  function statusWords(lang: string | undefined) {
+    const words = { draft: t(lang, "status.draft"), published: t(lang, "status.published"), modified: t(lang, "status.modified") };
+    const tones = { [words.published]: "success", [words.modified]: "info", [words.draft]: "neutral" } as const;
+    return { word: (status: unknown) => words[status as keyof typeof words] ?? status, tones };
+  }
+
+  function entriesTable(lang: string | undefined, model: Model, results: Entry[], label: string, total: number, locale?: string) {
     const columns: TableColumn[] = [{ key: label, label: humanize(label) }];
+    const status = statusWords(lang);
     if (hasDraftAndPublish(model)) {
-      columns.push({ key: "status", label: "Status", format: "badge", tones: { published: "success", modified: "info", draft: "neutral" } });
+      columns.push({ key: "status", label: t(lang, "field.status"), format: "badge", tones: status.tones });
     }
     const present = new Set(results.flatMap((entry) => Object.keys(entry)));
     const extra = editableAttributes(model).filter(
@@ -349,9 +372,9 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     for (const [name, attribute] of extra.slice(0, 4)) {
       columns.push({ key: name, label: humanize(name), format: attribute.type === "date" ? "date" : attribute.type === "datetime" ? "datetime" : undefined });
     }
-    columns.push({ key: "updatedAt", label: "Updated", format: "relative" });
+    columns.push({ key: "updatedAt", label: t(lang, "field.updated"), format: "relative" });
     const rows = results.map((entry) => {
-      const row: Entry = { ...entry, contentType: model.uid, kind: model.kind, locale: entry.locale ?? locale };
+      const row: Entry = { ...entry, status: status.word(entry.status), contentType: model.uid, kind: model.kind, locale: entry.locale ?? locale };
       for (const [name, attribute] of extra) {
         if (attribute.type !== "relation") continue;
         const value = entry[name];
@@ -366,13 +389,14 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
       rows,
       totalRows: total,
       rowKey: "documentId",
-      rowActions: [{ label: "Open", kind: "event", event: OPEN_ENTRY_EVENT }],
+      rowActions: [{ label: t(lang, "action.open"), kind: "event", event: OPEN_ENTRY_EVENT }],
     });
   }
 
   const getEntry = defineTool({
     name: "get_entry",
-    label: "Get entry",
+    label: (lang) => t(lang, "tool.getEntry.label"),
+    summary: (lang) => t(lang, "tool.getEntry.summary"),
     description:
       "Reads one entry in full: every field you may see, components and dynamic zones, rich text as Markdown and related entries by documentId and label. For single types, leave out documentId.",
     readOnly: true,
@@ -401,37 +425,38 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
         const shaped = shapeEntry(model, withMeta, getModel);
         const label = await labelField(model.uid);
         const media = autoMedia(entryMedia(model, shaped, getModel));
+        const lang = ctx.user.locale;
         return {
           text: JSON.stringify({ contentType: model.uid, entry: shaped }),
           ui: [
-            ui.keyValue(summaryItems(model, shaped), `${model.info.displayName} ${entryName(model, shaped, label)}`.trim()),
+            ui.keyValue(summaryItems(lang, model, shaped), entryOf(lang, model, shaped, label)),
             ...(media ? [media] : []),
-            ui.actions([openAction(model, shaped, locale)]),
+            ui.actions([openAction(lang, model, shaped, locale)]),
           ],
         };
       }),
   });
 
-  function summaryItems(model: Model, entry: Entry) {
+  function summaryItems(lang: string | undefined, model: Model, entry: Entry) {
     const items: { label: string; value: unknown; format?: "badge" | "relative" | "datetime" }[] = [];
-    if (entry.status) items.push({ label: "Status", value: entry.status, format: "badge" });
+    if (entry.status) items.push({ label: t(lang, "field.status"), value: statusWords(lang).word(entry.status), format: "badge" });
     for (const [name, attribute] of editableAttributes(model)) {
       const value = entry[name];
       if (value === undefined || value === null || value === "") continue;
       if (attribute.type === "relation") {
         const target = attribute.target ? labels.get(attribute.target) : undefined;
         const names = (Array.isArray(value) ? value : [value]).map((v: Entry) => (target && v?.[target]) ?? v?.documentId);
-        items.push({ label: humanize(name), value: names.join(", ") || "None" });
+        items.push({ label: humanize(name), value: names.join(", ") || t(lang, "value.none") });
       } else if (attribute.type === "media") {
         items.push({ label: humanize(name), value: (Array.isArray(value) ? value : [value]).map((v: Entry) => v?.name).join(", ") });
       } else if (attribute.type === "component" || attribute.type === "dynamiczone") {
-        items.push({ label: humanize(name), value: Array.isArray(value) ? `${value.length} item${value.length === 1 ? "" : "s"}` : "Set" });
+        items.push({ label: humanize(name), value: Array.isArray(value) ? t(lang, "value.items", { count: value.length }) : t(lang, "value.set") });
       } else {
         const text = typeof value === "string" ? value : JSON.stringify(value);
         items.push({ label: humanize(name), value: text.length > 280 ? `${text.slice(0, 280)}…` : text });
       }
     }
-    if (entry.updatedAt) items.push({ label: "Updated", value: entry.updatedAt, format: "relative" });
+    if (entry.updatedAt) items.push({ label: t(lang, "field.updated"), value: entry.updatedAt, format: "relative" });
     return items;
   }
 
@@ -439,7 +464,8 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
 
   const createEntry = defineTool({
     name: "create_entry",
-    label: "Create entry",
+    label: (lang) => t(lang, "tool.createEntry.label"),
+    summary: (lang) => t(lang, "tool.createEntry.summary"),
     description:
       "Creates an entry. For Draft & Publish types it is created as a draft; it is not published. Give field values in `data` as described by describe_content_type: rich text as Markdown (Media Library images as ![alt](url)), media fields as file ids, relations as documentIds, components as objects, dynamic zones as a list of { __component, ...fields }. Leave out what you don't know rather than inventing it.",
     parameters: Type.Object({
@@ -447,12 +473,18 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
       data: anyObject("Field values."),
       locale: localeParam,
     }),
-    approval: async (args) => {
+    approval: async (args, ctx) => {
+      const lang = ctx.user.locale;
       const model = getModel(args.contentType);
       const label = model ? await labelField(model.uid) : "title";
       const data = args.data as Entry | undefined;
-      const name = typeof data?.[label] === "string" ? ` "${data[label]}"` : "";
-      return { title: `Create ${model?.info.displayName ?? "entry"}${name}`, description: changeSummary(model ?? ({ attributes: {} } as Model), args.data), risk: "low" };
+      const name = typeof data?.[label] === "string" && data[label] ? (data[label] as string) : undefined;
+      const entry = entryPhrase(lang, model?.info.displayName ?? t(lang, "entry.unknown"), name, undefined);
+      return {
+        title: t(lang, "approval.create", { entry }),
+        description: changeSummary(lang, model ?? ({ attributes: {} } as Model), args.data),
+        risk: "low",
+      };
     },
     execute: (args, ctx) =>
       guarded(async () => {
@@ -473,11 +505,12 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
         const shaped = shapeEntry(model, await pc.sanitizeOutput(created), getModel);
         const label = await labelField(model.uid);
         const draft = hasDraftAndPublish(model) ? " as a draft (not published)" : "";
+        const lang = ctx.user.locale;
         return {
           text: [`Created ${model.info.displayName} ${created.documentId}${draft}.`, ...notes(ignored, denied), JSON.stringify(shaped)].join("\n"),
           ui: [
-            ui.alert("success", `${model.info.displayName} ${entryName(model, shaped, label)} created${draft}.`),
-            ui.actions([openAction(model, shaped, locale)]),
+            ui.alert("success", t(lang, draft ? "alert.createdDraft" : "alert.created", { entry: entryOf(lang, model, shaped, label) })),
+            ui.actions([openAction(lang, model, shaped, locale)]),
           ],
         };
       }),
@@ -485,7 +518,8 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
 
   const updateEntry = defineTool({
     name: "update_entry",
-    label: "Update entry",
+    label: (lang) => t(lang, "tool.updateEntry.label"),
+    summary: (lang) => t(lang, "tool.updateEntry.summary"),
     description:
       "Changes fields of an entry (only the fields you pass; the rest stay as they are). For Draft & Publish types it changes the draft; publish_entry makes it live. Rich text as Markdown (Media Library images as ![alt](url)), media fields as file ids, relations as documentIds or { connect, disconnect, set }. A component or dynamic zone you pass replaces the whole value, so read the entry first and send it back complete. For single types, leave out documentId. Passing a locale the entry doesn't have yet creates that translation.",
     parameters: Type.Object({
@@ -495,11 +529,15 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
       locale: localeParam,
     }),
     approval: async (args, ctx) => {
+      const lang = ctx.user.locale;
       const model = getModel(args.contentType);
-      if (!model) return { title: "Update entry", risk: "medium" };
+      if (!model) return { title: t(lang, "approval.update", { entry: t(lang, "entry.unknown") }), risk: "medium" };
       const label = await readableLabel(ctx.user, model, args.documentId, args.locale);
-      const name = label ? ` "${label}"` : args.documentId ? ` (${args.documentId})` : "";
-      return { title: `Update ${model.info.displayName}${name}`, description: changeSummary(model, args.data as Entry), risk: "medium" };
+      return {
+        title: t(lang, "approval.update", { entry: entryPhrase(lang, model.info.displayName, label, args.documentId) }),
+        description: changeSummary(lang, model, args.data as Entry),
+        risk: "medium",
+      };
     },
     execute: (args, ctx) =>
       guarded(async () => {
@@ -530,11 +568,13 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
         const shaped = shapeEntry(model, await pc.sanitizeOutput(updated), getModel);
         const label = await labelField(model.uid);
         const draft = hasDraftAndPublish(model) ? " The draft changed; it is not published yet." : "";
+        const lang = ctx.user.locale;
+        const changed = { entry: entryOf(lang, model, shaped, label), fields: Object.keys(sanitized).join(", ") };
         return {
           text: [`Updated ${model.info.displayName} ${updated.documentId}: ${Object.keys(sanitized).join(", ")}.${draft}`, ...notes(ignored, denied), JSON.stringify(shaped)].join("\n"),
           ui: [
-            ui.alert("success", `${model.info.displayName} ${entryName(model, shaped, label)} updated: ${Object.keys(sanitized).join(", ")}.${draft}`),
-            ui.actions([openAction(model, shaped, locale)]),
+            ui.alert("success", t(lang, draft ? "alert.updatedDraft" : "alert.updated", changed)),
+            ui.actions([openAction(lang, model, shaped, locale)]),
           ],
         };
       }),
@@ -543,7 +583,9 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
   /** delete, publish, unpublish and discard: same shape, different Document Service call. */
   function lifecycleTool(options: {
     name: string;
-    label: string;
+    /** Message ids of its label and summary. */
+    label: "tool.deleteEntry" | "tool.publishEntry" | "tool.unpublishEntry" | "tool.discardDraft";
+    /** For the model's error messages. */
     verb: string;
     description: string;
     risk: "medium" | "high";
@@ -551,20 +593,27 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     draftAndPublishOnly: boolean;
     run: (uid: string, documentId: string, locale: string | undefined) => Promise<unknown>;
     done: string;
+    /** The message for the alert once done. */
+    alert: "alert.deleted" | "alert.published" | "alert.unpublished" | "alert.discarded";
   }) {
     return defineTool({
       name: options.name,
-      label: options.label,
+      label: (lang) => t(lang, `${options.label}.label`),
+      summary: (lang) => t(lang, `${options.label}.summary`),
       description: options.description,
       parameters: Type.Object({ contentType: contentTypeParam, documentId: documentIdParam, locale: localeParam }),
       approval: async (args, ctx) => {
         const model = getModel(args.contentType);
         // Nothing to approve when the call can only fail; execute explains why.
         if (model && options.draftAndPublishOnly && !hasDraftAndPublish(model)) return false;
+        const lang = ctx.user.locale;
         const label = model ? await readableLabel(ctx.user, model, args.documentId, args.locale === "*" ? undefined : args.locale) : undefined;
-        const name = label ? ` "${label}"` : args.documentId ? ` (${args.documentId})` : "";
-        const where = args.locale ? ` (${args.locale === "*" ? "all locales" : args.locale})` : "";
-        return { title: `${options.verb} ${model?.info.displayName ?? "entry"}${name}${where}`, risk: options.risk };
+        const entry = entryPhrase(lang, model?.info.displayName ?? t(lang, "entry.unknown"), label, args.documentId);
+        const title = t(lang, `approval.${options.action}`, { entry });
+        // The title says it all; without `description`, the card would list the raw arguments, in English.
+        if (!args.locale) return { title, description: undefined, risk: options.risk };
+        const locale = args.locale === "*" ? t(lang, "approval.allLocales") : args.locale;
+        return { title: t(lang, "approval.inLocale", { title, locale }), description: undefined, risk: options.risk };
       },
       execute: (args, ctx) =>
         guarded(async () => {
@@ -583,7 +632,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
           const label = await labelField(model.uid);
           return {
             text: `${model.info.displayName} ${current.documentId} ${options.done}.`,
-            ui: ui.alert(options.action === "delete" ? "warning" : "success", `${model.info.displayName} ${entryName(model, current, label)} ${options.done}.`),
+            ui: ui.alert(options.action === "delete" ? "warning" : "success", t(ctx.user.locale, options.alert, { entry: entryOf(ctx.user.locale, model, current, label) })),
           };
         }),
     });
@@ -591,7 +640,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
 
   const deleteEntry = lifecycleTool({
     name: "delete_entry",
-    label: "Delete entry",
+    label: "tool.deleteEntry",
     verb: "Delete",
     description:
       'Deletes an entry for good, draft and published versions alike. For localized types it deletes one locale (the default unless you pass `locale`); pass locale "*" for every locale. Only when the person clearly asked for it.',
@@ -600,11 +649,12 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     draftAndPublishOnly: false,
     run: (uid, documentId, locale) => documents(uid).delete({ documentId, locale }),
     done: "deleted",
+    alert: "alert.deleted",
   });
 
   const publishEntry = lifecycleTool({
     name: "publish_entry",
-    label: "Publish entry",
+    label: "tool.publishEntry",
     verb: "Publish",
     description: "Publishes the current draft of an entry, making it live on the site. Only when the person asked for it. Strapi checks required fields here.",
     risk: "medium",
@@ -612,11 +662,12 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     draftAndPublishOnly: true,
     run: (uid, documentId, locale) => documents(uid).publish({ documentId, locale }),
     done: "published",
+    alert: "alert.published",
   });
 
   const unpublishEntry = lifecycleTool({
     name: "unpublish_entry",
-    label: "Unpublish entry",
+    label: "tool.unpublishEntry",
     verb: "Unpublish",
     description: "Takes an entry off the site. The draft stays, so it can be published again.",
     risk: "medium",
@@ -624,11 +675,12 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     draftAndPublishOnly: true,
     run: (uid, documentId, locale) => documents(uid).unpublish({ documentId, locale }),
     done: "unpublished",
+    alert: "alert.unpublished",
   });
 
   const discardDraft = lifecycleTool({
     name: "discard_draft",
-    label: "Discard draft",
+    label: "tool.discardDraft",
     verb: "Discard draft of",
     description: "Throws away unpublished changes, resetting the draft to the published version.",
     risk: "medium",
@@ -636,6 +688,7 @@ export function contentTools(strapi: Core.Strapi): ToolDefinition<any>[] {
     draftAndPublishOnly: true,
     run: (uid, documentId, locale) => documents(uid).discardDraft({ documentId, locale }),
     done: "draft discarded",
+    alert: "alert.discarded",
   });
 
   return [listContentTypes, describeContentType, findEntries, getEntry, createEntry, updateEntry, deleteEntry, publishEntry, unpublishEntry, discardDraft, uploadMediaTool(strapi)];

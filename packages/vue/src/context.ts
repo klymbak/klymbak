@@ -126,7 +126,7 @@ export interface KlymbakPluginOptions extends AgentClientOptions, I18nSource {
  */
 export const Klymbak = {
   install(app: App, options: KlymbakPluginOptions) {
-    const store = createAgentStore({ client: createAgentClient(options) });
+    const store = createAgentStore({ client: createAgentClient({ ...options, locale: options.locale ?? "en" }) });
     app.provide(STORE, store);
     app.provide(RENDERERS, options.renderers ?? {});
     if (options.locale !== undefined || options.messages) app.provide(I18N, shallowRef(createI18n({ locale: options.locale, messages: options.messages })));

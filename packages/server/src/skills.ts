@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { Type } from "@earendil-works/pi-ai";
+import { t } from "./messages.ts";
 import { defineTool } from "./tool.ts";
 import type { AgentUser, SkillDefinition, ToolDefinition } from "./types.ts";
 
@@ -137,7 +138,8 @@ ${lines}`;
 export function skillTool(skills: readonly SkillDefinition[]): ToolDefinition<any> {
   return defineTool({
     name: SKILL_TOOL,
-    label: "Use skill",
+    label: (locale) => t(locale, "tool.skill.label"),
+    summary: (locale) => t(locale, "tool.skill.summary"),
     source: "builtin",
     readOnly: true,
     description:

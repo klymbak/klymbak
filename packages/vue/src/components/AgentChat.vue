@@ -71,6 +71,8 @@ const insideRoot = useInsideRoot();
 if (!insideRoot) provideRoot();
 
 const i18n = provideI18n(() => ({ locale: props.locale, messages: props.messages }));
+// The server writes tool labels, approvals and notices in this language. Set before init, so the first requests ask for it.
+watch(() => i18n.locale, (locale) => store.setLocale(locale ?? "en"), { immediate: true });
 
 const composer = ref<InstanceType<typeof Composer>>();
 

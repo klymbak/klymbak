@@ -1,3 +1,4 @@
+import { validLocale } from "@klymbak/protocol";
 import type { AgentUser, SubagentDefinition } from "./types.ts";
 
 export const HARNESS_GUIDELINES = `## How to work
@@ -28,6 +29,19 @@ You can create recurring tasks with schedule_task (cron syntax, in the user's ti
 
 export const HEADLESS_SECTION = `## Unattended run
 No one is watching this run. Do the task, then finish with a short report (what you checked, what you found, what needs a person). Actions that need approval will be refused; recommend them in the report instead.`;
+
+/**
+ * For an unattended run's turn context: no one writes to the model in their language, so it's told which one the
+ * person reading the run uses. "uk" gives "… uses Ukrainian: write everything in it, …".
+ */
+export function reportLanguage(locale: string | undefined): string | undefined {
+  const tag = validLocale(locale);
+  if (!tag) return undefined;
+  // The base name drops extensions ("-u-ca-…", "-x-…"), which DisplayNames rejects.
+  const base = new Intl.Locale(tag).baseName;
+  const name = new Intl.DisplayNames(["en"], { type: "language" }).of(base) ?? base;
+  return `The person who reads this run uses ${name}: write everything in it, the report included.`;
+}
 
 /** Model-only context attached to each user message: the current time. */
 export function turnContext(timezone: string, extra?: string): string {

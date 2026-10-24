@@ -11,7 +11,7 @@ import {
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import type { StreamFn } from "@earendil-works/pi-agent-core";
 import { formatModelRef, parseModelRef, type ModelInfo, type ModelRef, type ThinkingLevel } from "@klymbak/protocol";
-import { AgentError } from "./errors.ts";
+import { agentError } from "./errors.ts";
 import type { CustomModelConfig, Logger, ModelsConfig, OpenAICompatibleProviderConfig } from "./types.ts";
 
 const CACHE_MS = 15_000;
@@ -120,14 +120,10 @@ export class ModelRegistry {
     const available = await this.available();
     const target = ref ?? (await this.defaultRef());
     if (!target) {
-      throw new AgentError(
-        503,
-        "No language model is configured. Set a provider API key (e.g. ANTHROPIC_API_KEY) or configure a local OpenAI-compatible server.",
-        "no_models",
-      );
+      throw agentError(503, "error.noModels", "no_models");
     }
     const model = available.find((m) => m.provider === target.provider && m.id === target.id);
-    if (!model) throw new AgentError(400, `Model ${formatModelRef(target)} is not available.`, "model_unavailable");
+    if (!model) throw agentError(400, "error.modelUnavailable", "model_unavailable", { model: formatModelRef(target) });
     return model;
   }
 

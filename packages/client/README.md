@@ -53,5 +53,6 @@ const messages = await loadMessages(navigator.language);
 - **Fallback**: a message a catalog leaves out is shown in English, so a host can pass a few of its own on top of a catalog.
 - **Format**: the basics of ICU MessageFormat, like react-intl and most translation tools: `{name}`, `{count, plural, one {# row} other {# rows}}` with the language's plural rules, and `{value, select, … other {…}}`. A malformed message shows as written rather than breaking the UI.
 - **Numbers and dates** follow `locale` too. Without one, components use the locale from `configureFormatting`, else the browser's.
-- **The store** doesn't pick a language: its own toasts and errors are `Text`, either a string from the server or a `{ id, values }` message that the UI translates with `i18n.text()`.
+- **The store** doesn't translate: its own toasts and errors are `Text`, either a string from the server or a `{ id, values }` message that the UI translates with `i18n.text()`.
+- **The server** writes tool names, approvals, notices and errors in the language `store.setLocale(locale)` asks for, sent as `Accept-Language`. The components call it with their `locale` (English when they have none), and the Tools panel loads again when it changes. Without it, the browser's own languages go out.
 - **Adding a language**: copy a catalog in `src/locales`, translate it (`satisfies Messages` makes the typecheck fail on a missing or misspelled key), and add it to `locales` in `i18n.ts`. The tests format every message of every catalog.

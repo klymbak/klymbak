@@ -1,6 +1,7 @@
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { ImageContent, TextContent, TSchema } from "@earendil-works/pi-ai";
 import { humanize, type ToolInfo, type UiBlock } from "@klymbak/protocol";
+import { localize } from "./i18n.ts";
 import type { ApprovalRequest, HookContext, ToolContext, ToolDefinition, ToolOutput } from "./types.ts";
 
 const TOOL_NAME = /^[A-Za-z0-9_-]{1,64}$/;
@@ -76,7 +77,7 @@ export interface ToolBinding extends HookContext {
 export function toAgentTool(definition: ToolDefinition<any>, binding: ToolBinding): AgentTool<any, ToolResultDetails> {
   return {
     name: definition.name,
-    label: definition.label ?? humanize(definition.name),
+    label: toolLabel(definition, undefined),
     description: definition.description,
     parameters: definition.parameters,
     executionMode: definition.sequential ? "sequential" : undefined,
@@ -107,7 +108,7 @@ export async function resolveApproval(
   const decision = typeof policy === "function" ? await policy(args, ctx) : policy;
   if (!decision) return undefined;
   const fallback: ApprovalRequest = {
-    title: definition.label ?? humanize(definition.name),
+    title: toolLabel(definition, ctx.user.locale),
     description: describeArgs(args),
     risk: definition.readOnly ? "low" : "medium",
   };
@@ -122,11 +123,17 @@ function describeArgs(args: unknown): string | undefined {
   return lines.length ? lines.join("\n") : undefined;
 }
 
-export function toolInfo(definition: ToolDefinition<any>): ToolInfo {
+/** The tool card's name for a tool, in the person's language when the tool has one. */
+export function toolLabel(definition: ToolDefinition<any>, locale: string | undefined): string {
+  return definition.label ? localize(definition.label, locale) : humanize(definition.name);
+}
+
+/** A tool for the Tools panel: its label and summary in the person's language. */
+export function toolInfo(definition: ToolDefinition<any>, locale?: string): ToolInfo {
   return {
     name: definition.name,
-    label: definition.label ?? humanize(definition.name),
-    description: definition.description,
+    label: toolLabel(definition, locale),
+    description: definition.summary ? localize(definition.summary, locale) : definition.description,
     source: definition.source ?? "local",
     server: definition.server,
     approval: !definition.approval ? "never" : typeof definition.approval === "function" ? "conditional" : "always",

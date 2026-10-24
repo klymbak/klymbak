@@ -38,8 +38,8 @@ export interface AgentWidgetProps extends StoreSource, I18nSource {
  */
 export function AgentWidget(props: AgentWidgetProps) {
   const { title, description, suggestions, theme = "auto", renderers, position = "right", defaultOpen = false, onAction } = props;
-  const store = useResolvedStore(props, "AgentWidget");
   const i18n = useResolvedI18n(props);
+  const store = useResolvedStore(props, "AgentWidget", i18n.locale);
   const inherited = useRenderers();
   const [open, setOpen] = useState(defaultOpen);
   const panel = useRef<HTMLDivElement>(null);

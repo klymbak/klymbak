@@ -93,9 +93,10 @@ export interface StoreSource extends Partial<AgentClientOptions> {
 
 /**
  * The store a top-level component works with: its `store` prop, the nearest provider's, or one it
- * creates from `baseUrl` and owns. Loads it on mount and re-renders on every change.
+ * creates from `baseUrl` and owns. Loads it on mount and re-renders on every change. The server writes
+ * tool labels, approvals and notices in `locale`, the component's language.
  */
-export function useResolvedStore(source: StoreSource, component: string): AgentStore {
+export function useResolvedStore(source: StoreSource, component: string, locale: string | undefined): AgentStore {
   const injected = useContext(StoreContext);
   const [created] = useState(() => {
     if (source.store || injected || !source.baseUrl) return null;
@@ -106,6 +107,8 @@ export function useResolvedStore(source: StoreSource, component: string): AgentS
   if (!store) throw new Error(`<${component}> needs a \`store\`, a <KlymbakProvider>, or a \`baseUrl\`.`);
   const owned = store === created;
 
+  // Before init, so the first requests already ask for the component's language.
+  useEffect(() => store.setLocale(locale ?? "en"), [store, locale]);
   useEffect(() => {
     if (owned || !store.state.ready) void store.init();
     return () => {
@@ -127,9 +130,9 @@ export interface KlymbakProviderProps extends StoreSource, I18nSource {
  * work without it when given a `baseUrl`.
  */
 export function KlymbakProvider({ renderers, locale, messages, children, ...source }: KlymbakProviderProps) {
-  const store = useResolvedStore(source, "KlymbakProvider");
-  const inherited = useRenderers();
   const i18n = useResolvedI18n({ locale, messages });
+  const store = useResolvedStore(source, "KlymbakProvider", i18n.locale);
+  const inherited = useRenderers();
   return (
     <StoreProvider value={store}>
       <RenderersProvider value={renderers ? mergeRenderers(inherited, renderers) : inherited}>

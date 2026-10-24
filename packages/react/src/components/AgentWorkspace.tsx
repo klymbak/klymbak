@@ -45,8 +45,8 @@ type Tab = "chats" | "schedules" | "capabilities";
 /** Full screen: conversations, schedules and capabilities in a sidebar, next to the chat. */
 export function AgentWorkspace(props: AgentWorkspaceProps) {
   const { title, description, suggestions, theme = "auto", renderers, showMeta = true, onAction, brand, sidebarFooter, headerEnd } = props;
-  const store = useResolvedStore(props, "AgentWorkspace");
   const i18n = useResolvedI18n(props);
+  const store = useResolvedStore(props, "AgentWorkspace", i18n.locale);
   const inherited = useRenderers();
   const [tab, setTab] = useState<Tab>("chats");
   const [drawer, setDrawer] = useState(false);

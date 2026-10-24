@@ -76,9 +76,9 @@ async function createAdmin(firstname: string, roleCode: string, options: { isAct
   return strapi.db.query("admin::user").findOne({ where: { id }, populate: ["roles"] });
 }
 
-/** Calls tools as this admin, with the context a chat run gives them. */
-function actingAs(admin: Admin) {
-  const user = { id: String(admin.id), name: admin.firstname, roles: admin.roles.map((role) => role.code) };
+/** Calls tools as this admin, with the context a chat run gives them, in their language if given. */
+function actingAs(admin: Admin, locale?: string) {
+  const user = { id: String(admin.id), name: admin.firstname, roles: admin.roles.map((role) => role.code), locale };
   const ctx = {
     user,
     sessionId: "integration",
@@ -96,6 +96,8 @@ function actingAs(admin: Admin) {
     return found;
   };
   return {
+    /** What the tool returns, as is. */
+    output: (name: string, args: Record<string, unknown>) => tool(name).execute(args, ctx),
     /** `overrides` replace parts of the context, e.g. a conversation with an image attached. */
     async call(name: string, args: Record<string, unknown>, overrides: Record<string, unknown> = {}): Promise<Result> {
       const output = await tool(name).execute(args, { ...ctx, ...overrides });
@@ -178,6 +180,38 @@ describe("as a super admin", () => {
     const { documentId, title } = await seededArticle("this-shrimp-is-awesome");
     const approval = await admin.approval("update_entry", { contentType: ARTICLE, documentId, data: { description: "New" } });
     expect(approval).toMatchObject({ title: `Update Article "${title}"`, description: "Fields: description", risk: "medium" });
+  });
+
+  it("writes approval cards and what it shows in the person's language, and what the model reads in English", async () => {
+    const greta = actingAs(await createAdmin("Greta", "strapi-super-admin"), "de-DE");
+    const { tools } = await strapi.plugin("klymbak").service("agent").runtime.configInfo({ id: "0", name: "Greta", roles: ["strapi-super-admin"], locale: "de-DE" });
+    expect(tools.find((tool: { name: string }) => tool.name === "update_entry")).toMatchObject({
+      label: "Eintrag ändern",
+      description: "Ändert Felder eines Eintrags, bei Entwurf & Veröffentlichung seinen Entwurf.",
+    });
+    const { documentId, title } = await seededArticle("this-shrimp-is-awesome");
+    expect(await greta.approval("update_entry", { contentType: ARTICLE, documentId, data: { description: "Neu" } })).toMatchObject({
+      title: `Article „${title}“ ändern`,
+      description: "Felder: description",
+    });
+    const removal = await greta.approval("delete_entry", { contentType: ARTICLE, documentId, locale: "*" });
+    expect(removal.title).toBe(`Article „${title}“ löschen (alle Sprachen)`);
+    // Set, though undefined: left out, the card would list the arguments ("Content Type: api::article.article").
+    expect(Object.hasOwn(removal, "description") && removal.description === undefined).toBe(true);
+
+    const found = (await greta.output("find_entries", { contentType: ARTICLE, filters: { documentId } })) as { text: string; ui: unknown };
+    const [{ status }] = JSON.parse(found.text).results;
+    expect(["draft", "published", "modified"]).toContain(status);
+    const word = { draft: "Entwurf", published: "Veröffentlicht", modified: "Geändert" }[status as string];
+    expect(found.ui).toMatchObject({
+      type: "table",
+      columns: expect.arrayContaining([
+        { key: "status", label: "Status", format: "badge", tones: { Veröffentlicht: "success", Geändert: "info", Entwurf: "neutral" } },
+        { key: "updatedAt", label: "Aktualisiert", format: "relative" },
+      ]),
+      rows: [expect.objectContaining({ documentId, status: word })],
+      rowActions: [expect.objectContaining({ label: "Öffnen" })],
+    });
   });
 
   it("creates, publishes, edits, discards and deletes, as the Content Manager would", async () => {

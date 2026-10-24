@@ -54,8 +54,8 @@ export interface AgentChatHandle {
 
 export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function AgentChat(props, ref) {
   const { title, placeholder, theme = "auto", renderers, showHeader = true, showMeta = false, onAction, context, headerStart, headerEnd, empty, className } = props;
-  const store = useResolvedStore(props, "AgentChat");
   const i18n = useResolvedI18n(props);
+  const store = useResolvedStore(props, "AgentChat", i18n.locale);
   const inherited = useRenderers();
   const insideRoot = useInsideRoot();
   const composer = useRef<ComposerHandle>(null);

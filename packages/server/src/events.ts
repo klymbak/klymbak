@@ -7,6 +7,12 @@ import { contentText, type ToolResultDetails } from "./tool.ts";
 /** Text blocks starting with this tag carry model-only context and are hidden from the transcript. */
 export const SYSTEM_CONTEXT_TAG = "<system-context>";
 
+/** A call the harness refused: how it ends, and why, in the person's language. */
+export interface Refusal {
+  status: "denied" | "blocked";
+  text: string;
+}
+
 export interface ToolMeta {
   label?: string;
   source?: ToolSource;
@@ -16,8 +22,8 @@ export interface ToolMeta {
 export interface EventMapperOptions {
   emit(event: AgentEvent): void;
   toolMeta(name: string): ToolMeta | undefined;
-  /** Calls refused by the harness, so they render as denied/blocked rather than failed. */
-  blocked: Map<string, "denied" | "blocked">;
+  /** Calls refused by the harness, so they render as denied/blocked rather than failed, with the person's reason. */
+  blocked: Map<string, Refusal>;
   /** When each call was allowed to start, for durations that exclude approval wait time. */
   startedAt: Map<string, number>;
   userOrigin(message: UserMessage, index: number): ChatMessage["origin"];
@@ -135,11 +141,11 @@ export function attachEventMapper(agent: Agent, options: EventMapperOptions): ()
           type: "tool_update",
           toolCallId: event.toolCallId,
           patch: {
-            status: refused ?? (event.isError ? "error" : "done"),
+            status: refused?.status ?? (event.isError ? "error" : "done"),
             progress: undefined,
             durationMs: started ? Date.now() - started : event.durationMs,
             result: {
-              text: contentText(result?.content),
+              text: refused?.text ?? contentText(result?.content),
               ui: result?.details?.ui?.length ? result.details.ui : undefined,
               isError: event.isError,
             },

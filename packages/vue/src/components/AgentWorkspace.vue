@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { UiAction } from "@klymbak/protocol";
 import { createAgentClient, type AgentClientOptions, type Messages } from "@klymbak/client";
 import { provideAgentStore, provideI18n, provideRenderers, provideRoot, useOptionalAgentStore, type KlymbakRenderers } from "../context";
@@ -48,6 +48,8 @@ provideAgentStore(store);
 if (props.renderers) provideRenderers(props.renderers);
 provideRoot();
 const i18n = provideI18n(() => ({ locale: props.locale, messages: props.messages }));
+// The server writes tool labels, approvals and notices in this language. Set before init, so the first requests ask for it.
+watch(() => i18n.locale, (locale) => store.setLocale(locale ?? "en"), { immediate: true });
 
 type Tab = "chats" | "schedules" | "capabilities";
 const tab = ref<Tab>("chats");

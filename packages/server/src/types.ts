@@ -11,6 +11,7 @@ import type {
   UiBlock,
   UsageInfo,
 } from "@klymbak/protocol";
+import type { Localized } from "./i18n.ts";
 import type { AgentRuntime } from "./runtime.ts";
 
 export type Awaitable<T> = T | Promise<T>;
@@ -20,6 +21,11 @@ export interface AgentUser {
   id: string;
   name: string;
   roles: string[];
+  /**
+   * The person's language, a BCP 47 tag such as "de". Tool labels, approvals, notices and errors are written in it.
+   * Default: the request's Accept-Language, which the Klymbak components set to their `locale`.
+   */
+  locale?: string;
   [key: string]: unknown;
 }
 
@@ -65,6 +71,7 @@ export type ToolOutput =
 
 export interface ApprovalRequest {
   title: string;
+  /** The card's body. Left out, it lists the call's arguments; set it to undefined for a card with the title alone. */
   description?: string;
   risk?: Risk;
 }
@@ -76,10 +83,12 @@ export type ApprovalPolicy<A> =
 export interface ToolDefinition<P extends TSchema = TSchema> {
   /** Unique, [A-Za-z0-9_-], at most 64 characters. */
   name: string;
-  /** Human-friendly name for the tool card. */
-  label?: string;
+  /** Human-friendly name for the tool card, or a function of the person's locale for one in their language. */
+  label?: Localized;
   /** Tells the model when and how to use the tool. This is the tool's most important field. */
   description: string;
+  /** What the tool does, for people: the Tools panel shows it instead of `description`, which is written for the model. */
+  summary?: Localized;
   /** TypeBox schema (re-exported as `Type`). Arguments are validated before `execute` runs. */
   parameters: P;
   /** Ask a person before running. A function can decide per call (e.g. only refunds over $50). */

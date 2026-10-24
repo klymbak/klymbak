@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { autoMedia, defineTool, Type, ui, type HookContext, type ImagePart, type ToolDefinition } from "@klymbak/server";
 import type { Core } from "@strapi/strapi";
+import { t } from "../messages.ts";
 import { ContentToolError, describeError, forbidden, loadActor, type Actor } from "./access.ts";
 import type { BlockImage, ImageLookup } from "./blocks.ts";
 
@@ -57,7 +58,8 @@ const fileName = (name: string | undefined, fallback: string) =>
 export function uploadMediaTool(strapi: Core.Strapi): ToolDefinition<any> {
   return defineTool({
     name: "upload_media",
-    label: "Upload to Media Library",
+    label: (lang) => t(lang, "tool.uploadMedia.label"),
+    summary: (lang) => t(lang, "tool.uploadMedia.summary"),
     description:
       'Uploads an image the person attached in this conversation (PNG, JPEG, GIF or WebP) to the Media Library. Returns the file\'s id and URL: set a media field to the id, e.g. { "cover": 12 }, or put the image in a rich-text (Blocks) field as ![alt text](url). Only for images attached here; it can\'t fetch files from links.',
     parameters: Type.Object({
@@ -69,9 +71,10 @@ export function uploadMediaTool(strapi: Core.Strapi): ToolDefinition<any> {
     approval: async (args, ctx) => {
       const images = await attachedImages(ctx).catch(() => []);
       const index = args.image ?? images.length;
+      const lang = ctx.user.locale;
       return {
-        title: `Upload ${fileName(args.name, `image-${index || 1}`)} to the Media Library`,
-        description: args.alternativeText ? `Alternative text: ${args.alternativeText}` : undefined,
+        title: t(lang, "approval.upload", { file: fileName(args.name, `image-${index || 1}`) }),
+        description: args.alternativeText ? t(lang, "approval.altText", { text: args.alternativeText }) : undefined,
         risk: "low",
       };
     },
@@ -119,7 +122,7 @@ export function uploadMediaTool(strapi: Core.Strapi): ToolDefinition<any> {
             `Uploaded ${file.name} to the Media Library: file id ${file.id}, URL ${file.url}${size}.`,
             `Set a media field to ${file.id}, or put it in rich text as ![${args.alternativeText ?? ""}](${file.url}).`,
           ].join(" "),
-          ui: [ui.alert("success", `${file.name} uploaded to the Media Library.`), ...(media ? [media] : [])],
+          ui: [ui.alert("success", t(ctx.user.locale, "alert.uploaded", { file: file.name })), ...(media ? [media] : [])],
         };
       } catch (error) {
         if (!(error instanceof ContentToolError)) strapi.log.warn(`[klymbak] upload failed: ${describeError(error)}`);
