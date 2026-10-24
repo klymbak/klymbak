@@ -33,7 +33,7 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
 
 - [x] CI on every push and pull request (`.github/workflows/ci.yml`): build, typecheck, unit tests, `strapi-plugin verify`, the demo's admin panel build, and the integration test. Verify wanted `bugs` as an object in package.json; all six packages now use that form.
 - [x] An integration test (`pnpm test:strapi`) that boots the demo headless on a fresh database and runs the content tools as a super admin, an Author and a custom role with field-level permissions. Breaking the role-condition filter in `find_entries` makes it fail, as it should.
-- [x] Published to npm as 0.1.0 (2026-10-17) and submitted to the Strapi Marketplace
+- [x] Published to npm as 0.1.0 (2026-10-17) and submitted to the Strapi Marketplace. Strapi declined to list it because it competes with the AI features Strapi sells, so the plugin is installed from npm only.
 - [x] **Media uploads**: `upload_media` puts an image attached in the chat into the Media Library, as the signed-in admin, with approval and their upload permission. Raster images only (PNG, JPEG, GIF, WebP, recognized by content), with the project's `upload.security` lists applied. In Blocks fields, a Markdown image pointing at a Media Library file becomes an image block; other images stay links.
 - ~~Uploads from a link (`upload_media` with a URL)~~: dropped (2026-10-22). Attaching an image in the chat covers the need, and fetching links on the server would need SSRF protection for little gain.
 - [x] A Blocks field in the demo (`bio` on Author, seeded as one paragraph), so the integration test covers image blocks end to end: a Markdown image of an uploaded file is stored as the Blocks editor stores it and reads back as Markdown, other images stay links, and so do Media Library images for a role that can't read the Media Library.
@@ -42,22 +42,44 @@ Where Klymbak is heading and in what order. Tick items off as they ship, and rec
 - [x] An offline copy of the docs index (`server/src/docs-index.json`, 297 pages, refreshed by `pnpm --filter @klymbak/strapi docs:index`): the search falls back to it when docs.strapi.io can't be reached and tries the site again after 10 minutes, and a page that can't be read still gives its summary. A copy fetched earlier wins over the shipped one.
 - [x] **Skills** in `@klymbak/server` for procedures and house rules: `skills` in the runtime config, `loadSkills(dir)` for folders in Anthropic's `SKILL.md` format, each skill's name and description in the prompt, its text and documents loaded on demand by `use_skill`, `roles` per skill, and a Skills section in the Tools panel (React and Vue). In the Strapi plugin a `skills` folder option (and `skills` in `extend`); the demo ships `write-article` and `pre-publish-checklist`. Every host gets them, not only Strapi.
 
-## Later: more hosts
+## Next: work that starts from a ticket
 
-Ranked from the October 2026 research on open-source admin products, weighing license, admin stack, how much back-office work the product has, traction, and whether it already ships its own agent.
+Support automation for a small online store is a common client request: answer customers faster through the helpdesk the team already uses, turn product knowledge and policies into a knowledge base and training for virtual assistants, and later forecast inventory. Klymbak already has the agent, approvals, roles, skills and schedules. What it lacks is work that starts from an incoming ticket instead of a chat, with a person approving hours later. The core items come first because every helpdesk integration needs them.
 
-1. **Bagisto** (MIT; Laravel with a Vue 3 admin; e-commerce): the Acme demo on a real store. A Node service calls Bagisto's API.
-2. **Chatwoot** (MIT outside `enterprise/`; Rails with a Vue 3 dashboard; support desk): an open alternative to its paid Captain copilot that can act, not only draft. Never touch `enterprise/`.
-3. **Medusa** (MIT except the RBAC/SSO paths; Node with a React admin; headless commerce): tools call Medusa's workflows in-process.
-4. **Krayin CRM** (MIT; Laravel with a Vue 3 admin): same vendor and layout as Bagisto, so most of that integration carries over.
+### Core
 
-Ruled out: Directus (already ships its own AI assistant, and its MSCL license forbids competing use; use its MCP server as a data source instead), NocoDB (Sustainable Use License bars commercial distribution of forks), Uptime Kuma (operations rather than back office).
+- [ ] **Triggers**: `POST /triggers/:name` checks the sender's signature and turns the payload (a new ticket, an order event) into a headless run with the payload as context.
+- [ ] **Approvals that wait**: approvals are in-memory promises that expire after `approvalTimeoutMs` (15 minutes by default), and headless runs refuse them. Instead, a headless run that reaches an approval saves the pending call in the session record and ends; the decision resumes the session from its transcript plus the tool result, so it survives a restart. Check first that pi's loop can continue from a transcript that ends in a tool result.
+- [ ] **An approval inbox** in React, Vue and Angular: pending approvals across sessions, filtered by role, where a person approves, denies with a reason, or edits a drafted reply before it goes out.
+- [ ] **Knowledge**: `knowledgeTools({ sources })` in `@klymbak/server`, generalized from the Strapi plugin's docs search (stemmed scoring, an offline index, search and read tools). Sources: folders of Markdown and PDF, sitemaps and `llms.txt`, helpdesk articles, resolved tickets, and CSV or spreadsheet tables searched by field. A table answers "does part X fit model Y" more reliably than vector search. Results cite their sources in a UI block so people can check them. Embeddings later, as an optional adapter. Skills stay for procedures and house rules; knowledge holds facts.
+
+### Integrations
+
+- [ ] **A helpdesk adapter**: one interface for tickets, threads, customers, drafts, private notes, tags and articles. Each implementation brings its tools, a webhook parser for triggers, and a ticket sidebar with `AgentChat` and the open ticket as page context, like the Strapi edit-view panel. Where the vendor runs an MCP server, use it, with function filters for `approval` and `readOnly`.
+- [ ] **A store adapter**: orders, customers, refunds, inventory and fulfillments, with refunds and cancellations behind approval.
+
+Which helpdesks and stores come first is up to the host evaluation below.
+
+### Delivery
+
+- [ ] **Evals from a client's history**: an eval harness that replays real transcripts against new prompts and models (moved here from Platform), pointed at a client's past resolved tickets. The agent drafts a reply, an LLM judge compares it with what staff sent, and a person spot-checks. The report is what a paid audit delivers, and the proof that the agent works on that client's data.
+- [ ] **A deployment kit**: a Docker image or one-click template, a Postgres storage adapter and per-tenant model budgets (moved here from Platform), and a usage and cost page from pi's cost tracking, so a client's instance takes an hour to set up and little to run.
+- [ ] **A trainer for new staff**: an onboarding handbook exported from skills and knowledge, and a subagent that plays customers from past tickets and grades the answers.
+- [ ] **A support-desk demo**: Acme gets a ticket queue. A ticket arrives, the agent investigates and drafts a reply with a refund waiting for approval, and a support agent approves it from the inbox.
+
+## Host evaluation (to redo)
+
+The October 2026 ranking of open-source admin products (Bagisto, Chatwoot, Medusa, Krayin; Directus, NocoDB and Uptime Kuma ruled out) is discarded. It weighed license, stack, back-office work, traction and whether a product ships its own agent, but not whether the vendor sells AI features and will treat Klymbak as a competitor. Strapi did: it declined the plugin for its Marketplace. A plugin can still be installed from npm, but people who browse the vendor's listing won't find it.
+
+The new evaluation covers helpdesks and stores and adds these questions:
+
+- Does the vendor sell AI features, or plan to, and do its marketplace rules allow an app that overlaps with them?
+- Can Klymbak integrate and be installed without the vendor's approval (public API, webhooks, a privately installed sidebar app)?
+- How often do clients ask for it?
 
 ## Platform
 
 - Run the React tests against React 19 as well as 18
 - Run the Angular tests against Angular 22 as well as 21
 - A .NET 10 server implementing the same HTTP/SSE protocol
-- A Postgres storage adapter and per-tenant model budgets
 - MCP OAuth flows in the integrations panel (pi-mcp already implements the client side)
-- An eval harness that replays real transcripts against new prompts and models

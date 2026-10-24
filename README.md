@@ -311,7 +311,7 @@ It runs on Cloudflare Workers at klymbak.ai (`apps/site/wrangler.jsonc`). Connec
 
 ## Roadmap
 
-The Strapi plugin has shipped; next are more host products (Bagisto, Chatwoot, Medusa, Krayin). The full list, and the reasoning behind the order, is in [ROADMAP.md](ROADMAP.md).
+The Strapi plugin has shipped. Next is work that starts from an incoming ticket rather than a chat: triggers, approvals that wait for a person, a knowledge base, and helpdesk and store adapters. Which products to integrate with first is being re-evaluated. The full list, and the reasoning behind the order, is in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
