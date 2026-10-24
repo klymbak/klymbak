@@ -27,5 +27,5 @@ A pull request made by the workflow doesn't start other workflows, so CI doesn't
 
 ## One-time setup
 
-- **npm**: on each package's **Settings** page, add a trusted publisher. Pick GitHub Actions, organization `klymbak`, repository `klymbak`, workflow `release.yml`, no environment, and allow staged publishing only, not `npm publish`. Once a release has gone through this way, set **Publishing access** to require 2FA and disallow tokens.
+- **npm**: on each package's **Settings** page, add a trusted publisher. Pick GitHub Actions, organization `klymbak`, repository `klymbak`, workflow `release.yml`, no environment, and allow staged publishing only, not `npm publish`. A new trusted publisher expires unless a version is staged through it within 2 days, so add it when a Version Packages pull request is ready to merge. Once a release has gone through this way, set **Publishing access** to require 2FA and disallow tokens.
 - **GitHub**: check **Allow GitHub Actions to create and approve pull requests**, under Workflow permissions in **Settings → Actions → General**, so the workflow can open Version Packages. Check it in the `klymbak` organization's settings first, since the repository's checkbox is disabled until the organization allows it, then in the repository's.
