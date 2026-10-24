@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Agent, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage, ToolCall, Usage, UserMessage } from "@earendil-works/pi-ai";
-import type { AgentEvent, ChatMessage, MessagePart, ToolPart, ToolSource, UsageInfo } from "@klymbak/protocol";
+import type { AgentEvent, ChatMessage, MessagePart, ToolPart, ToolPatch, ToolSource, UsageInfo } from "@klymbak/protocol";
 import { contentText, type ToolResultDetails } from "./tool.ts";
 
 /** Text blocks starting with this tag carry model-only context and are hidden from the transcript. */
@@ -24,6 +24,8 @@ export interface EventMapperOptions {
   toolMeta(name: string): ToolMeta | undefined;
   /** Calls refused by the harness, so they render as denied/blocked rather than failed, with the person's reason. */
   blocked: Map<string, Refusal>;
+  /** Calls left waiting for a person's decision after the run ends. */
+  parked: Set<string>;
   /** When each call was allowed to start, for durations that exclude approval wait time. */
   startedAt: Map<string, number>;
   userOrigin(message: UserMessage, index: number): ChatMessage["origin"];
@@ -132,7 +134,8 @@ export function attachEventMapper(agent: Agent, options: EventMapperOptions): ()
       }
 
       case "tool_execution_end": {
-        const result = event.result as AgentToolResult<ToolResultDetails> | undefined;
+        // A parked call keeps its approval card until a person decides.
+        if (options.parked.delete(event.toolCallId)) return;
         const refused = options.blocked.get(event.toolCallId);
         options.blocked.delete(event.toolCallId);
         const started = options.startedAt.get(event.toolCallId);
@@ -140,16 +143,7 @@ export function attachEventMapper(agent: Agent, options: EventMapperOptions): ()
         emit({
           type: "tool_update",
           toolCallId: event.toolCallId,
-          patch: {
-            status: refused?.status ?? (event.isError ? "error" : "done"),
-            progress: undefined,
-            durationMs: started ? Date.now() - started : event.durationMs,
-            result: {
-              text: refused?.text ?? contentText(result?.content),
-              ui: result?.details?.ui?.length ? result.details.ui : undefined,
-              isError: event.isError,
-            },
-          },
+          patch: toolEndPatch(event.result, event.isError, refused, started ? Date.now() - started : event.durationMs),
         });
         return;
       }
@@ -158,6 +152,21 @@ export function attachEventMapper(agent: Agent, options: EventMapperOptions): ()
         return;
     }
   });
+}
+
+/** The patch that finishes a tool card: how the call ended, its result and how long it ran. */
+export function toolEndPatch(result: unknown, isError: boolean, refused: Refusal | undefined, durationMs: number | undefined): ToolPatch {
+  const output = result as AgentToolResult<ToolResultDetails> | undefined;
+  return {
+    status: refused?.status ?? (isError ? "error" : "done"),
+    progress: undefined,
+    durationMs,
+    result: {
+      text: refused?.text ?? contentText(output?.content),
+      ui: output?.details?.ui?.length ? output.details.ui : undefined,
+      isError,
+    },
+  };
 }
 
 function toolPart(block: ToolCall, status: ToolPart["status"], options: EventMapperOptions): ToolPart {

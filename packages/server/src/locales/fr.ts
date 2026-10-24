@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "Écrivez d'abord un message.",
   "error.idle": "L'agent ne tourne pas, envoyez donc ceci comme un message normal.",
   "error.approvalGone": "Cette approbation n'attend plus de décision.",
+  "error.approvalsPending": "Une action attend une approbation ici. Approuvez-la ou refusez-la d'abord.",
   "error.unknownAgent": "Agent inconnu « {agent} ».",
   "error.noScheduler": "La planification est désactivée sur ce serveur.",
   "error.scheduleFields": "Une tâche planifiée a besoin d'un nom et d'une consigne.",

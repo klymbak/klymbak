@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "先にメッセージを入力してください。",
   "error.idle": "エージェントは実行中ではありません。通常のメッセージとして送ってください。",
   "error.approvalGone": "この承認はもう判断を待っていません。",
+  "error.approvalsPending": "ここには承認待ちの操作があります。先に承認するか拒否してください。",
   "error.unknownAgent": "不明なエージェント「{agent}」です。",
   "error.noScheduler": "このサーバーではスケジュール機能が無効です。",
   "error.scheduleFields": "スケジュールには名前と指示が必要です。",

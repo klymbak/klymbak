@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "Escribe un mensaje primero.",
   "error.idle": "El agente no está en marcha, así que envía esto como un mensaje normal.",
   "error.approvalGone": "Esta aprobación ya no está esperando una decisión.",
+  "error.approvalsPending": "Aquí hay una acción esperando aprobación. Apruébala o recházala primero.",
   "error.unknownAgent": "Agente desconocido «{agent}».",
   "error.noScheduler": "La programación de tareas está desactivada en este servidor.",
   "error.scheduleFields": "Una tarea programada necesita un nombre y una instrucción.",

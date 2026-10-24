@@ -51,6 +51,7 @@ export default {
   "error.emptyPrompt": "Najpierw wpisz wiadomość.",
   "error.idle": "Agent nie działa, więc wyślij to jako zwykłą wiadomość.",
   "error.approvalGone": "To zatwierdzenie nie czeka już na decyzję.",
+  "error.approvalsPending": "Tu czeka działanie na zatwierdzenie. Najpierw je zatwierdź albo odrzuć.",
   "error.unknownAgent": "Nieznany agent „{agent}”.",
   "error.noScheduler": "Planowanie jest wyłączone na tym serwerze.",
   "error.scheduleFields": "Harmonogram wymaga nazwy i polecenia.",

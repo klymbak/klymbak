@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "Scrivi prima un messaggio.",
   "error.idle": "L'agente non è in esecuzione, quindi invialo come un messaggio normale.",
   "error.approvalGone": "Questa approvazione non è più in attesa di una decisione.",
+  "error.approvalsPending": "Qui c'è un'azione in attesa di approvazione. Prima approvala o rifiutala.",
   "error.unknownAgent": "Agente sconosciuto «{agent}».",
   "error.noScheduler": "La pianificazione è disattivata su questo server.",
   "error.scheduleFields": "Un'attività pianificata ha bisogno di un nome e di un'istruzione.",

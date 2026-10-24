@@ -1,3 +1,4 @@
+import { matchLocale } from "@klymbak/protocol";
 import { createTranslator } from "./i18n.ts";
 import de from "./locales/de.ts";
 import es from "./locales/es.ts";
@@ -66,6 +67,7 @@ export const en = {
   "error.emptyPrompt": "Type a message first.",
   "error.idle": "The agent isn't running, so send this as a normal message.",
   "error.approvalGone": "This approval is no longer waiting for a decision.",
+  "error.approvalsPending": "An action here is waiting for approval. Approve or deny it first.",
   "error.unknownAgent": 'Unknown agent "{agent}".',
   "error.noScheduler": "Scheduling is turned off on this server.",
   "error.scheduleFields": "A schedule needs a name and a prompt.",
@@ -90,3 +92,8 @@ export type ServerMessages = Record<ServerMessageId, string>;
 
 /** The server's own messages in a person's language. */
 export const t = createTranslator(en, { de, es, fr, it, ja, ko, nl, pl, "pt-BR": ptBR, tr, uk, "zh-Hans": zhHans });
+
+/** "editor or admin" in the sentence's language, which is English when the person's has no messages. */
+export function roleList(roles: string[], locale: string | undefined): string {
+  return new Intl.ListFormat(matchLocale(locale, t.locales) ?? "en", { type: "disjunction" }).format(roles);
+}

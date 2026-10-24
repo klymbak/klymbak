@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "Typ eerst een bericht.",
   "error.idle": "De agent draait niet, dus stuur dit als gewoon bericht.",
   "error.approvalGone": "Deze goedkeuring wacht niet meer op een beslissing.",
+  "error.approvalsPending": "Hier wacht een actie op goedkeuring. Keur hem eerst goed of weiger hem.",
   "error.unknownAgent": "Onbekende agent \"{agent}\".",
   "error.noScheduler": "Plannen is uitgeschakeld op deze server.",
   "error.scheduleFields": "Een planning heeft een naam en een opdracht nodig.",

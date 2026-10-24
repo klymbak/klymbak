@@ -1,10 +1,24 @@
 import { randomUUID } from "node:crypto";
-import { Agent, type AgentMessage, type AgentToolResult } from "@earendil-works/pi-agent-core";
-import { StringEnum, Type, type Api, type ImageContent, type Model, type TextContent } from "@earendil-works/pi-ai";
+import {
+  Agent,
+  runToolCall,
+  type AgentMessage,
+  type AgentToolCall,
+  type AgentToolCallOutcome,
+  type AgentToolResult,
+} from "@earendil-works/pi-agent-core";
+import {
+  StringEnum,
+  Type,
+  type Api,
+  type AssistantMessage,
+  type ImageContent,
+  type Model,
+  type TextContent,
+} from "@earendil-works/pi-ai";
 import {
   addUsage,
   emptyUsage,
-  matchLocale,
   type AgentEvent,
   type ChatMessage,
   type RunStatus,
@@ -14,17 +28,20 @@ import {
 } from "@klymbak/protocol";
 import { createContextManager } from "./context.ts";
 import { errorText } from "./errors.ts";
-import { attachEventMapper, toUsageInfo, type Refusal, type ToolMeta } from "./events.ts";
-import { t } from "./messages.ts";
+import { attachEventMapper, toolEndPatch, toUsageInfo, type Refusal, type ToolMeta } from "./events.ts";
+import { roleList, t } from "./messages.ts";
 import { turnContext } from "./prompt.ts";
 import type { AgentRuntime } from "./runtime.ts";
+import type { PendingApproval } from "./storage.ts";
 import {
   contentText,
   defineTool,
   resolveApproval,
   toAgentTool,
   toolLabel,
+  userCanUse,
   type NormalizedOutput,
+  type ToolBinding,
   type ToolResultDetails,
 } from "./tool.ts";
 import type {
@@ -60,6 +77,11 @@ export interface HarnessOptions {
   onAllowedToolsChange?(): void;
   /** Called with the usage of every model response, including subagents'. */
   onUsage?(usage: UsageInfo): void;
+  /**
+   * Set for an unattended run's top-level agent: a call that needs approval waits for a person instead of being
+   * refused, and the run ends after that step. `resume` carries on once every waiting call has a decision.
+   */
+  onPark?(approval: PendingApproval): void;
 }
 
 export interface HarnessInput {
@@ -91,18 +113,26 @@ export class Harness {
   private toolIndex = new Map<string, ToolDefinition<any>>();
   private readonly rawOutputs = new Map<string, NormalizedOutput>();
   private readonly blocked = new Map<string, Refusal>();
+  private readonly parked = new Set<string>();
+  /** Calls a person approved after the run that asked ended; `resume` runs them without asking again. */
+  private readonly approved = new Set<string>();
   private readonly startedAt = new Map<string, number>();
   private readonly hookFollowUps = new Set<string>();
   private readonly unsubscribe: () => void;
   private user: AgentUser;
+  private headless: boolean;
   private turn = 0;
   private stopContinues = 0;
+  private parkedInTurn = false;
   private pendingOrigin: ChatMessage["origin"] | undefined;
   private runUsage: UsageInfo = emptyUsage();
+  /** Stops approved calls that `resume` runs outside pi's loop. */
+  private resumeAbort?: AbortController;
 
   constructor(options: HarnessOptions) {
     this.options = options;
     this.user = options.user;
+    this.headless = options.headless;
     this.hooks = options.runtime.hooks;
 
     this.agent = new Agent({
@@ -126,6 +156,7 @@ export class Harness {
       emit: options.emit,
       toolMeta: (name) => this.toolMeta(name),
       blocked: this.blocked,
+      parked: this.parked,
       startedAt: this.startedAt,
       userOrigin: (message) => {
         if (this.pendingOrigin) {
@@ -146,12 +177,17 @@ export class Harness {
   }
 
   get hookContext(): HookContext {
-    const { runtime, sessionId, agentName, headless, source } = this.options;
-    return { user: this.user, sessionId, agent: agentName, headless, source, runtime };
+    const { runtime, sessionId, agentName, source } = this.options;
+    return { user: this.user, sessionId, agent: agentName, headless: this.headless, source, runtime };
   }
 
   setUser(user: AgentUser) {
     this.user = user;
+  }
+
+  /** A session can be unattended for one run and watched for the next. Call before setTools, which binds it. */
+  setHeadless(headless: boolean) {
+    this.headless = headless;
   }
 
   /** Replaces the tool loadout. pi announces additions/removals to the model on the next request. */
@@ -163,8 +199,14 @@ export class Harness {
     const all = [...tools];
     if (this.options.subagents.length) all.push(this.createDelegateTool());
     this.toolIndex = new Map(all.map((tool) => [tool.name, tool]));
-    const binding = {
-      ...this.hookContext,
+    const binding = this.binding(this.hookContext);
+    return all.map((tool) => toAgentTool(tool, binding));
+  }
+
+  /** What tools are called with: who is calling, and the harness's bookkeeping. */
+  private binding(ctx: HookContext): ToolBinding {
+    return {
+      ...ctx,
       rawOutputs: this.rawOutputs,
       // pi preflights every call in a batch before executing any, so "running" and the
       // duration start here, not when a call's own approval came through.
@@ -174,7 +216,6 @@ export class Harness {
         this.emitTool(toolCallId, { status: "running", startedAt: now });
       },
     };
-    return all.map((tool) => toAgentTool(tool, binding));
   }
 
   setModel(model: Model<Api>, thinkingLevel: ThinkingLevel) {
@@ -183,18 +224,50 @@ export class Harness {
   }
 
   async run(input: HarnessInput): Promise<HarnessResult> {
-    this.turn = 0;
-    this.stopContinues = 0;
-    this.runUsage = emptyUsage();
+    this.begin();
     this.pendingOrigin = input.origin ?? "user";
 
     const content: (TextContent | ImageContent)[] = [{ type: "text", text: input.text }];
     for (const image of input.images ?? []) content.push({ type: "image", data: image.data, mimeType: image.mimeType });
     if (input.context) content.push({ type: "text", text: input.context });
+    return this.drive(() => this.agent.prompt({ role: "user", content, timestamp: Date.now() }));
+  }
 
+  /**
+   * Carries on after a run that ended with calls waiting for approval, once each has a decision: runs the
+   * approved calls, tells the model which were denied, and continues from there.
+   */
+  async resume(approvals: PendingApproval[]): Promise<HarnessResult> {
+    this.begin();
+    this.pendingOrigin = undefined;
+    const abort = (this.resumeAbort = new AbortController());
+    let outcomes: AgentToolCallOutcome[];
+    try {
+      outcomes = await Promise.all(approvals.map((approval) => this.settle(approval, abort.signal)));
+    } finally {
+      this.resumeAbort = undefined;
+    }
+    // Each waiting call's placeholder result becomes its real one.
+    const byId = new Map(outcomes.map((outcome) => [outcome.toolCall.id, outcome]));
+    this.agent.state.messages = this.agent.state.messages.map((message): AgentMessage => {
+      const outcome = message.role === "toolResult" && byId.get(message.toolCallId);
+      return outcome ? { ...message, content: outcome.result.content ?? [], details: outcome.result.details, isError: outcome.isError } : message;
+    });
+    if (abort.signal.aborted) return { status: "aborted", text: "", usage: this.runUsage };
+    return this.drive(() => this.agent.continue());
+  }
+
+  private begin() {
+    this.turn = 0;
+    this.stopContinues = 0;
+    this.parkedInTurn = false;
+    this.runUsage = emptyUsage();
+  }
+
+  private async drive(start: () => Promise<void>): Promise<HarnessResult> {
     const before = this.agent.state.messages.length;
     try {
-      await this.agent.prompt({ role: "user", content, timestamp: Date.now() });
+      await start();
     } catch (error) {
       return { status: "error", text: "", error: errorText(error, this.user.locale), usage: this.runUsage };
     }
@@ -219,6 +292,7 @@ export class Harness {
   }
 
   abort() {
+    this.resumeAbort?.abort();
     this.agent.abort();
   }
 
@@ -259,20 +333,19 @@ export class Harness {
     return { block: true, reason };
   }
 
-  private async beforeToolCall(toolCallId: string, name: string, args: unknown, signal?: AbortSignal) {
+  /** `ctx` is the run's own, except for a call a person approved after the run ended, which acts as them. */
+  private async beforeToolCall(toolCallId: string, name: string, args: unknown, signal?: AbortSignal, ctx = this.hookContext) {
     const tool = this.toolIndex.get(name);
     if (!tool) return undefined;
-    const ctx = this.hookContext;
     const { runtime } = this.options;
+    const locale = ctx.user.locale;
 
-    if (tool.roles?.length && !tool.roles.some((role) => this.user.roles.includes(role))) {
-      // "editor or admin" in the sentence's language, which is English when the person's has no messages.
-      const roles = new Intl.ListFormat(matchLocale(this.user.locale, t.locales) ?? "en", { type: "disjunction" }).format(tool.roles);
+    if (!userCanUse(tool, ctx.user.roles)) {
       return this.refuse(
         toolCallId,
         "blocked",
-        `Permission denied: ${name} requires the ${tool.roles.join(" or ")} role.`,
-        t(this.user.locale, "refused.role", { roles }),
+        `Permission denied: ${name} requires the ${tool.roles!.join(" or ")} role.`,
+        t(locale, "refused.role", { roles: roleList(tool.roles!, locale) }),
       );
     }
 
@@ -290,7 +363,7 @@ export class Harness {
           toolCallId,
           "blocked",
           `The ${hook.name} policy check failed, so the action was not run.`,
-          t(this.user.locale, "refused.hookFailed", { hook: hook.name }),
+          t(locale, "refused.hookFailed", { hook: hook.name }),
         );
       }
       if (!result?.decision) continue;
@@ -300,8 +373,8 @@ export class Harness {
           "blocked",
           `Blocked by policy (${hook.name}): ${result.reason ?? "not allowed"}`,
           result.reason
-            ? t(this.user.locale, "refused.policy", { hook: hook.name, reason: result.reason })
-            : t(this.user.locale, "refused.policyNoReason", { hook: hook.name }),
+            ? t(locale, "refused.policy", { hook: hook.name, reason: result.reason })
+            : t(locale, "refused.policyNoReason", { hook: hook.name }),
         );
       }
       if (result.decision === "ask") {
@@ -312,6 +385,9 @@ export class Harness {
         decision = "allow";
       }
     }
+
+    // A person approved this call after the run that asked had ended: policies apply again, the question doesn't.
+    if (this.approved.has(toolCallId)) return undefined;
 
     let request: ApprovalRequest | undefined;
     if (decision === "ask") {
@@ -325,11 +401,12 @@ export class Harness {
     if (!request) return undefined;
 
     if (ctx.headless) {
+      if (this.options.onPark) return this.park(toolCallId, name, args, request, ctx.user);
       return this.refuse(
         toolCallId,
         "denied",
         "This action needs a person's approval, and nobody is available in an unattended run. Don't retry; recommend the action in your report instead.",
-        t(this.user.locale, "refused.headless"),
+        t(locale, "refused.headless"),
       );
     }
 
@@ -355,7 +432,6 @@ export class Harness {
           reason: outcome.reason,
         },
       });
-      const locale = this.user.locale;
       if (outcome.aborted) {
         return this.refuse(toolCallId, "denied", "The run was stopped before anyone approved this action.", t(locale, "refused.aborted"));
       }
@@ -386,12 +462,86 @@ export class Harness {
     return undefined;
   }
 
+  /** Leaves a call for a person to decide after the run ends. Until `resume`, the model has a placeholder result. */
+  private park(toolCallId: string, name: string, args: unknown, request: ApprovalRequest, user: AgentUser) {
+    const approval: PendingApproval = {
+      id: randomUUID(),
+      toolCallId,
+      tool: name,
+      args,
+      title: request.title,
+      description: request.description,
+      risk: request.risk,
+      user: { ...user },
+      createdAt: Date.now(),
+    };
+    this.parked.add(toolCallId);
+    this.parkedInTurn = true;
+    this.emitTool(toolCallId, {
+      status: "awaiting_approval",
+      approval: { id: approval.id, title: request.title, description: request.description, risk: request.risk, status: "pending", waits: true },
+    });
+    this.options.onPark!(approval);
+    return { block: true, reason: "Waiting for a person's approval. The run continues once they decide." };
+  }
+
+  /** Runs a call a person approved, as them, or reports the denial, and finishes its card. */
+  private async settle(approval: PendingApproval, signal: AbortSignal): Promise<AgentToolCallOutcome> {
+    const toolCallId = approval.toolCallId;
+    const toolCall: AgentToolCall = { type: "toolCall", id: toolCallId, name: approval.tool, arguments: approval.args as AgentToolCall["arguments"] };
+    const decision = approval.decision!;
+    if (!decision.approved) {
+      const result = {
+        content: [{ type: "text" as const, text: `A person denied this action${decision.reason ? `: "${decision.reason}"` : ""}. Don't retry it.` }],
+        details: {},
+      };
+      const locale = decision.by.locale;
+      const shown = decision.reason ? t(locale, "refused.deniedReason", { reason: decision.reason }) : t(locale, "refused.denied");
+      this.emitTool(toolCallId, toolEndPatch(result, true, { status: "denied", text: shown }, undefined));
+      return { toolCall, result, isError: true };
+    }
+
+    // The person who approved acts, not the run's user: role checks, policy hooks and the tool itself see them.
+    // Someone is doing this now, so the call isn't unattended either.
+    const ctx: HookContext = { ...this.hookContext, user: decision.by, headless: false };
+    const definition = this.toolIndex.get(approval.tool);
+    const assistantMessage = this.agent.state.messages.findLast(
+      (message): message is AssistantMessage =>
+        message.role === "assistant" && message.content.some((block) => block.type === "toolCall" && block.id === toolCallId),
+    );
+    const missing = { content: [{ type: "text" as const, text: "This call is no longer in the conversation." }], details: {} };
+    this.approved.add(toolCallId);
+    const outcome: AgentToolCallOutcome = assistantMessage
+      ? await runToolCall(toolCall, {
+          // Unknown tools (removed since the run asked) come back as errors.
+          tools: definition ? [toAgentTool(definition, this.binding(ctx))] : [],
+          assistantMessage,
+          context: { messages: this.agent.state.messages, tools: this.agent.state.tools },
+          beforeToolCall: (call, signal) => this.beforeToolCall(call.toolCall.id, call.toolCall.name, call.args, signal, ctx),
+          afterToolCall: (call) => this.afterToolCall(call.toolCall.id, call.toolCall.name, call.args, call.result, call.isError, ctx),
+          signal,
+          onUpdate: (partial: AgentToolResult<ToolResultDetails>) => {
+            const text = partial.details?.progress ?? contentText(partial.content);
+            if (text) this.emitTool(toolCallId, { progress: text });
+          },
+        })
+      : { toolCall, result: missing, isError: true };
+    this.approved.delete(toolCallId);
+    const refused = this.blocked.get(toolCallId);
+    this.blocked.delete(toolCallId);
+    const started = this.startedAt.get(toolCallId);
+    this.startedAt.delete(toolCallId);
+    this.emitTool(toolCallId, toolEndPatch(outcome.result, outcome.isError, refused, started ? Date.now() - started : outcome.durationMs));
+    return outcome;
+  }
+
   private async afterToolCall(
     toolCallId: string,
     name: string,
     args: unknown,
     result: AgentToolResult<ToolResultDetails>,
     isError: boolean,
+    ctx = this.hookContext,
   ) {
     const raw = this.rawOutputs.get(toolCallId);
     this.rawOutputs.delete(toolCallId);
@@ -408,7 +558,7 @@ export class Harness {
     let current = original;
     for (const hook of hooks) {
       try {
-        const change = await hook.postToolUse!({ tool, args, toolCallId, result: current, ctx: this.hookContext });
+        const change = await hook.postToolUse!({ tool, args, toolCallId, result: current, ctx });
         if (change) current = { ...current, ...change };
       } catch (error) {
         this.options.runtime.logger.error(`postToolUse hook "${hook.name}" failed`, errorMessage(error));
@@ -426,6 +576,11 @@ export class Harness {
   private async finishTurn(message: AgentMessage) {
     this.turn++;
     if (message.role !== "assistant" || message.stopReason === "error" || message.stopReason === "aborted") return undefined;
+    if (this.parkedInTurn) {
+      // The run ends here and resumes once a person decides.
+      this.parkedInTurn = false;
+      return { action: "end" as const };
+    }
     const calledTools = message.content.some((block) => block.type === "toolCall");
 
     if (calledTools && this.turn >= this.options.maxTurns) {
@@ -482,6 +637,7 @@ export class Harness {
         const child = new Harness({
           ...this.options,
           user: this.user,
+          headless: ctx.headless,
           agentName: definition.name,
           emit: emitChild,
           tools: runtime.toolsForSubagent(this.user, definition),
@@ -491,6 +647,8 @@ export class Harness {
           thinkingLevel: runtime.models.clampThinking(model, definition.thinkingLevel ?? "off"),
           messages: undefined,
           maxTurns: definition.maxTurns ?? 12,
+          // A delegated task can't pause for hours inside the parent's call, so unattended, it refuses approvals.
+          onPark: undefined,
           onUsage: (usage) => {
             addUsage(this.runUsage, usage);
             this.options.onUsage?.(usage);

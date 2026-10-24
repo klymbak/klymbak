@@ -50,6 +50,7 @@ export default {
   "error.emptyPrompt": "Önce bir mesaj yazın.",
   "error.idle": "Ajan çalışmıyor, bu yüzden bunu normal bir mesaj olarak gönderin.",
   "error.approvalGone": "Bu onay artık bir karar beklemiyor.",
+  "error.approvalsPending": "Burada onay bekleyen bir işlem var. Önce onaylayın ya da reddedin.",
   "error.unknownAgent": "Bilinmeyen ajan \"{agent}\".",
   "error.noScheduler": "Bu sunucuda zamanlama kapalı.",
   "error.scheduleFields": "Bir zamanlamanın adı ve talimatı olmalıdır.",

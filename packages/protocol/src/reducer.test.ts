@@ -128,6 +128,23 @@ describe("applyEvent", () => {
     expect(tool.status).toBe("error");
     expect(tool.approval?.status).toBe("expired");
   });
+
+  it("keeps an approval open when its unattended run ended to wait for it", () => {
+    const waiting = { id: "ap", title: "Refund $99", status: "pending" as const, waits: true };
+    const messages = run([
+      { type: "message_start", message: assistant("a1") },
+      { type: "part_start", messageId: "a1", index: 0, part: { type: "tool", toolCallId: "t1", name: "refund_order", status: "pending" } },
+      { type: "tool_update", toolCallId: "t1", patch: { status: "awaiting_approval", approval: waiting } },
+      { type: "run_end", runId: "r", status: "completed" },
+    ]);
+    expect(messages[0]!.parts[0]).toMatchObject({ status: "awaiting_approval", approval: waiting });
+    expect(touchedMessages(messages, { type: "run_end", runId: "r2", status: "completed" })).toEqual([]);
+
+    // Once decided, the resumed run's end closes it like any other call.
+    applyEvent(messages, { type: "tool_update", toolCallId: "t1", patch: { status: "running", approval: { ...waiting, status: "approved" } } });
+    applyEvent(messages, { type: "run_end", runId: "r2", status: "error" });
+    expect(messages[0]!.parts[0]).toMatchObject({ status: "error", approval: { status: "approved" } });
+  });
 });
 
 describe("touchedMessages", () => {
