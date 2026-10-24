@@ -1,0 +1,105 @@
+name: Release
+
+# With changesets on main, opens or updates the "Version Packages" pull request. After it's merged,
+# stages the new versions on npm for a maintainer to approve with 2FA. See RELEASING.md.
+on:
+  push:
+    branches: [main]
+
+# Each job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  select-mode:
+    name: Choose between versioning and staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.select-mode.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.select-mode.outputs.publish-plan-artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Only the root, which has Changesets: nothing gets built here.
+      - run: pnpm install --frozen-lockfile --ignore-scripts --filter klymbak
+      # "version" when there are changesets, "publish" when a package's version isn't on npm yet.
+      - id: select-mode
+        uses: changesets/action/select-mode@v2
+
+  version:
+    name: Open the Version Packages pull request
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'version'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile --ignore-scripts --filter klymbak
+      - uses: changesets/action/version@v2
+
+  pack:
+    name: Build and pack
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --workspace-concurrency=1 --filter "./packages/*" build
+      # pnpm packs the tarballs, so workspace:* becomes the exact version.
+      - id: pack
+        uses: changesets/action/pack@v2
+        with:
+          publish-plan-artifact-id: ${{ needs.select-mode.outputs.publish-plan-artifact-id }}
+
+  stage:
+    name: Stage on npm
+    needs: pack
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # git tags and GitHub releases
+      id-token: write # trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Staging needs npm 11.15 or later, and Node 22 comes with npm 10. Nothing else is installed in
+      # the job that can publish: the script needs only Node, git and npm.
+      - run: npm install --global npm@11.21.1
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.pack.outputs.pack-dir-artifact-id }}
+          path: ${{ runner.temp }}/packed
+      - uses: changesets/action/publish@v2
+        with:
+          script: node scripts/stage-packages.mjs ${{ runner.temp }}/packed
