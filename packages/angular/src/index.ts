@@ -26,10 +26,48 @@ export { KeyValueList } from "./components/blocks/KeyValueList.ts";
 export { MediaGallery } from "./components/blocks/MediaGallery.ts";
 export { ActionBar } from "./components/blocks/ActionBar.ts";
 
-export { provideKlymbak, provideAgentStore, injectAgentStore, injectAgentState, injectChatActions, injectRenderers, agentState } from "./context.ts";
-export type { KlymbakOptions, KlymbakRenderers, ChatActions } from "./context.ts";
+export {
+  provideKlymbak,
+  provideAgentStore,
+  injectAgentStore,
+  injectAgentState,
+  injectChatActions,
+  injectI18n,
+  injectRenderers,
+  agentState,
+} from "./context.ts";
+export type { KlymbakOptions, KlymbakRenderers, ChatActions, I18nOptions } from "./context.ts";
 
-export { createAgentClient, createAgentStore, AgentApiError, configureFormatting, formatValue, describeCron, timeAgo } from "@klymbak/client";
-export type { AgentClient, AgentClientOptions, AgentState, AgentStore, AgentStoreOptions, Attachment, StreamOptions, Toast } from "@klymbak/client";
+export {
+  createAgentClient,
+  createAgentStore,
+  AgentApiError,
+  configureFormatting,
+  formatValue,
+  describeCron,
+  timeAgo,
+  createI18n,
+  formatMessage,
+  en,
+  loadMessages,
+  locales,
+  matchLocale,
+} from "@klymbak/client";
+export type {
+  AgentClient,
+  AgentClientOptions,
+  AgentState,
+  AgentStore,
+  AgentStoreOptions,
+  Attachment,
+  I18n,
+  Locale,
+  Message,
+  MessageId,
+  Messages,
+  StreamOptions,
+  Text,
+  Toast,
+} from "@klymbak/client";
 export { applyEvent, pendingApprovals, ui } from "@klymbak/protocol";
 export type * from "@klymbak/protocol";

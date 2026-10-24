@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { ChartBlock } from "@klymbak/protocol";
-import { compactNumber, formatValue } from "@klymbak/client";
+import { useI18n } from "../../context";
 
 const props = defineProps<{ block: ChartBlock }>();
+const i18n = useI18n();
 
 const HEIGHT = 220;
 const container = ref<HTMLElement>();
@@ -47,7 +48,7 @@ const scale = computed(() => {
 });
 
 const primary = computed(() => series.value[0]);
-const tickLabel = (value: number) => compactNumber(value, primary.value?.format, primary.value?.currency);
+const tickLabel = (value: number) => i18n.compactNumber(value, primary.value?.format, primary.value?.currency);
 
 const margin = computed(() => {
   const longest = Math.max(...scale.value.ticks.map((t) => tickLabel(t).length));
@@ -110,9 +111,9 @@ const xLabels = computed(() => {
 function formatX(value: unknown, format: ChartBlock["x"]["format"]) {
   if (format === "date" && typeof value === "string") {
     const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
-    if (!Number.isNaN(date.getTime())) return formatValue(date, "date");
+    if (!Number.isNaN(date.getTime())) return i18n.formatValue(date, "date");
   }
-  return formatValue(value, format);
+  return i18n.formatValue(value, format);
 }
 
 function onMove(event: PointerEvent) {
@@ -141,7 +142,7 @@ const tooltip = computed(() => {
     x,
     left: x > width.value * 0.6,
     title: formatX(row[props.block.x.key], props.block.x.format),
-    items: series.value.map((s, j) => ({ label: s.label, value: formatValue(row[s.key], s.format, s.currency), color: j })),
+    items: series.value.map((s, j) => ({ label: s.label, value: i18n.formatValue(row[s.key], s.format, s.currency), color: j })),
   };
 });
 </script>
@@ -162,7 +163,7 @@ const tooltip = computed(() => {
         :width="width"
         :height="HEIGHT"
         role="img"
-        :aria-label="`${block.title ?? 'Chart'}: ${n} data points`"
+        :aria-label="i18n.t('chart.label', { title: block.title ?? i18n.t('chart.defaultTitle'), count: n })"
         @pointermove="onMove"
         @pointerleave="hover = null"
       >

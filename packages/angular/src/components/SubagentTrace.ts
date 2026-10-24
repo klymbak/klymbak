@@ -1,5 +1,6 @@
 import { Component, booleanAttribute, forwardRef, input, signal, type DoCheck } from "@angular/core";
 import type { SubagentView } from "@klymbak/protocol";
+import { injectI18n } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 import { MarkdownContent } from "./MarkdownContent.ts";
 import { MessageItem } from "./MessageItem.ts";
@@ -16,11 +17,11 @@ import { MessageItem } from "./MessageItem.ts";
       <div class="kl-sub__head">
         <span class="kl-sub__agent"><svg klIcon name="agents" [size]="14" /> {{ sub.agent }}</span>
         @if (sub.status === "running") {
-          <span class="kl-sub__status kl-faint"><span class="kl-spinner"></span> working</span>
+          <span class="kl-sub__status kl-faint"><span class="kl-spinner"></span> {{ i18n().t("subagent.working") }}</span>
         }
         @if (sub.messages.length > 0) {
           <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm" (click)="showSteps.set(!showSteps())">
-            {{ showSteps() ? "Hide" : "Show" }} {{ steps }} {{ steps === 1 ? "step" : "steps" }}
+            {{ i18n().t(showSteps() ? "subagent.hideSteps" : "subagent.showSteps", { count: steps }) }}
             <svg klIcon [name]="showSteps() ? 'chevronDown' : 'chevron'" [size]="12" />
           </button>
         }
@@ -35,7 +36,7 @@ import { MessageItem } from "./MessageItem.ts";
       }
       @if (done() && result()) {
         <div class="kl-sub__result">
-          <span class="kl-sub__result-label">Answer</span>
+          <span class="kl-sub__result-label">{{ i18n().t("subagent.answer") }}</span>
           <kl-markdown-content [source]="result()!" />
         </div>
       }
@@ -46,6 +47,7 @@ export class SubagentTrace implements DoCheck {
   readonly subagent = input.required<SubagentView>();
   readonly result = input<string>();
   readonly done = input(false, { transform: booleanAttribute });
+  protected readonly i18n = injectI18n();
   protected readonly showSteps = signal(false);
   private status?: SubagentView["status"];
 

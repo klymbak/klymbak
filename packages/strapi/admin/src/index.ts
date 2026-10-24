@@ -2,6 +2,7 @@ import { Sparkle } from "@strapi/icons";
 import { PERMISSIONS, PLUGIN_ID } from "./agent";
 import { AskAboutSelection } from "./components/AskAboutSelection";
 import { EntryPanel } from "./components/EntryPanel";
+import { translations } from "./i18n";
 
 interface ContentManagerApis {
   addEditViewSidePanel(panels: unknown[]): void;
@@ -31,5 +32,9 @@ export default {
     // Chat about the open entry from the edit view, and about selected entries from the list view.
     contentManager?.addEditViewSidePanel([EntryPanel]);
     contentManager?.addBulkAction([AskAboutSelection]);
+  },
+
+  async registerTrads({ locales }: { locales: string[] }) {
+    return Promise.all(locales.map(async (locale) => ({ locale, data: await translations(locale) })));
   },
 };

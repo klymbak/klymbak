@@ -14,16 +14,11 @@ import { databaseStorage } from "./storage.ts";
 export const PLUGIN_ID = "klymbak";
 export const USE_ACTION = `plugin::${PLUGIN_ID}.use`;
 
-const DEFAULT_APP: AppInfo = {
-  name: "Assistant",
-  description: "Find, write and update content in plain language. Every change waits for your approval.",
-  suggestions: [
-    "What content can I manage here?",
-    "Which entries changed this week?",
-    "List drafts that haven't been published",
-    "Find entries with empty required fields",
-  ],
-};
+/**
+ * Sent when the project configures no `app`. Whatever is missing, the admin fills in from its translations, so the
+ * name, description and starter prompts appear in each admin's language.
+ */
+const DEFAULT_APP: AppInfo = { name: "" };
 
 function strapiLogger(strapi: Core.Strapi): Logger {
   const line = (message: string, data?: unknown) =>

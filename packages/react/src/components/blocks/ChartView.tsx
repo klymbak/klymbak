@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState, type PointerEvent } from "react";
 import type { ChartBlock } from "@klymbak/protocol";
-import { compactNumber, formatValue } from "@klymbak/client";
+import type { I18n } from "@klymbak/client";
+import { useI18n } from "../../context";
 
 const HEIGHT = 220;
 
@@ -9,17 +10,18 @@ const valueOf = (row: Record<string, unknown>, key: string) => {
   return Number.isFinite(value) ? value : 0;
 };
 
-function formatX(value: unknown, format: ChartBlock["x"]["format"]) {
+function formatX(i18n: I18n, value: unknown, format: ChartBlock["x"]["format"]) {
   if (format === "date" && typeof value === "string") {
     const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
-    if (!Number.isNaN(date.getTime())) return formatValue(date, "date");
+    if (!Number.isNaN(date.getTime())) return i18n.formatValue(date, "date");
   }
-  return formatValue(value, format);
+  return i18n.formatValue(value, format);
 }
 
 const seriesColor = (index: number) => `var(--kl-series-${(index % 4) + 1})`;
 
 export function ChartView({ block }: { block: ChartBlock }) {
+  const i18n = useI18n();
   const container = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(560);
   const [hover, setHover] = useState<number | null>(null);
@@ -52,7 +54,7 @@ export function ChartView({ block }: { block: ChartBlock }) {
   for (let t = bottom; t <= top + step / 2; t += step) ticks.push(Math.round(t * 1e6) / 1e6);
 
   const primary = series[0];
-  const tickLabel = (value: number) => compactNumber(value, primary?.format, primary?.currency);
+  const tickLabel = (value: number) => i18n.compactNumber(value, primary?.format, primary?.currency);
 
   const longest = Math.max(...ticks.map((t) => tickLabel(t).length));
   const margin = { top: 12, right: 14, bottom: 28, left: Math.max(36, longest * 7 + 14) };
@@ -96,7 +98,7 @@ export function ChartView({ block }: { block: ChartBlock }) {
     const room = Math.max(1, Math.floor(inner.width / 72));
     const every = Math.ceil(n / room);
     return data
-      .map((row, i) => ({ i, text: formatX(row[block.x.key], block.x.format) }))
+      .map((row, i) => ({ i, text: formatX(i18n, row[block.x.key], block.x.format) }))
       .filter(({ i }) => i % every === 0 || i === n - 1)
       .filter((label, k, all) => k === all.length - 1 || all[all.length - 1]!.i - label.i >= every * 0.6);
   })();
@@ -124,8 +126,8 @@ export function ChartView({ block }: { block: ChartBlock }) {
       : {
           x: xCenter(hover),
           left: xCenter(hover) > width * 0.6,
-          title: formatX(hovered[block.x.key], block.x.format),
-          items: series.map((s, j) => ({ label: s.label, value: formatValue(hovered[s.key], s.format, s.currency), color: j })),
+          title: formatX(i18n, hovered[block.x.key], block.x.format),
+          items: series.map((s, j) => ({ label: s.label, value: i18n.formatValue(hovered[s.key], s.format, s.currency), color: j })),
         };
 
   return (
@@ -151,7 +153,7 @@ export function ChartView({ block }: { block: ChartBlock }) {
           width={width}
           height={HEIGHT}
           role="img"
-          aria-label={`${block.title ?? "Chart"}: ${n} data points`}
+          aria-label={i18n.t("chart.label", { title: block.title ?? i18n.t("chart.defaultTitle"), count: n })}
           onPointerMove={onMove}
           onPointerLeave={() => setHover(null)}
         >

@@ -29,13 +29,18 @@ type Tab = "chats" | "schedules" | "capabilities";
   },
   template: `
     @let s = state();
-    <aside class="kl-workspace__sidebar" aria-label="Agent navigation">
+    <aside class="kl-workspace__sidebar" [attr.aria-label]="i18n().t('workspace.navigation')">
       <div class="kl-workspace__brand">
         <ng-content select="[klBrand]">
           <span class="kl-workspace__logo"><svg klIcon name="sparkle" [size]="16" /></span>
-          <span class="kl-workspace__app">{{ title() ?? s.config?.app?.name ?? "Assistant" }}</span>
+          <span class="kl-workspace__app">{{ title() ?? s.config?.app?.name ?? i18n().t("chat.defaultTitle") }}</span>
         </ng-content>
-        <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__close" aria-label="Close menu" (click)="drawer.set(false)">
+        <button
+          type="button"
+          class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__close"
+          [attr.aria-label]="i18n().t('workspace.closeMenu')"
+          (click)="drawer.set(false)"
+        >
           <svg klIcon name="close" [size]="16" />
         </button>
       </div>
@@ -76,8 +81,14 @@ type Tab = "chats" | "schedules" | "capabilities";
     </aside>
     <div class="kl-workspace__scrim" (click)="drawer.set(false)"></div>
     <main class="kl-workspace__main">
-      <kl-agent-chat [suggestions]="suggestions()" [showMeta]="showMeta()" (action)="action.emit($event)">
-        <button klHeaderStart type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu" aria-label="Open menu" (click)="drawer.set(true)">
+      <kl-agent-chat [title]="title()" [description]="description()" [suggestions]="suggestions()" [showMeta]="showMeta()" (action)="action.emit($event)">
+        <button
+          klHeaderStart
+          type="button"
+          class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
+          [attr.aria-label]="i18n().t('workspace.openMenu')"
+          (click)="drawer.set(true)"
+        >
           <svg klIcon name="menu" [size]="18" />
         </button>
         <ng-content select="[klHeaderEnd]" ngProjectAs="[klHeaderEnd]" />
@@ -87,7 +98,10 @@ type Tab = "chats" | "schedules" | "capabilities";
   `,
 })
 export class AgentWorkspace extends StoreHost {
+  /** The app's name in the sidebar and the chat. Defaults to the server's app.name. */
   readonly title = input<string>();
+  /** Text under the title on the welcome screen. Defaults to the server's app.description. */
+  readonly description = input<string>();
   readonly suggestions = input<string[]>();
   readonly theme = input<"auto" | "light" | "dark">("auto");
   /** Show model, tokens and cost under each answer. */
@@ -100,10 +114,11 @@ export class AgentWorkspace extends StoreHost {
   protected readonly state = computed(() => agentState(this.store)(), { equal: () => false });
   protected readonly tabs = computed(() => {
     const state = this.state();
+    const i18n = this.i18n();
     return [
-      { id: "chats" as const, label: "Chats", icon: "chat", badge: selectUnreadCount(state) || undefined },
-      ...(state.config?.features.schedules ? [{ id: "schedules" as const, label: "Schedules", icon: "clock", badge: undefined }] : []),
-      { id: "capabilities" as const, label: "Tools", icon: "tool", badge: undefined },
+      { id: "chats" as const, label: i18n.t("workspace.chats"), icon: "chat", badge: selectUnreadCount(state) || undefined },
+      ...(state.config?.features.schedules ? [{ id: "schedules" as const, label: i18n.t("workspace.schedules"), icon: "clock", badge: undefined }] : []),
+      { id: "capabilities" as const, label: i18n.t("workspace.tools"), icon: "tool", badge: undefined },
     ];
   });
 

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { KeyValueBlock } from "@klymbak/protocol";
-import { formatValue, toneClass } from "@klymbak/client";
+import { toneClass } from "@klymbak/client";
+import { useI18n } from "../../context";
 
 defineProps<{ block: KeyValueBlock }>();
+const i18n = useI18n();
 </script>
 
 <template>
@@ -14,7 +16,7 @@ defineProps<{ block: KeyValueBlock }>();
         <dd>
           <span v-if="item.format === 'badge'" class="kl-pill" :class="toneClass(item.tone)">{{ item.value }}</span>
           <span v-else-if="item.format === 'code'" class="kl-code">{{ item.value }}</span>
-          <span v-else :class="item.tone ? ['kl-kv__toned', toneClass(item.tone)] : ''">{{ formatValue(item.value, item.format, item.currency) }}</span>
+          <span v-else :class="item.tone ? ['kl-kv__toned', toneClass(item.tone)] : ''">{{ i18n.formatValue(item.value, item.format, item.currency) }}</span>
         </dd>
       </div>
     </dl>

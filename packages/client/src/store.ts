@@ -16,13 +16,16 @@ import {
   type UpdateScheduleRequest,
 } from "@klymbak/protocol";
 import { AgentApiError, type AgentClient } from "./client.ts";
+import type { Message, Text } from "./i18n.ts";
+import type { MessageId } from "./messages.ts";
 import { observe } from "./observe.ts";
 
 export interface Toast {
   id: number;
   tone: "info" | "success" | "warning" | "danger";
-  title: string;
-  body?: string;
+  /** The store's own toasts are messages, put into words in the UI's language; a host's may be plain strings. */
+  title: Text;
+  body?: Text;
   sessionId?: string;
 }
 
@@ -34,14 +37,15 @@ export interface Attachment {
 
 export interface AgentState {
   ready: boolean;
-  error: string | null;
+  /** Why the agent can't be reached: the browser's or server's reason, or a message when there is none. */
+  error: Text | null;
   config: AgentConfigInfo | null;
   sessions: SessionSummary[];
   sessionId: string | null;
   messages: ChatMessage[];
   loadingSession: boolean;
   running: boolean;
-  runError: string | null;
+  runError: Text | null;
   model: ModelRef | null;
   thinkingLevel: ThinkingLevel;
   schedules: ScheduleInfo[];
@@ -166,10 +170,12 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     else state.schedules.push(schedule);
   }
 
-  function handleError(error: unknown, fallback: string) {
-    const message = error instanceof AgentApiError || error instanceof Error ? error.message : fallback;
-    toast({ tone: "danger", title: fallback, body: message });
-    return message;
+  /** Shows a failed action as a toast: what failed, then the server's or browser's reason. Returns the reason. */
+  function handleError(error: unknown, failed: MessageId): Text {
+    const title: Message = { id: failed };
+    const reason = error instanceof AgentApiError || error instanceof Error ? error.message : title;
+    toast({ tone: "danger", title, body: reason });
+    return reason;
   }
 
   /** Events from a run or attach stream, ignored once the user switched away. */
@@ -194,7 +200,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
         break;
       case "run_end":
         state.running = false;
-        if (event.status === "error") state.runError = event.error ?? "The agent stopped with an error.";
+        if (event.status === "error") state.runError = event.error ?? { id: "store.runFailed" };
         break;
       case "session_update":
         upsertSession(event.session);
@@ -222,14 +228,17 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
         break;
       case "schedule_run":
         if (event.status === "completed") {
-          toast({ tone: "success", title: `${event.name} is ready`, body: event.summary?.slice(0, 160), sessionId: event.sessionId }, 12_000);
+          toast(
+            { tone: "success", title: { id: "toast.scheduleReady", values: { name: event.name } }, body: event.summary?.slice(0, 160), sessionId: event.sessionId },
+            12_000,
+          );
         } else if (event.status === "error") {
-          toast({ tone: "danger", title: `${event.name} failed`, sessionId: event.sessionId });
+          toast({ tone: "danger", title: { id: "toast.scheduleFailed", values: { name: event.name } }, sessionId: event.sessionId });
         }
         break;
       case "approval_pending":
         if (event.sessionId !== state.sessionId) {
-          toast({ tone: "warning", title: "Approval needed", body: event.title, sessionId: event.sessionId }, 15_000);
+          toast({ tone: "warning", title: { id: "toast.approvalNeeded" }, body: event.title, sessionId: event.sessionId }, 15_000);
         }
         break;
       case "mcp_update":
@@ -272,7 +281,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       eventsController = new AbortController();
       void client.subscribe({ onEvent: onNotification, signal: eventsController.signal });
     } catch (error) {
-      state.error = error instanceof Error ? error.message : "Could not reach the agent.";
+      state.error = error instanceof Error ? error.message : { id: "store.unreachable" };
     }
   }
 
@@ -306,7 +315,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       if (detail.unread) void client.updateSession(id, { unread: false }).then(upsertSession);
       if (detail.running) attach(id);
     } catch (error) {
-      handleError(error, "Couldn't open the conversation");
+      handleError(error, "error.openSession");
       newSession();
     } finally {
       state.loadingSession = false;
@@ -336,7 +345,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
         upsertSession(created);
       }
     } catch (error) {
-      state.runError = handleError(error, "Couldn't start a conversation");
+      state.runError = handleError(error, "error.startSession");
       return;
     }
     const sessionId = state.sessionId!;
@@ -370,7 +379,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       if (controller.signal.aborted) return;
       if (state.sessionId === sessionId) {
         state.messages = state.messages.filter((m) => !m.id.startsWith("local-"));
-        state.runError = error instanceof Error ? error.message : "The request failed.";
+        state.runError = error instanceof Error ? error.message : { id: "store.requestFailed" };
         state.running = false;
       }
     } finally {
@@ -383,7 +392,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     try {
       await client.steer(state.sessionId, text);
     } catch (error) {
-      handleError(error, "Couldn't send that to the agent");
+      handleError(error, "error.steer");
     }
   }
 
@@ -392,7 +401,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     try {
       await client.abort(state.sessionId);
     } catch (error) {
-      handleError(error, "Couldn't stop the agent");
+      handleError(error, "error.abort");
     }
   }
 
@@ -401,7 +410,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     try {
       await client.decide(state.sessionId, approvalId, decision);
     } catch (error) {
-      handleError(error, "Couldn't record your decision");
+      handleError(error, "error.decide");
     }
   }
 
@@ -422,7 +431,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     try {
       upsertSession(await client.updateSession(id, { title }));
     } catch (error) {
-      handleError(error, "Couldn't rename the conversation");
+      handleError(error, "error.renameSession");
     }
   }
 
@@ -432,7 +441,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       state.sessions = state.sessions.filter((s) => s.id !== id);
       if (state.sessionId === id) newSession();
     } catch (error) {
-      handleError(error, "Couldn't delete the conversation");
+      handleError(error, "error.deleteSession");
     }
   }
 
@@ -440,10 +449,10 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     try {
       const schedule = await client.createSchedule(input);
       upsertSchedule(schedule);
-      toast({ tone: "success", title: `Scheduled "${schedule.name}"` });
+      toast({ tone: "success", title: { id: "toast.scheduled", values: { name: schedule.name } } });
       return schedule;
     } catch (error) {
-      handleError(error, "Couldn't create the schedule");
+      handleError(error, "error.createSchedule");
       throw error;
     }
   }
@@ -452,7 +461,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     try {
       upsertSchedule(await client.updateSchedule(id, patch));
     } catch (error) {
-      handleError(error, "Couldn't update the schedule");
+      handleError(error, "error.updateSchedule");
     }
   }
 
@@ -461,16 +470,16 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       await client.deleteSchedule(id);
       state.schedules = state.schedules.filter((s) => s.id !== id);
     } catch (error) {
-      handleError(error, "Couldn't delete the schedule");
+      handleError(error, "error.deleteSchedule");
     }
   }
 
   async function runSchedule(id: string) {
     try {
       await client.runSchedule(id);
-      toast({ tone: "info", title: "Task started", body: "You'll get a notification when the result is ready." });
+      toast({ tone: "info", title: { id: "toast.taskStarted" }, body: { id: "toast.taskStartedBody" } });
     } catch (error) {
-      handleError(error, "Couldn't start the task");
+      handleError(error, "error.runSchedule");
     }
   }
 
@@ -485,7 +494,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       await client.removeMcpServer(name);
       await refreshConfig();
     } catch (error) {
-      handleError(error, "Couldn't remove the integration");
+      handleError(error, "error.removeServer");
     }
   }
 

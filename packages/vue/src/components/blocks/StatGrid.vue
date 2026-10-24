@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { StatItem, StatsBlock } from "@klymbak/protocol";
-import { formatValue, toneClass } from "@klymbak/client";
+import { toneClass } from "@klymbak/client";
+import { useI18n } from "../../context";
 import KlIcon from "../KlIcon.vue";
 
 defineProps<{ block: StatsBlock }>();
+const i18n = useI18n();
 
 function deltaTone(item: StatItem) {
   if (item.delta === undefined || item.delta === 0) return "neutral";
@@ -22,7 +24,7 @@ function deltaText(delta: number) {
     <div class="kl-stats__grid">
       <div v-for="item in block.items" :key="item.label" class="kl-stat" :class="item.tone ? toneClass(item.tone) : ''">
         <span class="kl-stat__label">{{ item.label }}</span>
-        <span class="kl-stat__value kl-num">{{ typeof item.value === "number" ? formatValue(item.value, item.format, item.currency) : item.value }}</span>
+        <span class="kl-stat__value kl-num">{{ typeof item.value === "number" ? i18n.formatValue(item.value, item.format, item.currency) : item.value }}</span>
         <span v-if="item.delta !== undefined" class="kl-stat__delta kl-num" :class="toneClass(deltaTone(item))">
           <KlIcon :name="item.delta >= 0 ? 'arrowUp' : 'arrowDown'" :size="12" />
           {{ deltaText(item.delta) }}

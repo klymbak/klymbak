@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { Toast } from "@klymbak/client";
-import { useAgentStore } from "../context";
+import { useAgentStore, useI18n } from "../context";
 import { useTransition } from "../transition";
 import { KlIcon } from "./KlIcon";
 
 const icons = { success: "check", danger: "alert", warning: "bell", info: "info" } as const;
 
 function ToastItem({ toast, leaving, onOpen, onDismiss, onLeft }: { toast: Toast; leaving: boolean; onOpen: () => void; onDismiss: () => void; onLeft: () => void }) {
+  const i18n = useI18n();
   const el = useRef<HTMLDivElement>(null);
   const visible = useTransition(el, !leaving, "kl-toast", true);
   useEffect(() => {
@@ -16,15 +17,15 @@ function ToastItem({ toast, leaving, onOpen, onDismiss, onLeft }: { toast: Toast
     <div ref={el} className={`kl-toast kl-tone-${toast.tone}`} role="status">
       <KlIcon name={icons[toast.tone]} size={16} className="kl-toast__icon" />
       <div className="kl-toast__body">
-        <strong>{toast.title}</strong>
-        {toast.body && <p>{toast.body}</p>}
+        <strong>{i18n.text(toast.title)}</strong>
+        {toast.body && <p>{i18n.text(toast.body)}</p>}
         {toast.sessionId && (
           <button type="button" className="kl-btn kl-btn--sm" onClick={onOpen}>
-            Open
+            {i18n.t("toast.open")}
           </button>
         )}
       </div>
-      <button type="button" className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Dismiss" onClick={onDismiss}>
+      <button type="button" className="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label={i18n.t("common.dismiss")} onClick={onDismiss}>
         <KlIcon name="close" size={12} />
       </button>
     </div>

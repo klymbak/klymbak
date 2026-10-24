@@ -1,5 +1,6 @@
 import type { StatItem, StatsBlock } from "@klymbak/protocol";
-import { formatValue, toneClass } from "@klymbak/client";
+import { toneClass } from "@klymbak/client";
+import { useI18n } from "../../context";
 import { cx } from "../../util";
 import { KlIcon } from "../KlIcon";
 
@@ -14,6 +15,7 @@ function deltaText(delta: number) {
 }
 
 export function StatGrid({ block }: { block: StatsBlock }) {
+  const i18n = useI18n();
   return (
     <section className="kl-stats">
       {block.title && <h4 className="kl-stats__title">{block.title}</h4>}
@@ -22,7 +24,7 @@ export function StatGrid({ block }: { block: StatsBlock }) {
           <div key={item.label} className={cx("kl-stat", item.tone && toneClass(item.tone))}>
             <span className="kl-stat__label">{item.label}</span>
             <span className="kl-stat__value kl-num">
-              {typeof item.value === "number" ? formatValue(item.value, item.format, item.currency) : item.value}
+              {typeof item.value === "number" ? i18n.formatValue(item.value, item.format, item.currency) : item.value}
             </span>
             {item.delta !== undefined && (
               <span className={cx("kl-stat__delta kl-num", toneClass(deltaTone(item)))}>

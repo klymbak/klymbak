@@ -1,6 +1,6 @@
 import { Component, input, output, signal } from "@angular/core";
 import type { ApprovalDecision, ApprovalView } from "@klymbak/protocol";
-import { injectOptionalStoreRef } from "../context.ts";
+import { injectI18n, injectOptionalStoreRef } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 
 const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
@@ -16,9 +16,9 @@ const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
       @if (a.status === "pending") {
         <div class="kl-approval__head">
           <svg klIcon name="shield" [size]="15" />
-          <span>Needs your approval</span>
+          <span>{{ i18n().t("approval.needed") }}</span>
           @if (a.risk) {
-            <span class="kl-pill kl-tone-{{ riskTone[a.risk] }}">{{ a.risk }} risk</span>
+            <span class="kl-pill kl-tone-{{ riskTone[a.risk] }}">{{ i18n().t(riskLabels[a.risk]) }}</span>
           }
         </div>
         <p class="kl-approval__title">{{ a.title }}</p>
@@ -27,12 +27,12 @@ const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
         }
         @if (denying()) {
           <label class="kl-label kl-approval__reason">
-            Why not? (optional, the agent will read this)
+            {{ i18n().t("approval.reasonLabel") }}
             <input
               #field
               class="kl-input"
               type="text"
-              placeholder="e.g. Offer a replacement instead"
+              [placeholder]="i18n().t('approval.reasonPlaceholder')"
               [value]="reason()"
               (input)="reason.set(field.value)"
               (keydown.enter)="respond(false)"
@@ -40,23 +40,25 @@ const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
           </label>
         }
         <div class="kl-approval__buttons">
-          <button type="button" class="kl-btn kl-btn--primary" [disabled]="busy()" (click)="respond(true)"><svg klIcon name="check" [size]="14" /> Approve</button>
+          <button type="button" class="kl-btn kl-btn--primary" [disabled]="busy()" (click)="respond(true)">
+            <svg klIcon name="check" [size]="14" /> {{ i18n().t("approval.approve") }}
+          </button>
           <button type="button" class="kl-btn" [disabled]="busy()" (click)="respond(false)">
-            <svg klIcon name="x" [size]="14" /> {{ denying() ? "Confirm deny" : "Deny" }}
+            <svg klIcon name="x" [size]="14" /> {{ i18n().t(denying() ? "approval.confirmDeny" : "approval.deny") }}
           </button>
           @if (a.rememberable && !denying()) {
             <label class="kl-approval__remember">
               <input #box type="checkbox" [checked]="remember()" (change)="remember.set(box.checked)" />
-              Don't ask again in this chat
+              {{ i18n().t("approval.remember") }}
             </label>
           }
         </div>
       } @else {
         <div class="kl-approval__decided">
-          <span class="kl-stamp kl-stamp--{{ a.status }}">{{ a.status }}</span>
+          <span class="kl-stamp kl-stamp--{{ a.status }}">{{ i18n().t(statusLabels[a.status]) }}</span>
           <div class="kl-approval__summary">
             <span class="kl-approval__title">{{ a.title }}</span>
-            <span class="kl-faint">{{ a.decidedBy ? "by " + a.decidedBy : "" }}{{ a.reason ? " · “" + a.reason + "”" : "" }}{{ a.status === "expired" ? "Nobody decided in time" : "" }}</span>
+            <span class="kl-faint">{{ decision() }}</span>
           </div>
         </div>
       }
@@ -67,11 +69,30 @@ export class ApprovalPrompt {
   readonly approval = input.required<ApprovalView>();
   readonly decide = output<ApprovalDecision>();
   private readonly store = injectOptionalStoreRef();
+  protected readonly i18n = injectI18n();
+  protected readonly riskLabels = { low: "approval.risk.low", medium: "approval.risk.medium", high: "approval.risk.high" } as const;
+  protected readonly statusLabels = {
+    pending: "approval.status.pending",
+    approved: "approval.status.approved",
+    denied: "approval.status.denied",
+    expired: "approval.status.expired",
+  } as const;
   protected readonly remember = signal(false);
   protected readonly reason = signal("");
   protected readonly denying = signal(false);
   protected readonly busy = signal(false);
   protected readonly riskTone = riskTone;
+
+  /** Who decided, why, or that nobody did. */
+  protected decision() {
+    const { decidedBy, reason, status } = this.approval();
+    const i18n = this.i18n();
+    return [
+      decidedBy ? i18n.t("approval.decidedBy", { name: decidedBy }) : "",
+      reason ? ` · ${i18n.t("approval.reason", { reason })}` : "",
+      status === "expired" ? i18n.t("approval.expiredNote") : "",
+    ].join("");
+  }
 
   protected async respond(approved: boolean) {
     if (!approved && !this.denying()) {

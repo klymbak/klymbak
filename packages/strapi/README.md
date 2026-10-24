@@ -10,6 +10,7 @@ An AI assistant for the **Strapi 5** admin panel. Editors ask for what they need
 - **Knows Strapi**: every conversation starts with the facts of this project (Strapi version, development or production mode, locales, plugins, and the content types the person can read with what their role allows). Questions about Strapi itself ("how do I let Authors publish?", "why can't I add a field?") are answered from the official docs on docs.strapi.io, with a link to the page.
 - **Strapi's MCP server** (optional): connect it with an admin token for the media library tools and tools other plugins register, with every non-read tool behind approval.
 - **Any model**: Anthropic, OpenAI, Google, OpenRouter, Bedrock, Azure, or a local model in LM Studio or Ollama.
+- **Speaks the admin's language**: the whole interface, in English and 12 more languages, follows the language each admin picks in their profile.
 - Conversations and schedules are stored in Strapi's database.
 
 Built on [`@klymbak/server`](../server) and [`@klymbak/react`](../react).
@@ -74,7 +75,7 @@ Images attached in the chat go to the Media Library through `upload_media`, as t
 | Option | Default | |
 |---|---|---|
 | `models` | every built-in provider with credentials | Which models people can pick: `providers`, `custom` (`lmStudio()`, `ollama()`, `openAICompatible()`), `allow` globs, `default` |
-| `app` | "Assistant" | Name, description and starter prompts |
+| `app` | the plugin's, in each admin's language | Name, description and starter prompts, shown as written. Anything left out comes from the plugin's translations: see [Languages](#languages) |
 | `instructions` | | Added to the built-in instructions: house style, required fields, glossary… |
 | `skills` | | A folder of skills, relative to the project root: see [Skills](#skills) |
 | `systemPrompt` | | Replaces the built-in instructions |
@@ -163,6 +164,29 @@ Strapi 5.47+ ships an MCP server with list, get, create, update, delete, publish
 The tools appear as `strapi_media_list_assets`, `strapi_media_delete_assets`…, and the assets they read show as a gallery of previews. Strapi sets no MCP annotations on them, so the plugin treats only `list_*`, `get_*`, `media_list_*` and `media_get_*` as reads: everything else, including tools other plugins register later, asks for approval.
 
 MCP calls run as the token, not as the person, and are capped by the token owner's permissions. That's why, while the content tools are on (the default), the plugin leaves out Strapi's per-content-type MCP tools (`list_article`, `create_article`, `publish_article`…) and keeps the ones the content tools don't cover: the media library and tools from other plugins. With both sets loaded, models mix them up. Set `mcp.contentTools: true` to load them anyway, or `contentTools: false` to work through MCP alone. Keep the token narrow either way.
+
+### Languages
+
+The assistant's interface follows the language each admin picks in their profile: German, Spanish, French, Italian, Japanese, Korean, Dutch, Polish, Brazilian Portuguese, Turkish, Ukrainian and Simplified Chinese, besides English. Strapi offers only English until a project lists more in `src/admin/app.ts`:
+
+```ts
+export default {
+  config: { locales: ["de", "fr", "uk"] },
+};
+```
+
+The strings come through Strapi's translations, so a project can change any of them there too: the plugin's own under `klymbak.*` (see `admin/src/translations/en.json`) and the chat's under `klymbak.ui.*` (see [`@klymbak/client`'s messages](../client/src/messages.ts)):
+
+```ts
+export default {
+  config: {
+    locales: ["fr"],
+    translations: { fr: { "klymbak.plugin.name": "Rédaction", "klymbak.ui.chat.newChat": "Nouvelle question" } },
+  },
+};
+```
+
+Text set in the plugin's `app` option is shown as written in every language. Leave `name`, `description` or `suggestions` out to get the plugin's own in each admin's language. Text the server writes stays English for now: tool names and descriptions in the Tools panel, and the titles on approval cards. The model answers in the language people write in.
 
 ### Scheduled tasks
 

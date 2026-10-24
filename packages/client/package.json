@@ -19,6 +19,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./locales/*": {
+      "@klymbak/source": "./src/locales/*.ts",
+      "types": "./dist/locales/*.d.ts",
+      "import": "./dist/locales/*.js"
+    },
     "./style.css": "./styles/index.css"
   },
   "files": ["dist", "styles"],

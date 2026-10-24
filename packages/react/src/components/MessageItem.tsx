@@ -1,20 +1,18 @@
 import type { ChatMessage } from "@klymbak/protocol";
 import { formatTokens } from "@klymbak/client";
+import { useI18n } from "../context";
 import { cx } from "../util";
 import { MarkdownContent } from "./MarkdownContent";
 import { KlIcon } from "./KlIcon";
 import { ThinkingBlock } from "./ThinkingBlock";
 import { ToolCallCard } from "./ToolCallCard";
 
-const ORIGIN: Record<string, string> = {
-  steer: "Added while the agent was working",
-  hook: "Automatic follow-up",
-  schedule: "Scheduled task",
-};
+const ORIGIN = { steer: "message.origin.steer", hook: "message.origin.hook", schedule: "message.origin.schedule" } as const;
 
 export function MessageItem({ message, compact, showMeta }: { message: ChatMessage; compact?: boolean; showMeta?: boolean }) {
+  const i18n = useI18n();
   if (message.role === "user") {
-    const origin = message.origin ? ORIGIN[message.origin] : undefined;
+    const origin = message.origin && message.origin !== "user" ? i18n.t(ORIGIN[message.origin]) : undefined;
     return (
       <div className={cx("kl-msg kl-msg--user", compact && "kl-msg--compact")}>
         {origin && (
@@ -29,7 +27,7 @@ export function MessageItem({ message, compact, showMeta }: { message: ChatMessa
                 {part.text}
               </p>
             ) : part.type === "image" ? (
-              <img key={i} className="kl-msg__image" src={`data:${part.mimeType};base64,${part.data}`} alt="Attached image" />
+              <img key={i} className="kl-msg__image" src={`data:${part.mimeType};base64,${part.data}`} alt={i18n.t("message.attachedImage")} />
             ) : null,
           )}
         </div>
@@ -61,7 +59,7 @@ export function MessageItem({ message, compact, showMeta }: { message: ChatMessa
       })}
       {streaming && !hasContent && (
         <div className="kl-msg__waiting">
-          <span className="kl-spinner" /> Working…
+          <span className="kl-spinner" /> {i18n.t("message.working")}
         </div>
       )}
       {message.status === "error" && message.error && (
@@ -70,14 +68,14 @@ export function MessageItem({ message, compact, showMeta }: { message: ChatMessa
         </div>
       )}
       {message.status === "aborted" ? (
-        <div className="kl-msg__meta">Stopped</div>
+        <div className="kl-msg__meta">{i18n.t("message.stopped")}</div>
       ) : (
         showMeta &&
         isFinalAnswer &&
         message.status === "done" &&
         message.usage && (
           <div className="kl-msg__meta kl-num">
-            {message.model?.id} · {formatTokens(message.usage.totalTokens)} tokens
+            {message.model?.id} · {i18n.t("message.tokens", { count: message.usage.totalTokens ?? 0, tokens: formatTokens(message.usage.totalTokens) })}
             {message.usage.cost ? ` · $${message.usage.cost.toFixed(4)}` : null}
           </div>
         )

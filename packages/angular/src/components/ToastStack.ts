@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, output } from "@angular/core";
 import type { Toast } from "@klymbak/client";
-import { injectAgentState, injectStoreRef } from "../context.ts";
+import { injectAgentState, injectI18n, injectStoreRef } from "../context.ts";
 import { animateWith } from "../transition.ts";
 import { KlIcon } from "./KlIcon.ts";
 
@@ -18,15 +18,20 @@ const icons = { success: "check", danger: "alert", warning: "bell", info: "info"
         <div class="kl-toast kl-tone-{{ toast.tone }}" role="status" (animate.enter)="enter($event)" (animate.leave)="leave($event)">
           <svg klIcon class="kl-toast__icon" [name]="icons[toast.tone]" [size]="16" />
           <div class="kl-toast__body">
-            <strong>{{ toast.title }}</strong>
+            <strong>{{ i18n().text(toast.title) }}</strong>
             @if (toast.body) {
-              <p>{{ toast.body }}</p>
+              <p>{{ i18n().text(toast.body) }}</p>
             }
             @if (toast.sessionId) {
-              <button type="button" class="kl-btn kl-btn--sm" (click)="open(toast)">Open</button>
+              <button type="button" class="kl-btn kl-btn--sm" (click)="open(toast)">{{ i18n().t("toast.open") }}</button>
             }
           </div>
-          <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Dismiss" (click)="store().dismissToast(toast.id)">
+          <button
+            type="button"
+            class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+            [attr.aria-label]="i18n().t('common.dismiss')"
+            (click)="store().dismissToast(toast.id)"
+          >
             <svg klIcon name="close" [size]="12" />
           </button>
         </div>
@@ -38,6 +43,7 @@ export class ToastStack {
   readonly openSession = output<string>();
   protected readonly store = injectStoreRef();
   protected readonly state = injectAgentState();
+  protected readonly i18n = injectI18n();
   protected readonly icons = icons;
   protected readonly enter = animateWith("kl-toast", "enter");
   protected readonly leave = animateWith("kl-toast", "leave");

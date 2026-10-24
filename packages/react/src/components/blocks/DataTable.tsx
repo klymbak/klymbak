@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TableBlock, TableColumn } from "@klymbak/protocol";
-import { fillTemplate, formatValue, toneClass } from "@klymbak/client";
+import { fillTemplate, toneClass } from "@klymbak/client";
 import { cx, displayText } from "../../util";
-import { useChatActions } from "../../context";
+import { useChatActions, useI18n } from "../../context";
 import { KlIcon } from "../KlIcon";
 
 const PAGE = 10;
@@ -12,6 +12,7 @@ const align = (column: TableColumn) => column.align ?? (numeric(column) ? "right
 
 export function DataTable({ block }: { block: TableBlock }) {
   const actions = useChatActions();
+  const i18n = useI18n();
   const [expanded, setExpanded] = useState(false);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
@@ -77,7 +78,7 @@ export function DataTable({ block }: { block: TableBlock }) {
       return <span className="kl-code">{column.key === "id" && typeof value === "number" ? `#${value}` : displayText(value)}</span>;
     }
     if (column.format === "email") return <span className="kl-table__email">{displayText(value)}</span>;
-    return formatValue(value, column.format, column.currency);
+    return i18n.formatValue(value, column.format, column.currency);
   }
 
   return (
@@ -85,12 +86,10 @@ export function DataTable({ block }: { block: TableBlock }) {
       {(block.title || block.rows.length > 0) && (
         <div className="kl-table__bar">
           <span className="kl-table__title">{block.title}</span>
-          <span className="kl-table__count kl-num">
-            {total.toLocaleString()} {total === 1 ? "row" : "rows"}
-          </span>
-          <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" title="Copy as CSV" onClick={copyCsv}>
+          <span className="kl-table__count kl-num">{i18n.t("table.rows", { count: total })}</span>
+          <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" title={i18n.t("table.copyCsv")} onClick={copyCsv}>
             <KlIcon name={copied ? "check" : "copy"} size={14} />
-            {copied ? "Copied" : "CSV"}
+            {i18n.t(copied ? "table.copied" : "table.csv")}
           </button>
         </div>
       )}
@@ -112,7 +111,7 @@ export function DataTable({ block }: { block: TableBlock }) {
               ))}
               {hasRowActions && (
                 <th className="kl-table__actions-head">
-                  <span className="kl-sr-only">Actions</span>
+                  <span className="kl-sr-only">{i18n.t("table.actions")}</span>
                 </th>
               )}
             </tr>
@@ -146,7 +145,7 @@ export function DataTable({ block }: { block: TableBlock }) {
             {!block.rows.length && (
               <tr>
                 <td colSpan={block.columns.length + (hasRowActions ? 1 : 0)} className="kl-table__empty">
-                  No rows
+                  {i18n.t("table.empty")}
                 </td>
               </tr>
             )}
@@ -157,21 +156,17 @@ export function DataTable({ block }: { block: TableBlock }) {
         <div className="kl-table__foot">
           {hidden > 0 ? (
             <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" onClick={() => setExpanded(true)}>
-              Show {hidden} more
+              {i18n.t("common.showMore", { count: hidden })}
             </button>
           ) : (
             expanded &&
             block.rows.length > PAGE && (
               <button type="button" className="kl-btn kl-btn--ghost kl-btn--sm" onClick={() => setExpanded(false)}>
-                Show fewer
+                {i18n.t("common.showFewer")}
               </button>
             )
           )}
-          {total > block.rows.length && (
-            <span className="kl-faint">
-              Showing {block.rows.length} of {total.toLocaleString()}
-            </span>
-          )}
+          {total > block.rows.length && <span className="kl-faint">{i18n.t("common.showingOf", { shown: block.rows.length, total })}</span>}
           {block.caption && <span className="kl-faint kl-table__caption">{block.caption}</span>}
         </div>
       )}

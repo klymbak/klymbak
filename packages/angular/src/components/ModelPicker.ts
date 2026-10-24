@@ -2,7 +2,7 @@ import { DOCUMENT } from "@angular/common";
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, afterRenderEffect, computed, inject, input, signal, viewChild } from "@angular/core";
 import type { ModelInfo, ThinkingLevel } from "@klymbak/protocol";
 import { formatContext, selectCurrentModel, selectModels } from "@klymbak/client";
-import { injectAgentState, injectStoreRef } from "../context.ts";
+import { injectAgentState, injectI18n, injectStoreRef } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 
 @Component({
@@ -15,18 +15,26 @@ import { KlIcon } from "./KlIcon.ts";
     @let model = current();
     <div #root class="kl-models" (keydown.escape)="open.set(false)">
       <button type="button" class="kl-models__button" [attr.aria-expanded]="open()" aria-haspopup="listbox" (click)="toggle()">
-        <span class="kl-models__name">{{ model?.name ?? (models().length ? "Choose a model" : "No models") }}</span>
+        <span class="kl-models__name">{{ model?.name ?? i18n().t(models().length ? "models.choose" : "models.none") }}</span>
         @if (model) {
           <span class="kl-models__provider">{{ model.providerName }}</span>
         }
         @if (model?.reasoning && s.thinkingLevel !== "off") {
-          <span class="kl-pill kl-tone-accent">think: {{ s.thinkingLevel }}</span>
+          <span class="kl-pill kl-tone-accent">{{ i18n().t("models.thinkingPill", { level: levelLabel(s.thinkingLevel) }) }}</span>
         }
         <svg klIcon name="chevronDown" [size]="12" />
       </button>
       @if (open()) {
         <div class="kl-models__panel kl-models__panel--{{ placement() }}" role="listbox">
-          <input #search class="kl-input" type="search" placeholder="Search models" aria-label="Search models" [value]="query()" (input)="query.set(search.value)" />
+          <input
+            #search
+            class="kl-input"
+            type="search"
+            [placeholder]="i18n().t('models.search')"
+            [attr.aria-label]="i18n().t('models.search')"
+            [value]="query()"
+            (input)="query.set(search.value)"
+          />
           <div class="kl-models__groups kl-scroll">
             @for (group of groups(); track group.provider) {
               <div class="kl-models__group">
@@ -43,13 +51,13 @@ import { KlIcon } from "./KlIcon.ts";
                     <span class="kl-models__option-name">{{ option.name }}</span>
                     <span class="kl-models__badges">
                       @if (option.local) {
-                        <span class="kl-pill kl-tone-success">local</span>
+                        <span class="kl-pill kl-tone-success">{{ i18n().t("models.local") }}</span>
                       }
                       @if (option.reasoning) {
-                        <span class="kl-pill kl-tone-accent">reasoning</span>
+                        <span class="kl-pill kl-tone-accent">{{ i18n().t("models.reasoning") }}</span>
                       }
                       @if (option.input.includes("image")) {
-                        <span class="kl-pill">vision</span>
+                        <span class="kl-pill">{{ i18n().t("models.vision") }}</span>
                       }
                       <span class="kl-faint kl-num">{{ formatContext(option.contextWindow) }}</span>
                     </span>
@@ -58,13 +66,13 @@ import { KlIcon } from "./KlIcon.ts";
               </div>
             }
             @if (!groups().length) {
-              <p class="kl-models__empty">{{ models().length ? "No models match." : "No providers are configured on the server. Add an API key or a local model server." }}</p>
+              <p class="kl-models__empty">{{ i18n().t(models().length ? "models.noMatch" : "models.noProviders") }}</p>
             }
           </div>
           @if (levels().length > 1) {
             <div class="kl-models__thinking">
-              <span>Thinking</span>
-              <div class="kl-segmented" role="radiogroup" aria-label="Thinking level">
+              <span>{{ i18n().t("models.thinking") }}</span>
+              <div class="kl-segmented" role="radiogroup" [attr.aria-label]="i18n().t('models.thinkingLevel')">
                 @for (level of levels(); track level) {
                   <button
                     type="button"
@@ -72,7 +80,7 @@ import { KlIcon } from "./KlIcon.ts";
                     [attr.aria-checked]="s.thinkingLevel === level"
                     [class.active]="s.thinkingLevel === level"
                     (click)="store().setThinkingLevel(level)"
-                  >{{ level }}</button>
+                  >{{ levelLabel(level) }}</button>
                 }
               </div>
             </div>
@@ -86,6 +94,7 @@ export class ModelPicker {
   readonly placement = input<"up" | "down">("up");
   protected readonly store = injectStoreRef();
   protected readonly state = injectAgentState();
+  protected readonly i18n = injectI18n();
   protected readonly open = signal(false);
   protected readonly query = signal("");
   protected readonly formatContext = formatContext;
@@ -124,6 +133,10 @@ export class ModelPicker {
       document.addEventListener("mousedown", onOutside);
       destroyRef.onDestroy(() => document.removeEventListener("mousedown", onOutside));
     });
+  }
+
+  protected levelLabel(level: ThinkingLevel) {
+    return this.i18n().t(`models.level.${level}`);
   }
 
   protected isCurrent(model: ModelInfo) {

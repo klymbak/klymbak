@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from "@angular/core";
 import type { StatItem, StatsBlock } from "@klymbak/protocol";
-import { formatValue, toneClass } from "@klymbak/client";
+import { toneClass } from "@klymbak/client";
+import { injectI18n } from "../../context.ts";
 import { KlIcon } from "../KlIcon.ts";
 
 function deltaTone(item: StatItem) {
@@ -45,11 +46,12 @@ function deltaText(delta: number) {
 })
 export class StatGrid {
   readonly block = input.required<StatsBlock>();
+  protected readonly i18n = injectI18n();
   protected readonly toneClass = toneClass;
   protected readonly deltaTone = deltaTone;
   protected readonly deltaText = deltaText;
 
   protected value(item: StatItem) {
-    return typeof item.value === "number" ? formatValue(item.value, item.format, item.currency) : item.value;
+    return typeof item.value === "number" ? this.i18n().formatValue(item.value, item.format, item.currency) : item.value;
   }
 }

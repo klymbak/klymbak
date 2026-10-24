@@ -1,15 +1,17 @@
 import { useState } from "react";
+import { useI18n } from "../context";
 import { cx } from "../util";
 import { KlIcon } from "./KlIcon";
 
 export function ThinkingBlock({ text, active, redacted }: { text: string; active?: boolean; redacted?: boolean }) {
+  const i18n = useI18n();
   const [open, setOpen] = useState(false);
   if (!text.trim() && !redacted && !active) return null;
   return (
     <div className="kl-think">
       <button type="button" className="kl-think__toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
         <KlIcon name="brain" size={14} />
-        <span>{active ? "Thinking" : "Reasoning"}</span>
+        <span>{i18n.t(active ? "thinking.active" : "thinking.done")}</span>
         {active && (
           <span className="kl-think__dots" aria-hidden="true">
             <i />
@@ -21,7 +23,7 @@ export function ThinkingBlock({ text, active, redacted }: { text: string; active
       </button>
       {(open || (active && text)) && (
         <p className={cx("kl-think__text", active && !open && "kl-think__text--live")}>
-          {redacted ? "The model's reasoning is hidden by the provider." : text.trim()}
+          {redacted ? i18n.t("thinking.redacted") : text.trim()}
         </p>
       )}
     </div>

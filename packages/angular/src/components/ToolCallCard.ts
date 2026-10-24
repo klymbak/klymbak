@@ -1,21 +1,21 @@
 import { NgComponentOutlet } from "@angular/common";
 import { Component, booleanAttribute, inject, input, signal, type DoCheck } from "@angular/core";
 import { humanize, type ToolPart, type ToolStatus } from "@klymbak/protocol";
-import { RENDERERS } from "../context.ts";
+import { RENDERERS, injectI18n } from "../context.ts";
 import { ApprovalPrompt } from "./ApprovalPrompt.ts";
 import { KlIcon } from "./KlIcon.ts";
 import { SubagentTrace } from "./SubagentTrace.ts";
 import { UiBlockView } from "./blocks/UiBlockView.ts";
 
-const STATUS: Record<ToolStatus, { label: string; tone: string }> = {
-  streaming: { label: "Preparing", tone: "neutral" },
-  pending: { label: "Queued", tone: "neutral" },
-  awaiting_approval: { label: "Waiting for you", tone: "warning" },
-  running: { label: "Running", tone: "info" },
-  done: { label: "Done", tone: "success" },
-  error: { label: "Failed", tone: "danger" },
-  denied: { label: "Denied", tone: "danger" },
-  blocked: { label: "Blocked", tone: "danger" },
+const TONES: Record<ToolStatus, string> = {
+  streaming: "neutral",
+  pending: "neutral",
+  awaiting_approval: "warning",
+  running: "info",
+  done: "success",
+  error: "danger",
+  denied: "danger",
+  blocked: "danger",
 };
 
 const ICONS = { mcp: "plug", builtin: "clock", subagent: "agents", local: "tool" } as const;
@@ -39,7 +39,7 @@ const ICONS = { mcp: "plug", builtin: "clock", subagent: "agents", local: "tool"
         </span>
         <span class="kl-tool__name">{{ card.label }}</span>
         @if (part.server) {
-          <span class="kl-tool__via">via {{ part.server }}</span>
+          <span class="kl-tool__via">{{ i18n().t("tool.via", { server: part.server }) }}</span>
         }
         @if (card.argSummary && !part.subagent) {
           <span class="kl-tool__args">{{ card.argSummary }}</span>
@@ -48,7 +48,7 @@ const ICONS = { mcp: "plug", builtin: "clock", subagent: "agents", local: "tool"
           @if (card.duration) {
             <span class="kl-faint kl-num">{{ card.duration }}</span>
           }
-          <span class="kl-pill kl-tone-{{ card.status.tone }}">{{ card.status.label }}</span>
+          <span class="kl-pill kl-tone-{{ card.tone }}">{{ card.status }}</span>
           <svg klIcon class="kl-tool__chevron" [class.kl-tool__chevron--open]="open()" name="chevronDown" [size]="14" />
         </span>
       </button>
@@ -85,7 +85,7 @@ const ICONS = { mcp: "plug", builtin: "clock", subagent: "agents", local: "tool"
         <div class="kl-tool__details">
           @if (card.args.length > 0) {
             <div class="kl-tool__detail">
-              <span class="kl-tool__detail-label">Input</span>
+              <span class="kl-tool__detail-label">{{ i18n().t("tool.input") }}</span>
               <dl class="kl-tool__argList">
                 @for (arg of card.args; track arg.key) {
                   <dt>{{ humanize(arg.key) }}</dt>
@@ -96,14 +96,22 @@ const ICONS = { mcp: "plug", builtin: "clock", subagent: "agents", local: "tool"
           }
           @if (part.result?.text && !part.subagent) {
             <div class="kl-tool__detail">
-              <span class="kl-tool__detail-label">{{ part.result?.isError ? "Error" : "What the agent saw" }}</span>
+              <span class="kl-tool__detail-label">{{ i18n().t(part.result?.isError ? "tool.error" : "tool.output") }}</span>
               <pre class="kl-tool__output kl-scroll">{{ part.result?.text }}</pre>
             </div>
           }
           <div class="kl-tool__detail kl-faint kl-tool__ids">
             <span class="kl-code">{{ part.name }}</span>
             @if (part.source === "mcp") {
-              <span>MCP tool from <strong>{{ part.server }}</strong></span>
+              <span>
+                @for (piece of i18n().parts("tool.mcpFrom", { server: part.server ?? "" }); track $index) {
+                  @if (piece.arg === "server") {
+                    <strong>{{ piece.text }}</strong>
+                  } @else {
+                    {{ piece.text }}
+                  }
+                }
+              </span>
             }
           </div>
         </div>
@@ -115,6 +123,7 @@ export class ToolCallCard implements DoCheck {
   readonly part = input.required<ToolPart>();
   readonly compact = input(false, { transform: booleanAttribute });
   private readonly renderers = inject(RENDERERS);
+  protected readonly i18n = injectI18n();
   protected readonly open = signal(false);
   protected readonly humanize = humanize;
   private failed = false;
@@ -136,7 +145,7 @@ export class ToolCallCard implements DoCheck {
             long: typeof v === "string" ? v.length > 80 || v.includes("\n") : typeof v === "object",
           }))
         : [];
-    const ms = part.durationMs;
+    const i18n = this.i18n();
     return {
       part,
       args,
@@ -146,12 +155,13 @@ export class ToolCallCard implements DoCheck {
         .slice(0, 3)
         .map((a) => `${humanize(a.key).toLowerCase()}: ${a.value}`)
         .join(" · "),
-      status: STATUS[part.status],
+      status: i18n.t(`tool.status.${part.status}`),
+      tone: TONES[part.status],
       active: ["streaming", "pending", "running"].includes(part.status),
       refused: ["error", "denied", "blocked"].includes(part.status),
       icon: ICONS[part.source ?? "local"],
       label: part.label ?? humanize(part.name),
-      duration: ms === undefined ? "" : ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`,
+      duration: part.durationMs === undefined ? "" : i18n.duration(part.durationMs),
       renderer: part.result ? this.renderers().tools?.[part.name] : undefined,
       blocks: part.result?.ui ?? [],
     };

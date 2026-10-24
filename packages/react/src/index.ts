@@ -28,10 +28,39 @@ export { StatGrid } from "./components/blocks/StatGrid";
 export { KeyValueList } from "./components/blocks/KeyValueList";
 export { MediaGallery } from "./components/blocks/MediaGallery";
 
-export { KlymbakProvider, useAgentStore, useChatActions, useRenderers } from "./context";
-export type { KlymbakProviderProps, KlymbakRenderers, ChatActions } from "./context";
+export { KlymbakProvider, useAgentStore, useChatActions, useI18n, useRenderers } from "./context";
+export type { KlymbakProviderProps, KlymbakRenderers, ChatActions, I18nSource } from "./context";
 
-export { createAgentClient, createAgentStore, AgentApiError, configureFormatting, formatValue, describeCron, timeAgo } from "@klymbak/client";
-export type { AgentClient, AgentClientOptions, AgentState, AgentStore, AgentStoreOptions, Attachment, StreamOptions, Toast } from "@klymbak/client";
+export {
+  createAgentClient,
+  createAgentStore,
+  AgentApiError,
+  configureFormatting,
+  formatValue,
+  describeCron,
+  timeAgo,
+  createI18n,
+  formatMessage,
+  en,
+  loadMessages,
+  locales,
+  matchLocale,
+} from "@klymbak/client";
+export type {
+  AgentClient,
+  AgentClientOptions,
+  AgentState,
+  AgentStore,
+  AgentStoreOptions,
+  Attachment,
+  I18n,
+  Locale,
+  Message,
+  MessageId,
+  Messages,
+  StreamOptions,
+  Text,
+  Toast,
+} from "@klymbak/client";
 export { applyEvent, pendingApprovals, ui } from "@klymbak/protocol";
 export type * from "@klymbak/protocol";

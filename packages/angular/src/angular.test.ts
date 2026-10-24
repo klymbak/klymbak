@@ -3,6 +3,8 @@ import { TestBed, type ComponentFixture } from "@angular/core/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AgentConfigInfo, AgentEvent, ChatMessage, MediaBlock, SessionDetail, TableBlock, ToolPart } from "@klymbak/protocol";
 import { createAgentClient, createAgentStore, formatValue, type AgentStore } from "@klymbak/client";
+import de from "@klymbak/client/locales/de";
+import fr from "@klymbak/client/locales/fr";
 import { CHAT_ACTIONS, injectAgentState, provideAgentStore, provideKlymbak } from "./context.ts";
 import { AgentChat } from "./components/AgentChat.ts";
 import { AgentWidget } from "./components/AgentWidget.ts";
@@ -339,6 +341,31 @@ describe("provideKlymbak", () => {
     await until(view, () => expect(view.el.querySelector(".ready")?.textContent).toBe("Ada"));
     expect(view.el.querySelector(".kl-welcome__title")?.textContent).toBe("Support");
     expect(view.el.querySelector("kl-agent-chat")!.hasAttribute("title")).toBe(false);
+  });
+
+  it("speaks its language, follows input changes and puts a component's messages on top", async () => {
+    const store = testStore();
+    const view = await render(AgentWorkspace, {
+      providers: [provideKlymbak({ baseUrl: "http://test", fetch: testFetch(), locale: "de", messages: de })],
+      inputs: { store, messages: { "chat.newChat": "Neues Gespräch" }, description: "Fragen Sie mich etwas." },
+    });
+    await store.init();
+    await view.stable();
+    expect(button(view.el, "Werkzeuge")).toBeDefined();
+    expect(button(view.el, "Neues Gespräch")).toBeDefined();
+    expect(view.el.querySelector(".kl-welcome__text")?.textContent).toBe("Fragen Sie mich etwas.");
+
+    store.toast({ tone: "info", title: { id: "toast.taskStarted" } }, 0);
+    await view.stable();
+    expect(view.el.querySelector(".kl-toast strong")?.textContent).toBe("Aufgabe gestartet");
+
+    view.fixture.componentRef.setInput("locale", "fr");
+    view.fixture.componentRef.setInput("messages", fr);
+    await view.stable();
+    expect(button(view.el, "Outils")).toBeDefined();
+    expect(button(view.el, "Nouvelle discussion")).toBeDefined();
+    expect(view.el.querySelector(".kl-chat")?.getAttribute("aria-label")).toBe("Discussion avec l'agent");
+    expect(view.el.querySelector(".kl-toast strong")?.textContent).toBe("Tâche lancée");
   });
 });
 

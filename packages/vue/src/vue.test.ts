@@ -3,9 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { h, isReactive, nextTick, watch } from "vue";
 import type { AgentConfigInfo, ChatMessage, MediaBlock, TableBlock } from "@klymbak/protocol";
-import { createAgentClient, formatValue } from "@klymbak/client";
-import { provideAgentStore, provideChatActions } from "./context";
+import { createAgentClient, formatValue, type Text } from "@klymbak/client";
+import de from "@klymbak/client/locales/de";
+import fr from "@klymbak/client/locales/fr";
+import { Klymbak, provideAgentStore, provideChatActions } from "./context";
 import { createAgentStore, type AgentStore } from "./store";
+import AgentWorkspace from "./components/AgentWorkspace.vue";
 import ApprovalPrompt from "./components/ApprovalPrompt.vue";
 import DataTable from "./components/blocks/DataTable.vue";
 import MediaGallery from "./components/blocks/MediaGallery.vue";
@@ -37,7 +40,7 @@ describe("agent store", () => {
     }) as unknown as typeof globalThis.fetch;
     const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch }), persist: false });
     expect(isReactive(store.state)).toBe(true);
-    const titles: string[][] = [];
+    const titles: Text[][] = [];
     watch(() => store.state.toasts.map((t) => t.title), (value) => titles.push(value), { flush: "sync" });
 
     await store.init();
@@ -153,6 +156,29 @@ describe("components", () => {
     expect(wrapper.find(".kl-tool .kl-pill").text()).toBe("Done");
     expect(wrapper.find(".kl-stat__value").text()).toBe("2");
     expect(wrapper.find(".kl-md").html()).toContain("Here you go");
+  });
+
+  it("speaks the plugin's language, follows prop changes and puts a component's messages on top", async () => {
+    const fetch = vi.fn(async (url: string) => {
+      if (url.endsWith("/config")) return json(config);
+      if (url.endsWith("/events")) return new Response(new ReadableStream(), { headers: { "content-type": "text/event-stream" } });
+      return json([]);
+    }) as unknown as typeof globalThis.fetch;
+    const wrapper = mount(AgentWorkspace, {
+      props: { messages: { "chat.newChat": "Neues Gespräch" }, description: "Fragen Sie mich etwas." },
+      global: { plugins: [[Klymbak, { baseUrl: "http://test", fetch, locale: "de", messages: de }]] },
+    });
+    await flushPromises();
+    const button = (text: string) => wrapper.findAll("button").find((b) => b.text().includes(text));
+    expect(button("Werkzeuge")).toBeDefined();
+    expect(button("Neues Gespräch")).toBeDefined();
+    expect(wrapper.find(".kl-welcome__text").text()).toBe("Fragen Sie mich etwas.");
+
+    await wrapper.setProps({ locale: "fr", messages: fr });
+    expect(button("Outils")).toBeDefined();
+    expect(button("Nouvelle discussion")).toBeDefined();
+    expect(wrapper.find(".kl-chat").attributes("aria-label")).toBe("Discussion avec l'agent");
+    wrapper.unmount();
   });
 
   it("escapes HTML in model output", () => {

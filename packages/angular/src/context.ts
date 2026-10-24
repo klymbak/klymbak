@@ -14,7 +14,16 @@ import {
   type Type,
 } from "@angular/core";
 import type { UiAction } from "@klymbak/protocol";
-import { createAgentClient, createAgentStore, type AgentClientOptions, type AgentState, type AgentStore } from "@klymbak/client";
+import {
+  createAgentClient,
+  createAgentStore,
+  createI18n,
+  type AgentClientOptions,
+  type AgentState,
+  type AgentStore,
+  type I18n,
+  type Messages,
+} from "@klymbak/client";
 
 /** Host-app extensions: custom UI blocks and per-tool result renderers. */
 export interface KlymbakRenderers {
@@ -42,6 +51,29 @@ export const CHAT_ACTIONS = new InjectionToken<ChatActions>("klymbak chat action
 });
 /** True inside a themed .kl-root, so nested components don't re-theme. */
 export const INSIDE_ROOT = new InjectionToken<boolean>("klymbak root", { factory: () => false });
+/** The words, numbers and dates of the components below: English unless provideKlymbak() or a Klymbak component says otherwise. */
+export const I18N = new InjectionToken<Signal<I18n>>("klymbak i18n", { factory: () => signal(createI18n()) });
+
+export interface I18nOptions {
+  /** The interface language, a BCP 47 tag such as "fr". Numbers and dates follow it too. */
+  locale?: string;
+  /**
+   * Messages in that language, e.g. the default export of `@klymbak/client/locales/fr`, or a few of your own.
+   * They go over the inherited ones, and anything missing is shown in English.
+   */
+  messages?: Partial<Messages>;
+}
+
+/** `locale` and `messages` over an inherited I18n. */
+function resolveI18n(base: I18n, { locale, messages }: I18nOptions): I18n {
+  if (locale === undefined && !messages) return base;
+  return createI18n({ locale: locale ?? base.locale, messages: messages ? { ...base.messages, ...messages } : base.messages });
+}
+
+/** The nearest I18n, as a signal. Call it in an injection context. */
+export function injectI18n(): Signal<I18n> {
+  return inject(I18N);
+}
 
 const states = new WeakMap<AgentStore, Signal<Readonly<AgentState>>>();
 
@@ -98,7 +130,7 @@ export function provideAgentStore(store: AgentStore): Provider {
   return { provide: STORE, useValue: () => store };
 }
 
-export interface KlymbakOptions extends AgentClientOptions {
+export interface KlymbakOptions extends AgentClientOptions, I18nOptions {
   renderers?: KlymbakRenderers;
   /** Load config and sessions as soon as the store is created. Default true. */
   autoInit?: boolean;
@@ -108,7 +140,7 @@ export interface KlymbakOptions extends AgentClientOptions {
  * Shares one store with every Klymbak component in the app (in `bootstrapApplication`'s providers) or below a
  * component (in its `providers`), like the Vue plugin. Components also work without it when given a `baseUrl`.
  */
-export function provideKlymbak({ renderers, autoInit = true, ...options }: KlymbakOptions): Provider[] {
+export function provideKlymbak({ renderers, autoInit = true, locale, messages, ...options }: KlymbakOptions): Provider[] {
   const providers: Provider[] = [
     {
       provide: STORE,
@@ -126,6 +158,15 @@ export function provideKlymbak({ renderers, autoInit = true, ...options }: Klymb
       useFactory: () => {
         const inherited = inject(RENDERERS, { skipSelf: true, optional: true });
         return computed(() => mergeRenderers(inherited?.() ?? {}, renderers));
+      },
+    });
+  }
+  if (locale !== undefined || messages) {
+    providers.push({
+      provide: I18N,
+      useFactory: () => {
+        const inherited = inject(I18N, { skipSelf: true, optional: true });
+        return computed(() => resolveI18n(inherited?.() ?? createI18n(), { locale, messages }));
       },
     });
   }
@@ -150,14 +191,21 @@ export abstract class StoreHost {
   readonly credentials = input<RequestCredentials>();
   readonly fetch = input<typeof globalThis.fetch>();
   readonly renderers = input<KlymbakRenderers>();
+  /** The interface language, a BCP 47 tag such as "fr". Numbers and dates follow it too. */
+  readonly locale = input<string>();
+  /** Messages in that language, e.g. the default export of `@klymbak/client/locales/fr`. Missing ones are shown in English. */
+  readonly messages = input<Partial<Messages>>();
 
   protected abstract readonly tag: string;
   private readonly inherited = inject(STORE, { optional: true, skipSelf: true });
   private readonly inheritedRenderers = inject(RENDERERS, { skipSelf: true });
+  private readonly inheritedI18n = inject(I18N, { skipSelf: true });
   private resolved?: { store: AgentStore; owned: boolean };
 
   /** Its renderers over the inherited ones, for the components inside it. */
   readonly mergedRenderers = computed(() => mergeRenderers(this.inheritedRenderers(), this.renderers()));
+  /** Its locale and messages over the inherited ones, for itself and the components inside it. */
+  readonly i18n = computed(() => resolveI18n(this.inheritedI18n(), { locale: this.locale(), messages: this.messages() }));
 
   constructor() {
     afterNextRender(() => {
@@ -198,5 +246,6 @@ export const HOST_PROVIDERS: Provider[] = [
     },
   },
   { provide: RENDERERS, useFactory: () => inject(StoreHost, { self: true }).mergedRenderers },
+  { provide: I18N, useFactory: () => inject(StoreHost, { self: true }).i18n },
   { provide: INSIDE_ROOT, useValue: true },
 ];

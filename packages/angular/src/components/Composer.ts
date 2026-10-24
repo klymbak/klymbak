@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, afterRenderEffect, booleanAttribute, computed, input, output, signal, viewChild } from "@angular/core";
 import type { Attachment } from "@klymbak/client";
+import { injectI18n } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 
 export interface ComposerSend {
@@ -20,7 +21,12 @@ export interface ComposerSend {
           @for (file of attachments(); track $index; let i = $index) {
             <span class="kl-composer__file">
               <img [src]="'data:' + file.mimeType + ';base64,' + file.data" [alt]="file.name" />
-              <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" [attr.aria-label]="'Remove ' + file.name" (click)="remove(i)">
+              <button
+                type="button"
+                class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+                [attr.aria-label]="i18n().t('composer.removeFile', { name: file.name })"
+                (click)="remove(i)"
+              >
                 <svg klIcon name="close" [size]="12" />
               </button>
             </span>
@@ -31,9 +37,9 @@ export interface ComposerSend {
         #input
         class="kl-composer__input"
         rows="1"
-        [placeholder]="running() ? 'Add an instruction while the agent works…' : (placeholder() ?? 'Ask anything, or tell the agent what to do…')"
+        [placeholder]="running() ? i18n().t('composer.placeholderRunning') : (placeholder() ?? i18n().t('composer.placeholder'))"
         [disabled]="disabled()"
-        aria-label="Message"
+        [attr.aria-label]="i18n().t('composer.label')"
         (input)="text.set(input.value)"
         (keydown)="onKeyDown($event)"
         (paste)="onPaste($event)"
@@ -41,21 +47,32 @@ export interface ComposerSend {
       <div class="kl-composer__bar">
         <ng-content />
         @if (acceptImages()) {
-          <button type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Attach an image" title="Attach an image" (click)="fileInput.click()">
+          <button
+            type="button"
+            class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm"
+            [attr.aria-label]="i18n().t('composer.attachImage')"
+            [title]="i18n().t('composer.attachImage')"
+            (click)="fileInput.click()"
+          >
             <svg klIcon name="image" [size]="15" />
           </button>
         }
         <input #fileInput type="file" accept="image/*" multiple hidden (change)="onFiles(fileInput)" />
         <span class="kl-composer__spacer"></span>
         @if (running()) {
-          <button type="button" class="kl-btn kl-btn--sm" (click)="stop.emit()"><svg klIcon name="stop" [size]="12" /> Stop</button>
+          <button type="button" class="kl-btn kl-btn--sm" (click)="stop.emit()"><svg klIcon name="stop" [size]="12" /> {{ i18n().t("composer.stop") }}</button>
         }
-        <button type="submit" class="kl-btn kl-btn--primary kl-btn--icon kl-composer__send" [disabled]="!canSend()" [attr.aria-label]="running() ? 'Send instruction' : 'Send'">
+        <button
+          type="submit"
+          class="kl-btn kl-btn--primary kl-btn--icon kl-composer__send"
+          [disabled]="!canSend()"
+          [attr.aria-label]="i18n().t(running() ? 'composer.sendInstruction' : 'composer.send')"
+        >
           <svg klIcon name="send" [size]="16" />
         </button>
       </div>
       @if (running()) {
-        <p class="kl-composer__hint">The agent is working. Anything you send now is added as an instruction it reads after the current step.</p>
+        <p class="kl-composer__hint">{{ i18n().t("composer.runningHint") }}</p>
       }
     </form>
   `,
@@ -68,6 +85,7 @@ export class Composer {
   readonly send = output<ComposerSend>();
   readonly stop = output<void>();
 
+  protected readonly i18n = injectI18n();
   protected readonly text = signal("");
   protected readonly attachments = signal<Attachment[]>([]);
   protected readonly canSend = computed(() => !this.disabled() && (this.text().trim().length > 0 || this.attachments().length > 0));

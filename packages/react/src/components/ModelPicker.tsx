@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { ModelInfo, ThinkingLevel } from "@klymbak/protocol";
 import { formatContext, selectCurrentModel, selectModels } from "@klymbak/client";
-import { useAgentStore } from "../context";
+import { useAgentStore, useI18n } from "../context";
 import { cx } from "../util";
 import { KlIcon } from "./KlIcon";
 
 export function ModelPicker({ placement = "up" }: { placement?: "up" | "down" }) {
   const store = useAgentStore();
+  const i18n = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const root = useRef<HTMLDivElement>(null);
@@ -58,10 +59,10 @@ export function ModelPicker({ placement = "up" }: { placement?: "up" | "down" })
       }}
     >
       <button type="button" className="kl-models__button" aria-expanded={open} aria-haspopup="listbox" onClick={toggle}>
-        <span className="kl-models__name">{current?.name ?? (models.length ? "Choose a model" : "No models")}</span>
+        <span className="kl-models__name">{current?.name ?? i18n.t(models.length ? "models.choose" : "models.none")}</span>
         {current && <span className="kl-models__provider">{current.providerName}</span>}
         {current?.reasoning && store.state.thinkingLevel !== "off" && (
-          <span className="kl-pill kl-tone-accent">think: {store.state.thinkingLevel}</span>
+          <span className="kl-pill kl-tone-accent">{i18n.t("models.thinkingPill", { level: i18n.t(`models.level.${store.state.thinkingLevel}`) })}</span>
         )}
         <KlIcon name="chevronDown" size={12} />
       </button>
@@ -71,8 +72,8 @@ export function ModelPicker({ placement = "up" }: { placement?: "up" | "down" })
             ref={search}
             className="kl-input"
             type="search"
-            placeholder="Search models"
-            aria-label="Search models"
+            placeholder={i18n.t("models.search")}
+            aria-label={i18n.t("models.search")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
@@ -91,9 +92,9 @@ export function ModelPicker({ placement = "up" }: { placement?: "up" | "down" })
                   >
                     <span className="kl-models__option-name">{model.name}</span>
                     <span className="kl-models__badges">
-                      {model.local && <span className="kl-pill kl-tone-success">local</span>}
-                      {model.reasoning && <span className="kl-pill kl-tone-accent">reasoning</span>}
-                      {model.input.includes("image") && <span className="kl-pill">vision</span>}
+                      {model.local && <span className="kl-pill kl-tone-success">{i18n.t("models.local")}</span>}
+                      {model.reasoning && <span className="kl-pill kl-tone-accent">{i18n.t("models.reasoning")}</span>}
+                      {model.input.includes("image") && <span className="kl-pill">{i18n.t("models.vision")}</span>}
                       <span className="kl-faint kl-num">{formatContext(model.contextWindow)}</span>
                     </span>
                   </button>
@@ -102,14 +103,14 @@ export function ModelPicker({ placement = "up" }: { placement?: "up" | "down" })
             ))}
             {!groups.size && (
               <p className="kl-models__empty">
-                {models.length ? "No models match." : "No providers are configured on the server. Add an API key or a local model server."}
+                {i18n.t(models.length ? "models.noMatch" : "models.noProviders")}
               </p>
             )}
           </div>
           {levels.length > 1 && (
             <div className="kl-models__thinking">
-              <span>Thinking</span>
-              <div className="kl-segmented" role="radiogroup" aria-label="Thinking level">
+              <span>{i18n.t("models.thinking")}</span>
+              <div className="kl-segmented" role="radiogroup" aria-label={i18n.t("models.thinkingLevel")}>
                 {levels.map((level) => (
                   <button
                     key={level}
@@ -119,7 +120,7 @@ export function ModelPicker({ placement = "up" }: { placement?: "up" | "down" })
                     className={store.state.thinkingLevel === level ? "active" : undefined}
                     onClick={() => store.setThinkingLevel(level)}
                   >
-                    {level}
+                    {i18n.t(`models.level.${level}`)}
                   </button>
                 ))}
               </div>

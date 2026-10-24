@@ -1,6 +1,6 @@
 import { memo, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { ChatMessage } from "@klymbak/protocol";
-import { useOptionalAgentStore } from "../context";
+import { useI18n, useOptionalAgentStore } from "../context";
 import { MessageItem } from "./MessageItem";
 import { KlIcon } from "./KlIcon";
 
@@ -35,6 +35,7 @@ export function MessageList({
   empty?: ReactNode;
 }) {
   const store = useOptionalAgentStore();
+  const i18n = useI18n();
   // Only the store's own transcript has revisions; anything else renders without memoizing.
   const revisionOf = store?.getMessageRevision && messages === store.state.messages ? store.getMessageRevision : undefined;
   const scroller = useRef<HTMLDivElement>(null);
@@ -85,12 +86,12 @@ export function MessageList({
           ),
         )}
         <div className="kl-sr-only" aria-live="polite">
-          {running ? "The agent is working" : ""}
+          {running ? i18n.t("messages.working") : ""}
         </div>
       </div>
       {!pinned && (
         <button type="button" className="kl-list__jump kl-btn kl-btn--sm" onClick={() => scrollToBottom(true)}>
-          <KlIcon name="arrowDown" size={12} /> Latest
+          <KlIcon name="arrowDown" size={12} /> {i18n.t("messages.latest")}
         </button>
       )}
     </div>

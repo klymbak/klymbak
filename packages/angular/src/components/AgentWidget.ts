@@ -25,9 +25,9 @@ import { ToastStack } from "./ToastStack.ts";
     "[attr.title]": "null",
   },
   template: `
-    <div class="kl-widget__panel" role="dialog" [attr.aria-label]="title() ?? 'Agent'" [klTransition]="open()" klTransitionName="kl-widget">
-      <kl-agent-chat [title]="title()" [suggestions]="suggestions()" (action)="action.emit($event)">
-        <button klHeaderEnd type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" aria-label="Close" (click)="open.set(false)">
+    <div class="kl-widget__panel" role="dialog" [attr.aria-label]="title() ?? i18n().t('widget.label')" [klTransition]="open()" klTransitionName="kl-widget">
+      <kl-agent-chat [title]="title()" [description]="description()" [suggestions]="suggestions()" (action)="action.emit($event)">
+        <button klHeaderEnd type="button" class="kl-btn kl-btn--ghost kl-btn--icon kl-btn--sm" [attr.aria-label]="i18n().t('common.close')" (click)="open.set(false)">
           <svg klIcon name="close" [size]="14" />
         </button>
       </kl-agent-chat>
@@ -35,9 +35,9 @@ import { ToastStack } from "./ToastStack.ts";
     @if (!open()) {
       <button type="button" class="kl-widget__launcher" (click)="open.set(true)">
         <svg klIcon name="sparkle" [size]="18" />
-        <span>{{ label() }}</span>
+        <span>{{ label() ?? i18n().t("widget.launcher") }}</span>
         @if (waiting()) {
-          <span class="kl-widget__dot" aria-label="Approval waiting"></span>
+          <span class="kl-widget__dot" [attr.aria-label]="i18n().t('widget.approvalWaiting')"></span>
         }
       </button>
     }
@@ -46,7 +46,9 @@ import { ToastStack } from "./ToastStack.ts";
 })
 export class AgentWidget extends StoreHost implements OnInit {
   readonly title = input<string>();
-  readonly label = input("Ask the agent");
+  /** Text under the title on the welcome screen. Defaults to the server's app.description. */
+  readonly description = input<string>();
+  readonly label = input<string>();
   readonly suggestions = input<string[]>();
   readonly theme = input<"auto" | "light" | "dark">("auto");
   readonly position = input<"right" | "left">("right");
