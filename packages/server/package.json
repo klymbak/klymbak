@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Agent harness for chat-native admin panels: tools, MCP, hooks, approvals, subagents, scheduled tasks and an HTTP/SSE API. Built on pi.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",

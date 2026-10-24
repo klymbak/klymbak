@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "React components for chat-native admin panels: streaming chat, tool cards, approvals, subagent traces, generative UI, model picker.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
