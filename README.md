@@ -175,7 +175,7 @@ Install the [plugin](packages/strapi) instead: `npm install @klymbak/strapi`, ad
 
 - `text` is what the model reads. Keep it compact; it is truncated past 24k characters.
 - `ui` blocks go only to the browser: `table`, `stats`, `chart` (bar/line/area), `keyvalue`, `media` (images and videos as previews, other files as tiles that open them), `markdown`, `alert`, `actions` (buttons that send a prompt or emit an event to your app) and `custom` (your own Vue component). A 500-row table costs no tokens.
-- Options: `approval` (boolean or a function of the arguments returning `{ title, description, risk }`), `roles`, `readOnly`, `sequential`, `maxResultChars`.
+- Options: `label` (the tool card's name) and `summary` (what the Tools panel says it does, in place of the description written for the model), each a string or a function of the person's locale; `approval` (boolean or a function of the arguments returning `{ title, description, risk }`), `roles`, `readOnly`, `sequential`, `maxResultChars`.
 
 `ctx` gives every tool the signed-in `user`, `sessionId`, `signal`, `headless` (unattended) and `progress(text)` for live status lines.
 
@@ -233,6 +233,28 @@ Procedures and house rules: how we write an article, what to check before publis
 ### Scheduled tasks
 
 Define them in config (`schedules: [{ id, name, cron, prompt, agent?, audience? }]`), create them in the **Schedules** panel, or ask the agent ("every weekday at 8, …"). Each run is an unattended session owned by the schedule's owner. People in its audience see the result and get a notification.
+
+### Languages
+
+The components come in 12 languages besides English (`locale` and `messages`, see [`@klymbak/client`](packages/client#languages)), and the server writes what people read in their language too: tool names and summaries in the Tools panel, approval titles, refusals, notices and errors. The components send their `locale` as `Accept-Language`, and the server puts it on `ctx.user.locale`, unless `auth` set one already. What the model reads (the prompt, tool descriptions and results) stays English; the model answers in the language people write in.
+
+```ts
+import { createTranslator, defineTool } from "@klymbak/server";
+
+const t = createTranslator(
+  { label: "Refund order", title: "Refund {amount} on order {id}" },
+  { de: { label: "Bestellung erstatten", title: "{amount} für Bestellung {id} erstatten" } },
+);
+
+defineTool({
+  name: "refund_order",
+  label: (locale) => t(locale, "label"),
+  approval: (args, ctx) => ({ title: t(ctx.user.locale, "title", args) }),
+  // …
+});
+```
+
+`t` picks the closest language ("de-AT" gets `de`) and falls back to English message by message. Messages use the same ICU MessageFormat basics as the components' catalogs. A schedule keeps its owner's language for its unattended runs, and the model is asked to write their report in it.
 
 ### Models and providers
 

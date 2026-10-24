@@ -1,5 +1,6 @@
 import { defineTool, Type, ui, type ToolDefinition, type ToolOutput } from "@klymbak/server";
 import shippedIndex from "./docs-index.json";
+import { t } from "./messages.ts";
 
 /**
  * Strapi's documentation, read live from docs.strapi.io: its llms.txt index (every page's title
@@ -339,7 +340,8 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
 
   const search = defineTool({
     name: "search_strapi_docs",
-    label: "Search Strapi docs",
+    label: (lang) => t(lang, "tool.searchDocs.label"),
+    summary: (lang) => t(lang, "tool.searchDocs.summary"),
     description:
       "Searches the official Strapi 5 documentation (docs.strapi.io) by page title and summary. Use it for questions about how Strapi works or how to do something in the admin panel: roles and permissions, locales, the Content-type Builder, the Media Library, Draft & Publish, Releases, Review Workflows, API tokens, webhooks, settings. Returns pages with a one-line summary; read one with read_strapi_docs.",
     readOnly: true,
@@ -368,7 +370,8 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
 
   const read = defineTool({
     name: "read_strapi_docs",
-    label: "Read Strapi docs",
+    label: (lang) => t(lang, "tool.readDocs.label"),
+    summary: (lang) => t(lang, "tool.readDocs.summary"),
     description:
       'Reads a page of the official Strapi documentation as Markdown. Pass a page from search_strapi_docs (e.g. "cms/features/rbac") or a docs.strapi.io link. Long pages return their outline first; then read the section you need.',
     readOnly: true,
@@ -393,7 +396,7 @@ export function docsTools(options: DocsOptions = {}): ToolDefinition<any>[] {
       const url = `${base}/${path}`;
       return {
         text: `Source: ${url}\n\n${pageExcerpt(text, section)}`,
-        ui: ui.actions([{ label: "Open in Strapi docs", kind: "link", href: url }]),
+        ui: ui.actions([{ label: t(ctx.user.locale, "action.openDocs"), kind: "link", href: url }]),
       };
     },
   });

@@ -247,9 +247,14 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     }
   }
 
+  let configRequest = 0;
+
   async function refreshConfig() {
+    const request = ++configRequest;
     try {
-      state.config = await client.getConfig();
+      const config = await client.getConfig();
+      // After two quick language changes, the first answer can arrive last: keep the latest request's.
+      if (request === configRequest) state.config = config;
     } catch {
       // Keep the previous config; the next notification will retry.
     }
@@ -506,6 +511,18 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     pageContext = context?.trim() || undefined;
   }
 
+  /**
+   * The language for the server to write in: tool labels, approvals, notices and errors. The Klymbak components call
+   * it with their `locale`; when it changes, the Tools panel loads again in the new language.
+   */
+  function setLocale(locale: string | undefined) {
+    if (client.locale === locale) return;
+    client.setLocale(locale);
+    if (state.ready) void refreshConfig();
+    // A first load under way asked in the old language: ask again once it has finished.
+    else void initializing?.then(() => (state.ready ? refreshConfig() : undefined));
+  }
+
   /** Stops all streams. A later init() starts over, e.g. when React StrictMode mounts a component twice. */
   function dispose() {
     stopStream();
@@ -538,6 +555,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     openSession,
     send,
     setContext,
+    setLocale,
     steer,
     abort,
     decide,

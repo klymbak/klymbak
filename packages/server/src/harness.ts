@@ -4,7 +4,7 @@ import { StringEnum, Type, type Api, type ImageContent, type Model, type TextCon
 import {
   addUsage,
   emptyUsage,
-  humanize,
+  matchLocale,
   type AgentEvent,
   type ChatMessage,
   type RunStatus,
@@ -13,7 +13,9 @@ import {
   type UsageInfo,
 } from "@klymbak/protocol";
 import { createContextManager } from "./context.ts";
-import { attachEventMapper, toUsageInfo, type ToolMeta } from "./events.ts";
+import { errorText } from "./errors.ts";
+import { attachEventMapper, toUsageInfo, type Refusal, type ToolMeta } from "./events.ts";
+import { t } from "./messages.ts";
 import { turnContext } from "./prompt.ts";
 import type { AgentRuntime } from "./runtime.ts";
 import {
@@ -21,6 +23,7 @@ import {
   defineTool,
   resolveApproval,
   toAgentTool,
+  toolLabel,
   type NormalizedOutput,
   type ToolResultDetails,
 } from "./tool.ts";
@@ -87,7 +90,7 @@ export class Harness {
   private readonly hooks: Hook[];
   private toolIndex = new Map<string, ToolDefinition<any>>();
   private readonly rawOutputs = new Map<string, NormalizedOutput>();
-  private readonly blocked = new Map<string, "denied" | "blocked">();
+  private readonly blocked = new Map<string, Refusal>();
   private readonly startedAt = new Map<string, number>();
   private readonly hookFollowUps = new Set<string>();
   private readonly unsubscribe: () => void;
@@ -193,13 +196,13 @@ export class Harness {
     try {
       await this.agent.prompt({ role: "user", content, timestamp: Date.now() });
     } catch (error) {
-      return { status: "error", text: "", error: errorMessage(error), usage: this.runUsage };
+      return { status: "error", text: "", error: errorText(error, this.user.locale), usage: this.runUsage };
     }
 
     const added = this.agent.state.messages.slice(before);
     const last = [...added].reverse().find((m) => m.role === "assistant");
     if (!last || last.role !== "assistant") {
-      return { status: "error", text: "", error: this.agent.state.errorMessage ?? "The model returned no response.", usage: this.runUsage };
+      return { status: "error", text: "", error: this.agent.state.errorMessage ?? t(this.user.locale, "notice.noResponse"), usage: this.runUsage };
     }
     const status: RunStatus = last.stopReason === "aborted" ? "aborted" : last.stopReason === "error" ? "error" : "completed";
     const text = last.content
@@ -228,7 +231,7 @@ export class Harness {
   private toolMeta(name: string): ToolMeta | undefined {
     const tool = this.toolIndex.get(name);
     if (!tool) return undefined;
-    return { label: tool.label ?? humanize(tool.name), source: tool.source ?? "local", server: tool.server };
+    return { label: toolLabel(tool, this.user.locale), source: tool.source ?? "local", server: tool.server };
   }
 
   private matchingHooks(toolName: string, key: keyof Hook): Hook[] {
@@ -250,8 +253,9 @@ export class Harness {
     });
   }
 
-  private refuse(toolCallId: string, kind: "denied" | "blocked", reason: string) {
-    this.blocked.set(toolCallId, kind);
+  /** Refuses a call: `reason` tells the model why, `shown` the person, in their language. */
+  private refuse(toolCallId: string, status: Refusal["status"], reason: string, shown: string) {
+    this.blocked.set(toolCallId, { status, text: shown });
     return { block: true, reason };
   }
 
@@ -262,7 +266,14 @@ export class Harness {
     const { runtime } = this.options;
 
     if (tool.roles?.length && !tool.roles.some((role) => this.user.roles.includes(role))) {
-      return this.refuse(toolCallId, "blocked", `Permission denied: ${name} requires the ${tool.roles.join(" or ")} role.`);
+      // "editor or admin" in the sentence's language, which is English when the person's has no messages.
+      const roles = new Intl.ListFormat(matchLocale(this.user.locale, t.locales) ?? "en", { type: "disjunction" }).format(tool.roles);
+      return this.refuse(
+        toolCallId,
+        "blocked",
+        `Permission denied: ${name} requires the ${tool.roles.join(" or ")} role.`,
+        t(this.user.locale, "refused.role", { roles }),
+      );
     }
 
     // Policy hooks: any deny wins, then ask, then allow.
@@ -275,11 +286,23 @@ export class Harness {
         result = await hook.preToolUse!({ tool, args, toolCallId, ctx });
       } catch (error) {
         runtime.logger.error(`preToolUse hook "${hook.name}" failed`, errorMessage(error));
-        return this.refuse(toolCallId, "blocked", `The ${hook.name} policy check failed, so the action was not run.`);
+        return this.refuse(
+          toolCallId,
+          "blocked",
+          `The ${hook.name} policy check failed, so the action was not run.`,
+          t(this.user.locale, "refused.hookFailed", { hook: hook.name }),
+        );
       }
       if (!result?.decision) continue;
       if (result.decision === "deny") {
-        return this.refuse(toolCallId, "blocked", `Blocked by policy (${hook.name}): ${result.reason ?? "not allowed"}`);
+        return this.refuse(
+          toolCallId,
+          "blocked",
+          `Blocked by policy (${hook.name}): ${result.reason ?? "not allowed"}`,
+          result.reason
+            ? t(this.user.locale, "refused.policy", { hook: hook.name, reason: result.reason })
+            : t(this.user.locale, "refused.policyNoReason", { hook: hook.name }),
+        );
       }
       if (result.decision === "ask") {
         decision = "ask";
@@ -306,6 +329,7 @@ export class Harness {
         toolCallId,
         "denied",
         "This action needs a person's approval, and nobody is available in an unattended run. Don't retry; recommend the action in your report instead.",
+        t(this.user.locale, "refused.headless"),
       );
     }
 
@@ -331,12 +355,23 @@ export class Harness {
           reason: outcome.reason,
         },
       });
-      if (outcome.aborted) return this.refuse(toolCallId, "denied", "The run was stopped before anyone approved this action.");
-      if (outcome.expired) return this.refuse(toolCallId, "denied", "Nobody approved this action in time. Don't retry unless the user asks.");
+      const locale = this.user.locale;
+      if (outcome.aborted) {
+        return this.refuse(toolCallId, "denied", "The run was stopped before anyone approved this action.", t(locale, "refused.aborted"));
+      }
+      if (outcome.expired) {
+        return this.refuse(
+          toolCallId,
+          "denied",
+          "Nobody approved this action in time. Don't retry unless the user asks.",
+          t(locale, "refused.expired"),
+        );
+      }
       return this.refuse(
         toolCallId,
         "denied",
         `The user denied this action${outcome.reason ? `: "${outcome.reason}"` : ""}. Don't retry it unless they ask.`,
+        outcome.reason ? t(locale, "refused.deniedReason", { reason: outcome.reason }) : t(locale, "refused.denied"),
       );
     }
 
@@ -394,7 +429,7 @@ export class Harness {
     const calledTools = message.content.some((block) => block.type === "toolCall");
 
     if (calledTools && this.turn >= this.options.maxTurns) {
-      this.notice("warning", `Stopped after ${this.options.maxTurns} steps to stay safe. Say "continue" to let the agent keep going.`);
+      this.notice("warning", t(this.user.locale, "notice.maxTurns", { count: this.options.maxTurns }));
       return { action: "end" as const };
     }
     if (calledTools || this.stopContinues >= MAX_STOP_HOOK_CONTINUES) return undefined;
@@ -425,7 +460,8 @@ export class Harness {
     const roster = subagents.map((s) => `- ${s.name}: ${s.description}`).join("\n");
     return defineTool({
       name: "delegate_task",
-      label: "Delegate to specialist",
+      label: (locale) => t(locale, "tool.delegate.label"),
+      summary: (locale) => t(locale, "tool.delegate.summary"),
       source: "subagent",
       readOnly: true,
       description: `Hand a focused, self-contained task to a specialist agent and receive its final answer. The specialist cannot see this conversation, so include every ID, date range and detail it needs. Independent tasks can be delegated in parallel.\n\nSpecialists:\n${roster}`,

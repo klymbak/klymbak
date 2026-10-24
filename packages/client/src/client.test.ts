@@ -80,6 +80,57 @@ describe("agent store", () => {
     store.dispose();
   });
 
+  it("asks the server for the UI's language and loads the Tools panel again when it changes", async () => {
+    const languages: (string | null)[] = [];
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace("http://test", "");
+      if (path === "/config") languages.push(new Headers(init?.headers).get("accept-language"));
+      if (path === "/config") return json(config);
+      if (path === "/sessions") return json([]);
+      return new Response(new ReadableStream(), { headers: { "content-type": "text/event-stream" } });
+    });
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch: fetch as unknown as typeof globalThis.fetch }), persist: false });
+    store.setLocale("de");
+    await store.init();
+    store.setLocale("de");
+    store.setLocale("pt-BR");
+    await vi.waitFor(() => expect(languages).toEqual(["de", "pt-BR"]));
+    store.dispose();
+  });
+
+  it("keeps the Tools panel in the latest language when it changes during startup or twice in a row", async () => {
+    const pending: { language: string | null; respond: () => void }[] = [];
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace("http://test", "");
+      if (path === "/config") {
+        const language = new Headers(init?.headers).get("accept-language");
+        await new Promise<void>((respond) => pending.push({ language, respond }));
+        return json({ ...config, app: { name: language } });
+      }
+      if (path === "/sessions") return json([]);
+      return new Response(new ReadableStream(), { headers: { "content-type": "text/event-stream" } });
+    });
+    const store = createAgentStore({
+      client: createAgentClient({ baseUrl: "http://test", locale: "en", fetch: fetch as unknown as typeof globalThis.fetch }),
+      persist: false,
+    });
+    const ready = store.init();
+    await vi.waitFor(() => expect(pending).toHaveLength(1));
+    store.setLocale("de");
+    pending[0]!.respond();
+    await ready;
+    await vi.waitFor(() => expect(pending.map((request) => request.language)).toEqual(["en", "de"]));
+
+    store.setLocale("uk");
+    await vi.waitFor(() => expect(pending).toHaveLength(3));
+    pending[2]!.respond();
+    await vi.waitFor(() => expect(store.state.config?.app.name).toBe("uk"));
+    pending[1]!.respond();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(store.state.config?.app.name).toBe("uk");
+    store.dispose();
+  });
+
   it("sends the host app's page context with every run until it is cleared", async () => {
     const server = fakeServer([{ type: "run_end", runId: "r", status: "completed" }]);
     const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch: server.fetch }), persist: false });

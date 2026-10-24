@@ -13,7 +13,9 @@ import type {
   UpdateScheduleRequest,
   UpdateSessionRequest,
 } from "@klymbak/protocol";
-import { AgentError } from "./errors.ts";
+import { AgentError, agentError, errorText } from "./errors.ts";
+import { preferredLocale } from "./i18n.ts";
+import { t } from "./messages.ts";
 import { AgentRuntime } from "./runtime.ts";
 import type { AgentRuntimeConfig, AgentUser, Awaitable } from "./types.ts";
 
@@ -39,15 +41,16 @@ export function createAgentRoutes(runtime: AgentRuntime, options: AgentHttpOptio
   const app = new Hono<Env>();
 
   app.onError((error, c) => {
-    if (error instanceof AgentError) return c.json({ error: error.message, code: error.code }, error.status as 400);
-    if (error instanceof SyntaxError) return c.json({ error: "The request body is not valid JSON.", code: "bad_json" }, 400);
+    const locale = (c.get("user") as AgentUser | undefined)?.locale ?? requestLocale(c);
+    if (error instanceof AgentError) return c.json({ error: errorText(error, locale), code: error.code }, error.status as 400);
+    if (error instanceof SyntaxError) return c.json({ error: t(locale, "error.badJson"), code: "bad_json" }, 400);
     runtime.logger.error("Unhandled API error", error instanceof Error ? error.stack : String(error));
-    return c.json({ error: "Something went wrong on the server.", code: "internal" }, 500);
+    return c.json({ error: t(locale, "error.internal"), code: "internal" }, 500);
   });
 
   if (options.cors) {
     const origin = options.cors === true ? "*" : options.cors.origin;
-    app.use("*", cors({ origin, allowHeaders: ["content-type", "authorization", "x-requested-with"], credentials: origin !== "*" }));
+    app.use("*", cors({ origin, allowHeaders: ["content-type", "authorization", "x-requested-with", "accept-language"], credentials: origin !== "*" }));
   }
 
   app.get("/health", (c) => c.json({ ok: true }));
@@ -55,8 +58,10 @@ export function createAgentRoutes(runtime: AgentRuntime, options: AgentHttpOptio
   app.use("*", async (c, next) => {
     await runtime.start();
     const user = options.auth ? await options.auth(c.req.raw) : LOCAL_USER;
-    if (!user) return c.json({ error: "Sign in to use the assistant.", code: "unauthorized" }, 401);
-    c.set("user", user);
+    if (!user) return c.json({ error: t(requestLocale(c), "error.unauthorized"), code: "unauthorized" }, 401);
+    // The person reads in the language their UI asks for, unless auth already knows it.
+    const locale = user.locale ?? requestLocale(c);
+    c.set("user", locale === user.locale ? user : { ...user, locale });
     await next();
   });
 
@@ -106,7 +111,7 @@ export function createAgentRoutes(runtime: AgentRuntime, options: AgentHttpOptio
 
   // Schedules -----------------------------------------------------------------
   const scheduler = () => {
-    if (!runtime.scheduler) throw new AgentError(404, "Scheduling is turned off on this server.", "no_scheduler");
+    if (!runtime.scheduler) throw agentError(404, "error.noScheduler", "no_scheduler");
     return runtime.scheduler;
   };
   app.get("/schedules", (c) => c.json(runtime.scheduler?.list(c.get("user")) ?? []));
@@ -170,11 +175,15 @@ export function createAgentServer(config: AgentRuntimeConfig & AgentHttpOptions)
   };
 }
 
+function requestLocale(c: Context): string | undefined {
+  return preferredLocale(c.req.header("accept-language"));
+}
+
 async function body<T>(c: Context, fallback?: T): Promise<T> {
   const text = await c.req.text();
   if (!text) {
     if (fallback !== undefined) return fallback;
-    throw new AgentError(400, "This request needs a JSON body.", "bad_json");
+    throw agentError(400, "error.needsBody", "bad_json");
   }
   return JSON.parse(text) as T;
 }

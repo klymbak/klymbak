@@ -9,12 +9,15 @@ import {
 } from "@earendil-works/pi-ai";
 import {
   readSseStream,
+  type AgentConfigInfo,
   type AgentEvent,
   type ChatMessage,
   type ToolPart,
 } from "@klymbak/protocol";
 import { createAgentRoutes } from "./http.ts";
 import { redactPii } from "./hooks.ts";
+import { createTranslator } from "./i18n.ts";
+import { reportLanguage } from "./prompt.ts";
 import { AgentRuntime } from "./runtime.ts";
 import { memoryStorage } from "./storage.ts";
 import { defineTool } from "./tool.ts";
@@ -447,5 +450,104 @@ describe("scheduler", () => {
     expect(session.messages.at(-1)!.parts).toEqual([{ type: "text", text: "All quiet." }]);
     expect(runtime.scheduler!.list(admin)[0]!.lastRun?.status).toBe("completed");
     expect(runtime.scheduler!.list(support)).toEqual([]);
+  });
+});
+
+describe("languages", () => {
+  const german: AgentUser = { ...admin, locale: "de" };
+  const t = createTranslator(
+    { label: "Refund order", summary: "Refunds an order." },
+    { de: { label: "Bestellung erstatten", summary: "Erstattet eine Bestellung." } },
+  );
+  const refund = defineTool({
+    name: "refund_order",
+    label: (locale) => t(locale, "label"),
+    summary: (locale) => t(locale, "summary"),
+    description: "Refund an order",
+    parameters: Type.Object({ id: Type.String() }),
+    approval: true,
+    execute: ({ id }) => `Refunded ${id}`,
+  });
+
+  it("writes labels, approvals and refusals in the person's language, and keeps the model's text in English", async () => {
+    setup({ tools: [refund] });
+    expect((await runtime.createSession(german)).title).toBe("Neue Unterhaltung");
+
+    let seenByModel = "";
+    faux.setResponses([
+      fauxAssistantMessage(fauxToolCall("refund_order", { id: "A1" }), { stopReason: "toolUse" }),
+      (context) => {
+        seenByModel = lastToolResult(context.messages);
+        return fauxAssistantMessage("Verstanden.");
+      },
+    ]);
+    const { detail } = await run(german, "Erstatte A1", (event, sessionId) => {
+      if (event.type === "tool_update" && event.patch.approval?.status === "pending") {
+        void runtime.decide(german, sessionId, event.patch.approval.id, { approved: false, reason: "Zu viel" });
+      }
+    });
+    expect(tools(detail.messages)[0]).toMatchObject({
+      label: "Bestellung erstatten",
+      status: "denied",
+      approval: { title: "Bestellung erstatten", status: "denied" },
+      result: { text: "Abgelehnt: „Zu viel“" },
+    });
+    expect(seenByModel).toBe(`The user denied this action: "Zu viel". Don't retry it unless they ask.`);
+    expect(detail.title).toBe("Erstatte A1");
+  });
+
+  it("writes notices in the person's language", async () => {
+    setup({ maxTurns: 2 });
+    faux.setResponses(
+      Array.from({ length: 3 }, (_, i) => fauxAssistantMessage(fauxToolCall("lookup_order", { id: `L${i}` }), { stopReason: "toolUse" })),
+    );
+    const { detail } = await run({ ...admin, locale: "uk-UA" }, "Loop forever");
+    expect(detail.messages.at(-1)!.parts).toEqual([
+      { type: "text", text: "Зупинено після 2 кроків задля безпеки. Напишіть «продовжуй», щоб агент працював далі." },
+    ]);
+  });
+
+  it("takes the language from Accept-Language for the Tools panel and errors, unless auth knows it", async () => {
+    setup({ tools: [refund] });
+    const app = createAgentRoutes(runtime, { auth: (req) => (req.headers.get("authorization") ? admin : null) });
+    const headers = { authorization: "x", "accept-language": "de-AT,de;q=0.9,en;q=0.8" };
+
+    const config = (await (await app.request("/config", { headers })).json()) as AgentConfigInfo;
+    expect(config.app.name).toBe("Assistent");
+    expect(config.tools[0]).toMatchObject({ label: "Bestellung erstatten", description: "Erstattet eine Bestellung." });
+    const missing = await app.request("/sessions/nope", { headers });
+    expect(await missing.json()).toEqual({ error: "Unterhaltung nicht gefunden.", code: "not_found" });
+    const anonymous = await app.request("/sessions", { headers: { "accept-language": "de" } });
+    expect(await anonymous.json()).toEqual({ error: "Melde dich an, um den Assistenten zu verwenden.", code: "unauthorized" });
+
+    const english = (await (await app.request("/config", { headers: { authorization: "x" } })).json()) as AgentConfigInfo;
+    expect(english.tools[0]).toMatchObject({ label: "Refund order", description: "Refunds an order." });
+
+    const known = createAgentRoutes(runtime, { auth: () => ({ ...admin, locale: "uk" }) });
+    const ukrainian = (await (await known.request("/config", { headers })).json()) as AgentConfigInfo;
+    expect(ukrainian.app.name).toBe("Асистент");
+  });
+
+  it("keeps a schedule owner's language for its unattended runs", async () => {
+    const storage = memoryStorage();
+    setup({ schedules: [], storage });
+    await runtime.start();
+    await runtime.scheduler!.create({ name: "Digest", prompt: "Summarize", cron: "0 9 * * 1" }, german, "user");
+    expect((await storage.listSchedules())[0]!.owner).toEqual({ id: "u1", name: "Ada Admin", roles: ["admin"], locale: "de" });
+  });
+
+  it("asks for an unattended run's report in its reader's language, and lets people choose theirs in chat", async () => {
+    setup();
+    const seen: string[] = [];
+    const capture = (context: { messages: Message[] }) => (seen.push(JSON.stringify(context.messages.at(-1))), fauxAssistantMessage("ok"));
+    faux.setResponses([capture, capture]);
+    await runtime.runHeadless({ user: { ...admin, locale: "uk" }, prompt: "List this week's drafts", title: "Weekly drafts" });
+    await run(german, "List this week's drafts");
+
+    expect(seen[0]).toContain("The person who reads this run uses Ukrainian: write everything in it, the report included.");
+    expect(seen[1]).not.toContain("The person who reads this run");
+    expect(reportLanguage("ja-JP-u-ca-japanese")).toContain("uses Japanese (Japan):");
+    expect(reportLanguage("en_US")).toContain("uses American English:");
+    expect(reportLanguage(undefined)).toBeUndefined();
   });
 });

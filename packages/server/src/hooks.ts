@@ -4,18 +4,19 @@ import type { AgentUser, Hook, HookContext, ToolDefinition } from "./types.ts";
 /** Asks a person before matching tools run, e.g. MCP tools you don't control. */
 export function requireApproval(options: {
   tools: string[] | RegExp;
-  title?: string | ((tool: ToolDefinition<any>, args: any) => string);
+  /** A function also gets the context, whose `user.locale` is the person's language. */
+  title?: string | ((tool: ToolDefinition<any>, args: any, ctx: HookContext) => string);
   risk?: Risk;
   reason?: string;
 }): Hook {
   return {
     name: "require-approval",
     tools: options.tools,
-    preToolUse: ({ tool, args }) => ({
+    preToolUse: ({ tool, args, ctx }) => ({
       decision: "ask",
       reason: options.reason,
       approval: {
-        title: typeof options.title === "function" ? options.title(tool, args) : options.title,
+        title: typeof options.title === "function" ? options.title(tool, args, ctx) : options.title,
         risk: options.risk,
       },
     }),

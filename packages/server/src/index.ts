@@ -14,6 +14,8 @@ export type { AgentStorage, ScheduleRecord, SessionFilter, SessionRecord, Sessio
 export { auditTrail, maskText, redactPii, requireApproval } from "./hooks.ts";
 export type { AuditEntry } from "./hooks.ts";
 export { AgentError } from "./errors.ts";
+export { createTranslator, localize, preferredLocale } from "./i18n.ts";
+export type { Localized, Translator } from "./i18n.ts";
 export { HARNESS_GUIDELINES } from "./prompt.ts";
 export { loadSkills, parseSkill } from "./skills.ts";
 export type * from "./types.ts";

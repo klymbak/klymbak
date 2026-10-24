@@ -186,7 +186,9 @@ export default {
 };
 ```
 
-Text set in the plugin's `app` option is shown as written in every language. Leave `name`, `description` or `suggestions` out to get the plugin's own in each admin's language. Text the server writes stays English for now: tool names and descriptions in the Tools panel, and the titles on approval cards. The model answers in the language people write in.
+Text set in the plugin's `app` option is shown as written in every language. Leave `name`, `description` or `suggestions` out to get the plugin's own in each admin's language.
+
+Text the server writes follows the admin's language too: tool names and summaries in the Tools panel, approval cards, the tables and alerts of the content tools, notices and errors. Scheduled runs use the language of the admin who created them, and the model is asked to write their report in it. These strings live in the plugin's server (`server/src/locales`), so the translations in `app.ts` don't reach them. What the model reads stays English, and the model answers in the language people write in.
 
 ### Scheduled tasks
 

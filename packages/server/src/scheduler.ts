@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { Cron } from "croner";
 import { Type } from "@earendil-works/pi-ai";
-import { ui, type CreateScheduleRequest, type ScheduleInfo, type UpdateScheduleRequest } from "@klymbak/protocol";
-import { AgentError, notFound } from "./errors.ts";
+import { ui, validLocale, type CreateScheduleRequest, type ScheduleInfo, type UpdateScheduleRequest } from "@klymbak/protocol";
+import { agentError, notFound } from "./errors.ts";
+import { t } from "./messages.ts";
 import type { AgentRuntime } from "./runtime.ts";
 import type { AgentStorage, ScheduleRecord } from "./storage.ts";
 import { defineTool } from "./tool.ts";
@@ -68,10 +69,10 @@ export class Scheduler {
   }
 
   async create(input: CreateScheduleRequest, owner: AgentUser, source: "user" | "agent"): Promise<ScheduleInfo> {
-    if (!input.name?.trim() || !input.prompt?.trim()) throw new AgentError(400, "A schedule needs a name and a prompt.");
+    if (!input.name?.trim() || !input.prompt?.trim()) throw agentError(400, "error.scheduleFields");
     this.nextRun(input.cron, input.timezone);
     if (input.agent && !this.runtime.subagents.some((s) => s.name === input.agent)) {
-      throw new AgentError(400, `Unknown agent "${input.agent}".`);
+      throw agentError(400, "error.unknownAgent", undefined, { agent: input.agent });
     }
     const record: ScheduleRecord = {
       id: randomUUID().slice(0, 8),
@@ -82,7 +83,8 @@ export class Scheduler {
       agent: input.agent,
       enabled: input.enabled ?? true,
       source,
-      owner: { id: owner.id, name: owner.name, roles: [...owner.roles] },
+      // The owner's language too, so unattended runs write labels and notices in it.
+      owner: { id: owner.id, name: owner.name, roles: [...owner.roles], locale: owner.locale },
       createdAt: Date.now(),
     };
     await this.storage.saveSchedule(record);
@@ -95,7 +97,7 @@ export class Scheduler {
     const job = this.manageable(id, user);
     const record = { ...job.record };
     if (record.source === "config" && (patch.cron || patch.prompt || patch.name)) {
-      throw new AgentError(400, "Built-in schedules can only be paused or resumed.");
+      throw agentError(400, "error.builtinSchedulePatch");
     }
     if (patch.cron !== undefined || patch.timezone !== undefined) this.nextRun(patch.cron ?? record.cron, patch.timezone ?? record.timezone);
     Object.assign(record, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)));
@@ -107,7 +109,7 @@ export class Scheduler {
 
   async remove(id: string, user: AgentUser) {
     const job = this.manageable(id, user);
-    if (job.record.source === "config") throw new AgentError(400, "Built-in schedules can't be deleted. Pause them instead.");
+    if (job.record.source === "config") throw agentError(400, "error.builtinScheduleDelete");
     job.cron.stop();
     this.jobs.delete(id);
     await this.storage.deleteSchedule(id);
@@ -117,8 +119,8 @@ export class Scheduler {
   /** Starts a run immediately. Resolves once it has started, not when it finishes. */
   runNow(id: string, user: AgentUser) {
     const job = this.jobs.get(id);
-    if (!job || !this.canSee(job.record, user)) throw notFound("Schedule");
-    if (job.running) throw new AgentError(409, "This task is already running.", "busy");
+    if (!job || !this.canSee(job.record, user)) throw notFound("error.scheduleNotFound");
+    if (job.running) throw agentError(409, "error.scheduleRunning", "busy");
     void this.execute(id);
   }
 
@@ -151,7 +153,7 @@ export class Scheduler {
     const scope = this.scope(record);
     try {
       const owner = record.owner ?? this.runtime.systemUser;
-      const date = new Date().toLocaleDateString("en-US", {
+      const date = new Date().toLocaleDateString(validLocale(owner.locale) ?? "en-US", {
         month: "short",
         day: "numeric",
         hour: "2-digit",
@@ -203,7 +205,7 @@ export class Scheduler {
       probe.stop();
       return next;
     } catch (error) {
-      throw new AgentError(400, `Invalid cron expression "${expression}": ${error instanceof Error ? error.message : error}`, "invalid_cron");
+      throw agentError(400, "error.invalidCron", "invalid_cron", { expression, error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -213,9 +215,9 @@ export class Scheduler {
 
   private manageable(id: string, user: AgentUser): Job {
     const job = this.jobs.get(id);
-    if (!job || !this.canSee(job.record, user)) throw notFound("Schedule");
+    if (!job || !this.canSee(job.record, user)) throw notFound("error.scheduleNotFound");
     if (job.record.owner?.id !== user.id && !user.roles.includes("admin")) {
-      throw new AgentError(403, "Only the owner or an admin can change this schedule.", "forbidden");
+      throw agentError(403, "error.scheduleForbidden", "forbidden");
     }
     return job;
   }
@@ -251,7 +253,8 @@ export class Scheduler {
     return [
       defineTool({
         name: "schedule_task",
-        label: "Schedule a recurring task",
+        label: (locale) => t(locale, "tool.schedule.label"),
+        summary: (locale) => t(locale, "tool.schedule.summary"),
         source: "builtin",
         description:
           "Create a recurring task that runs unattended on a cron schedule, e.g. a Monday 9:00 report. The prompt must be self-contained (it runs without this conversation) and should read and report rather than make changes. Cron fields: minute hour day-of-month month day-of-week.",
@@ -264,47 +267,52 @@ export class Scheduler {
         execute: async (args, ctx) => {
           const schedule = await this.create({ ...args, timezone: this.runtime.timezone }, ctx.user, "agent");
           const next = schedule.nextRunAt ? new Date(schedule.nextRunAt).toLocaleString("en-US", { timeZone: schedule.timezone }) : "never";
+          const locale = ctx.user.locale;
           return {
             text: `Scheduled "${schedule.name}" (id ${schedule.id}, cron "${schedule.cron}", ${schedule.timezone}). Next run: ${next}.`,
             ui: ui.keyValue(
               [
-                { label: "Task", value: schedule.name },
-                { label: "Schedule", value: schedule.cron, format: "code" },
-                { label: "Next run", value: schedule.nextRunAt, format: "datetime" },
-                { label: "Prompt", value: schedule.prompt },
+                { label: t(locale, "schedule.task"), value: schedule.name },
+                { label: t(locale, "schedule.cron"), value: schedule.cron, format: "code" },
+                { label: t(locale, "schedule.nextRun"), value: schedule.nextRunAt, format: "datetime" },
+                { label: t(locale, "schedule.prompt"), value: schedule.prompt },
               ],
-              "Scheduled task created",
+              t(locale, "schedule.created"),
             ),
           };
         },
       }),
       defineTool({
         name: "list_scheduled_tasks",
-        label: "List scheduled tasks",
+        label: (locale) => t(locale, "tool.listSchedules.label"),
+        summary: (locale) => t(locale, "tool.listSchedules.summary"),
         source: "builtin",
         readOnly: true,
         description: "List recurring tasks the user can see, with their schedule, status and last result.",
         parameters: Type.Object({}),
         execute: async (_args, ctx) => {
           const schedules = this.list(ctx.user);
+          const locale = ctx.user.locale;
+          const [active, paused] = [t(locale, "schedule.active"), t(locale, "schedule.paused")];
           return {
             data: schedules.map((s) => ({ id: s.id, name: s.name, cron: s.cron, enabled: s.enabled, prompt: s.prompt, lastRun: s.lastRun?.status })),
             ui: ui.table({
-              title: "Scheduled tasks",
+              title: t(locale, "schedule.list"),
               columns: [
-                { key: "name", label: "Task" },
-                { key: "cron", label: "Schedule", format: "code" },
-                { key: "nextRunAt", label: "Next run", format: "datetime" },
-                { key: "state", label: "State", format: "badge", tones: { active: "success", paused: "neutral" } },
+                { key: "name", label: t(locale, "schedule.task") },
+                { key: "cron", label: t(locale, "schedule.cron"), format: "code" },
+                { key: "nextRunAt", label: t(locale, "schedule.nextRun"), format: "datetime" },
+                { key: "state", label: t(locale, "schedule.state"), format: "badge", tones: { [active]: "success", [paused]: "neutral" } },
               ],
-              rows: schedules.map((s) => ({ ...s, state: s.enabled ? "active" : "paused" })),
+              rows: schedules.map((s) => ({ ...s, state: s.enabled ? active : paused })),
             }),
           };
         },
       }),
       defineTool({
         name: "cancel_scheduled_task",
-        label: "Cancel a scheduled task",
+        label: (locale) => t(locale, "tool.cancelSchedule.label"),
+        summary: (locale) => t(locale, "tool.cancelSchedule.summary"),
         source: "builtin",
         description: "Delete a recurring task the user created. Built-in tasks can only be paused from the Schedules panel.",
         parameters: Type.Object({ id: Type.String({ description: "Schedule id from list_scheduled_tasks" }) }),

@@ -94,7 +94,7 @@ describe("docs pages", () => {
 });
 
 describe("docs tools", () => {
-  const ctx = { signal: new AbortController().signal } as any;
+  const ctx = { signal: new AbortController().signal, user: { id: "1", name: "Editor", roles: [] } } as any;
 
   function setup(pages: Record<string, string>) {
     const requests: string[] = [];
@@ -121,6 +121,10 @@ describe("docs tools", () => {
     const page = (await read.execute({ page: "https://docs.strapi.io/cms/features/rbac" }, ctx)) as { text: string; ui: unknown };
     expect(page.text).toBe("Source: https://docs.strapi.io/cms/features/rbac\n\n# RBAC\n\nRoles live in Settings.");
     expect(page.ui).toEqual({ type: "actions", actions: [{ label: "Open in Strapi docs", kind: "link", href: "https://docs.strapi.io/cms/features/rbac" }] });
+    // People read the link in their language; the model reads the page as it is.
+    const german = (await read.execute({ page: "cms/features/rbac" }, { ...ctx, user: { ...ctx.user, locale: "de-AT" } })) as { text: string; ui: unknown };
+    expect(german.text).toBe(page.text);
+    expect(german.ui).toMatchObject({ actions: [{ label: "In der Strapi-Doku öffnen" }] });
 
     expect(await read.execute({ page: "cms/features/teleport" }, ctx)).toEqual({ text: expect.stringMatching(/^There is no Strapi docs page/), isError: true });
     expect(await read.execute({ page: "../../etc/passwd" }, ctx)).toEqual({ text: expect.stringMatching(/isn't a Strapi docs page/), isError: true });

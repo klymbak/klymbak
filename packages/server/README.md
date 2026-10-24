@@ -10,6 +10,7 @@ Agent harness for chat-native admin panels, built on the [pi](https://github.com
 - **Skills** in Anthropic's `SKILL.md` format (`loadSkills`): procedures and house rules, loaded with a `use_skill` tool when a task calls for them
 - **Scheduled tasks** (cron) that run unattended and notify their audience
 - **Any model**: every pi-ai provider plus OpenAI-compatible endpoints (`lmStudio()`, `ollama()`, `openAICompatible()`)
+- **People's languages**: tool names, approvals, refusals, notices and errors in each person's language (`ctx.user.locale`, from `Accept-Language`), with `createTranslator` for a tool's own text. Built-in text ships in 12 languages besides English; what the model reads stays English
 - **Sessions, steering, context-window management** and an **HTTP + SSE API** (`createAgentServer`), mountable in Hono, Express or any fetch runtime
 
 ```ts

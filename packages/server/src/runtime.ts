@@ -22,9 +22,10 @@ import {
   type UpdateSessionRequest,
 } from "@klymbak/protocol";
 import { ApprovalBroker } from "./approvals.ts";
-import { AgentError, notFound } from "./errors.ts";
+import { agentError, errorText, notFound } from "./errors.ts";
 import { errorMessage, Harness, type HarnessResult } from "./harness.ts";
 import { McpManager } from "./mcp.ts";
+import { t } from "./messages.ts";
 import { ModelRegistry } from "./models.ts";
 import {
   composePrompt,
@@ -32,6 +33,7 @@ import {
   environmentSection,
   HARNESS_GUIDELINES,
   HEADLESS_SECTION,
+  reportLanguage,
   SCHEDULING_SECTION,
   turnContext,
 } from "./prompt.ts";
@@ -56,7 +58,6 @@ import type {
   ToolDefinition,
 } from "./types.ts";
 
-const DEFAULT_TITLE = "New conversation";
 const IDLE_EVICT_MS = 30 * 60_000;
 const SCHEDULING_TOOLS = new Set(["schedule_task", "cancel_scheduled_task"]);
 /** Page context from the client is for orientation, not a document upload. */
@@ -224,19 +225,19 @@ export class AgentRuntime {
 
   async configInfo(user: AgentUser): Promise<AgentConfigInfo> {
     await this.start();
-    const tools = this.toolsFor(user).map(toolInfo);
+    const tools = this.toolsFor(user).map((tool) => toolInfo(tool, user.locale));
     if (this.subagents.length) {
       tools.push({
         name: "delegate_task",
-        label: "Delegate to specialist",
-        description: "Hands a task to one of the specialist agents.",
+        label: t(user.locale, "tool.delegate.label"),
+        description: t(user.locale, "tool.delegate.summary"),
         source: "subagent",
         approval: "never",
         readOnly: true,
       });
     }
     return {
-      app: this.config.app ?? { name: "Assistant" },
+      app: this.config.app ?? { name: t(user.locale, "app.name") },
       user: { id: user.id, name: user.name, roles: user.roles },
       models: await this.models.list(),
       defaultModel: await this.models.defaultRef(),
@@ -277,7 +278,7 @@ export class AgentRuntime {
       id: randomUUID().replace(/-/g, "").slice(0, 16),
       userId: user.id,
       audience: options.audience,
-      title: request.title?.trim() || DEFAULT_TITLE,
+      title: request.title?.trim() || t(user.locale, "session.title"),
       createdAt: now,
       updatedAt: now,
       source: options.source ?? "chat",
@@ -316,7 +317,7 @@ export class AgentRuntime {
   async deleteSession(user: AgentUser, id: string): Promise<void> {
     const handle = await this.handle(user, id);
     if (handle.record.userId !== user.id && !user.roles.includes("admin")) {
-      throw new AgentError(403, "Only the owner can delete this conversation.", "forbidden");
+      throw agentError(403, "error.notOwner", "forbidden");
     }
     handle.harness?.abort();
     await handle.run?.done.catch(() => undefined);
@@ -332,9 +333,9 @@ export class AgentRuntime {
    */
   async startRun(user: AgentUser, sessionId: string, request: RunRequest, listener?: Listener): Promise<ActiveRun> {
     const handle = await this.handle(user, sessionId);
-    if (handle.run) throw new AgentError(409, "The agent is still working on this conversation. Wait for it or stop it first.", "busy");
+    if (handle.run) throw agentError(409, "error.busy", "busy");
     const text = request.prompt?.trim() ?? "";
-    if (!text && !request.images?.length) throw new AgentError(400, "Type a message first.", "empty_prompt");
+    if (!text && !request.images?.length) throw agentError(400, "error.emptyPrompt", "empty_prompt");
 
     const model = await this.models.resolve(request.model ?? handle.record.model);
     const thinking = this.models.clampThinking(model, request.thinkingLevel ?? handle.record.thinkingLevel);
@@ -373,15 +374,15 @@ export class AgentRuntime {
 
   async steer(user: AgentUser, sessionId: string, text: string): Promise<void> {
     const handle = await this.handle(user, sessionId);
-    if (!handle.run || !handle.harness) throw new AgentError(409, "The agent isn't running, so send this as a normal message.", "idle");
-    if (!text.trim()) throw new AgentError(400, "Type a message first.", "empty_prompt");
+    if (!handle.run || !handle.harness) throw agentError(409, "error.idle", "idle");
+    if (!text.trim()) throw agentError(400, "error.emptyPrompt", "empty_prompt");
     handle.harness.steer(text.trim());
   }
 
   async decide(user: AgentUser, sessionId: string, approvalId: string, decision: ApprovalDecision): Promise<void> {
     await this.handle(user, sessionId);
     if (!this.approvals.decide(sessionId, approvalId, decision, user.name)) {
-      throw new AgentError(404, "This approval is no longer waiting for a decision.", "approval_gone");
+      throw agentError(404, "error.approvalGone", "approval_gone");
     }
   }
 
@@ -389,7 +390,7 @@ export class AgentRuntime {
   async runHeadless(options: HeadlessRunOptions): Promise<RunOutcome> {
     await this.start();
     const agent = options.agent ? this.subagents.find((s) => s.name === options.agent) : undefined;
-    if (options.agent && !agent) throw new AgentError(400, `Unknown agent "${options.agent}".`);
+    if (options.agent && !agent) throw agentError(400, "error.unknownAgent", undefined, { agent: options.agent });
     const modelRef = options.model ?? agent?.model;
     const model = await this.models.resolve(modelRef ? parseModelRef(modelRef) : undefined);
     const session = await this.createSession(
@@ -427,23 +428,23 @@ export class AgentRuntime {
   }
 
   async addMcpServer(user: AgentUser, request: AddMcpServerRequest): Promise<McpServerInfo> {
-    if (!this.canManageMcp(user)) throw new AgentError(403, "You can't add integrations.", "forbidden");
+    if (!this.canManageMcp(user)) throw agentError(403, "error.cantAddMcp", "forbidden");
     let url: URL;
     try {
       url = new URL(request.url);
     } catch {
-      throw new AgentError(400, "Enter a full URL, e.g. https://mcp.example.com/mcp.");
+      throw agentError(400, "error.mcpUrl");
     }
-    if (url.protocol !== "https:" && url.protocol !== "http:") throw new AgentError(400, "Only HTTP(S) MCP servers can be added at runtime.");
+    if (url.protocol !== "https:" && url.protocol !== "http:") throw agentError(400, "error.mcpHttpOnly");
     if (this.mcp.has(request.name) && !this.mcp.isRuntime(request.name)) {
-      throw new AgentError(409, `"${request.name}" is already configured on the server.`);
+      throw agentError(409, "error.mcpExists", undefined, { name: request.name });
     }
     return this.mcp.connect(request.name, { url: url.toString(), headers: request.headers }, true);
   }
 
   async removeMcpServer(user: AgentUser, name: string): Promise<void> {
-    if (!this.canManageMcp(user)) throw new AgentError(403, "You can't remove integrations.", "forbidden");
-    if (!this.mcp.isRuntime(name)) throw new AgentError(400, "Only integrations added at runtime can be removed here.");
+    if (!this.canManageMcp(user)) throw agentError(403, "error.cantRemoveMcp", "forbidden");
+    if (!this.mcp.isRuntime(name)) throw agentError(400, "error.mcpNotRuntime");
     await this.mcp.remove(name);
     this.notify({ type: "mcp_update", server: { name, transport: "http", target: "", status: "disabled", tools: [], runtime: true } });
   }
@@ -489,7 +490,7 @@ export class AgentRuntime {
   ): string {
     const runId = randomUUID();
     const { record } = handle;
-    if (record.title === DEFAULT_TITLE) record.title = titleFrom(options.text);
+    if (DEFAULT_TITLES.has(record.title)) record.title = titleFrom(options.text) || record.title;
     record.model = { provider: options.model.provider, id: options.model.id };
     record.thinkingLevel = options.thinking;
     const emit = this.emitter(handle, user, options.headless);
@@ -516,6 +517,8 @@ export class AgentRuntime {
     let prompt = options.text;
     try {
       const contexts: string[] = options.pageContext ? [`Open in the app right now: ${options.pageContext}`] : [];
+      const language = options.headless ? reportLanguage(user.locale) : undefined;
+      if (language) contexts.push(language);
       let blocked: string | undefined;
       for (const hook of this.hooks) {
         if (!hook.userPromptSubmit) continue;
@@ -548,8 +551,8 @@ export class AgentRuntime {
         record.messages = harness.agent.state.messages;
       }
     } catch (error) {
-      result = { status: "error", text: "", error: errorMessage(error), usage: result.usage };
-      this.logger.error(`Run ${runId} failed`, result.error);
+      result = { status: "error", text: "", error: errorText(error, user.locale), usage: result.usage };
+      this.logger.error(`Run ${runId} failed`, errorMessage(error));
     }
 
     if (result.status === "error" && result.error) {
@@ -677,10 +680,10 @@ export class AgentRuntime {
     let handle = this.handles.get(id);
     if (!handle) {
       const record = await this.storage.getSession(id);
-      if (!record) throw notFound("Conversation");
+      if (!record) throw notFound("error.sessionNotFound");
       handle = this.cache(record);
     }
-    if (!canSeeSession(handle.record, { userId: user.id, roles: user.roles })) throw notFound("Conversation");
+    if (!canSeeSession(handle.record, { userId: user.id, roles: user.roles })) throw notFound("error.sessionNotFound");
     handle.lastUsed = Date.now();
     return handle;
   }
@@ -762,9 +765,13 @@ function pageContext(value: unknown): string | undefined {
   return text.length > MAX_PAGE_CONTEXT_CHARS ? `${text.slice(0, MAX_PAGE_CONTEXT_CHARS)}…` : text;
 }
 
+/** A new conversation's title in every language, so the first prompt can replace it. */
+const DEFAULT_TITLES = new Set(t.locales.map((locale) => t(locale, "session.title")));
+
+/** The first line of a prompt, shortened; empty when it has none. */
 function titleFrom(prompt: string): string {
   const line = prompt.split("\n")[0]!.trim();
-  if (line.length <= 60) return line || DEFAULT_TITLE;
+  if (line.length <= 60) return line;
   const cut = line.slice(0, 60);
   return `${cut.slice(0, cut.lastIndexOf(" ") > 30 ? cut.lastIndexOf(" ") : 60)}…`;
 }
