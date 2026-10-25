@@ -49,7 +49,8 @@ export function parseSkill(markdown: string, where = "SKILL.md"): SkillDefinitio
   return skill;
 }
 
-function parseFrontmatter(text: string): Record<string, string> {
+/** The fields of YAML frontmatter, between its --- lines: plain, quoted and block scalars as text. */
+export function parseFrontmatter(text: string): Record<string, string> {
   const fields: Record<string, string> = {};
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {

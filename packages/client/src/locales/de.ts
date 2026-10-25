@@ -227,6 +227,12 @@ export default {
   "media.file": "Datei",
   "media.open": "{name} öffnen",
 
+  "sources.title": "Quellen",
+  "sources.count": "{count, plural, one {# Quelle} other {# Quellen}}",
+  "sources.open": "{title} öffnen",
+  "sources.expand": "Ganze Passage lesen",
+  "sources.collapse": "Weniger anzeigen",
+
   "chart.label": "{title}: {count, plural, one {# Datenpunkt} other {# Datenpunkte}}",
   "chart.defaultTitle": "Diagramm",
 

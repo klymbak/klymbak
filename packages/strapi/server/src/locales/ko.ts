@@ -81,5 +81,4 @@ export default {
 
   "action.open": "열기",
   "action.openInContentManager": "콘텐츠 관리자에서 열기",
-  "action.openDocs": "Strapi 문서에서 열기",
 } satisfies PluginMessages;

@@ -1,7 +1,7 @@
 import { Component, input, type Provider, type Type } from "@angular/core";
 import { TestBed, type ComponentFixture } from "@angular/core/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AgentConfigInfo, AgentEvent, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, SessionDetail, TableBlock, ToolPart } from "@klymbak/protocol";
+import type { AgentConfigInfo, AgentEvent, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, SessionDetail, SourcesBlock, TableBlock, ToolPart } from "@klymbak/protocol";
 import { createAgentClient, createAgentStore, formatValue, type AgentStore } from "@klymbak/client";
 import de from "@klymbak/client/locales/de";
 import fr from "@klymbak/client/locales/fr";
@@ -17,6 +17,7 @@ import { ModelPicker } from "./components/ModelPicker.ts";
 import { ToastStack } from "./components/ToastStack.ts";
 import { DataTable } from "./components/blocks/DataTable.ts";
 import { MediaGallery } from "./components/blocks/MediaGallery.ts";
+import { SourceList } from "./components/blocks/SourceList.ts";
 import { UiBlockView } from "./components/blocks/UiBlockView.ts";
 
 const cleanups: (() => void)[] = [];
@@ -476,6 +477,35 @@ describe("components", () => {
     expect(tiles()).toHaveLength(12);
     await click(view, button(view.el, "Show 3 more"));
     expect(tiles()).toHaveLength(15);
+  });
+
+  it("cites sources with links, where each passage is, and a long excerpt that opens", async () => {
+    const block: SourcesBlock = {
+      type: "sources",
+      items: [
+        { title: "Returns and refunds", url: "https://help.acme.test/returns", source: "Help center", location: "Damaged items", excerpt: "If an item arrives damaged, we send a replacement." },
+        { title: "Torn rainfly", url: "javascript:alert(1)", source: "Resolved tickets", excerpt: "We sent a replacement rainfly. ".repeat(12).trim() },
+        ...Array.from({ length: 4 }, (_, i) => ({ title: `Page ${i + 3}` })),
+      ],
+    };
+    const view = await render(SourceList, { inputs: { block } });
+    const items = () => view.el.querySelectorAll(".kl-sources__item");
+    expect(view.el.querySelector(".kl-sources__title")?.textContent).toBe("Sources");
+    expect(view.el.querySelector(".kl-sources__count")?.textContent).toBe("6 sources");
+    const link = items()[0]!.querySelector("a")!;
+    expect([link.getAttribute("href"), link.target, link.textContent]).toEqual(["https://help.acme.test/returns", "_blank", "Returns and refunds"]);
+    expect(items()[0]!.querySelector(".kl-sources__where")?.textContent).toBe("Help center · Damaged items");
+    expect(items()[0]!.querySelector(".kl-sources__excerpt")?.textContent).toBe("If an item arrives damaged, we send a replacement.");
+    expect(items()[0]!.querySelector("button")).toBeNull();
+    // A script URL never becomes a link; a long excerpt shows three lines until opened.
+    expect(items()[1]!.querySelector("a")).toBeNull();
+    expect(items()[1]!.querySelector(".kl-sources__excerpt")?.classList.contains("kl-sources__excerpt--clamped")).toBe(true);
+    await click(view, button(view.el, "Read the whole passage"));
+    expect(items()[1]!.querySelector(".kl-sources__excerpt")?.classList.contains("kl-sources__excerpt--clamped")).toBe(false);
+    expect(items()[1]!.querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
+    expect(items()).toHaveLength(4);
+    await click(view, button(view.el, "Show 2 more"));
+    expect(items()).toHaveLength(6);
   });
 
   it("empties the message box on send, even when Enter comes before Angular has rendered the typing", async () => {

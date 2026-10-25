@@ -81,5 +81,4 @@ export default {
 
   "action.open": "Abrir",
   "action.openInContentManager": "Abrir no Content Manager",
-  "action.openDocs": "Abrir na documentação do Strapi",
 } satisfies PluginMessages;

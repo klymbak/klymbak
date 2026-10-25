@@ -24,6 +24,7 @@ export { default as ChartView } from "./components/blocks/ChartView.vue";
 export { default as StatGrid } from "./components/blocks/StatGrid.vue";
 export { default as KeyValueList } from "./components/blocks/KeyValueList.vue";
 export { default as MediaGallery } from "./components/blocks/MediaGallery.vue";
+export { default as SourceList } from "./components/blocks/SourceList.vue";
 
 export { createAgentClient, AgentApiError } from "@klymbak/client";
 export type {

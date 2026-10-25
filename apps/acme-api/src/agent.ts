@@ -10,6 +10,7 @@ import {
 } from "@klymbak/server";
 import { DATA_DIR, DB_PATH } from "./db/database.ts";
 import { hooks } from "./hooks.ts";
+import { knowledgeBase } from "./knowledge.ts";
 import { tools } from "./tools/index.ts";
 import { demoAuth } from "./users.ts";
 
@@ -23,8 +24,9 @@ Facts:
 - Channels: web, mobile app, marketplace. Ships to US, CA, UK, DE, FR, NL, SE, AU.
 - Parcels go out with UPS, FedEx, DHL and USPS; the carrier_* tools talk to the ParcelPoint carrier platform.
 - Refund rules are enforced automatically when you call refund_order (small refunds go straight through, larger ones ask for approval, some roles have limits). Just call the tool when a refund is warranted.
+- Acme's policies (returns, shipping, warranty, discount codes), product information, the tent manual and how past tickets were resolved are in the knowledge base (search_knowledge), and which spare parts fit which product is in its parts table (lookup_knowledge). Follow the policies, and say which one an answer rests on.
 
-When a customer has a problem, check the order, the shipment and the ticket before proposing a fix, then offer concrete options (refund, replacement, return label, discount code).`;
+When a customer has a problem, check the order, the shipment and the ticket before proposing a fix, look up the policy and how similar tickets were resolved, then offer concrete options (refund, replacement, return label, discount code).`;
 
 const subagents: SubagentDefinition[] = [
   {
@@ -40,7 +42,21 @@ const subagents: SubagentDefinition[] = [
     description: "Customer-support specialist: investigates a customer's orders, shipments and tickets and drafts the reply.",
     systemPrompt:
       "You are an Acme Outfitters customer-support specialist. Investigate the customer, their order, the shipment and the ticket before acting. Propose the smallest fix that makes the customer whole, and draft replies in a warm, concise tone signed 'The Acme support team'.",
-    tools: ["search_customers", "get_customer", "list_orders", "get_order", "list_tickets", "get_ticket", "reply_to_ticket", "refund_order", "carrier_track_shipment", "carrier_create_return_label"],
+    tools: [
+      "search_customers",
+      "get_customer",
+      "list_orders",
+      "get_order",
+      "list_tickets",
+      "get_ticket",
+      "reply_to_ticket",
+      "refund_order",
+      "carrier_track_shipment",
+      "carrier_create_return_label",
+      "search_knowledge",
+      "read_knowledge",
+      "lookup_knowledge",
+    ],
     maxTurns: 12,
   },
   {
@@ -78,7 +94,7 @@ const schedules: ScheduleDefinition[] = [
     cron: "0 * * * *",
     enabled: false,
     prompt:
-      "Answer up to three open support tickets, most urgent first. For each, read it with get_ticket, check the related order, then reply to the customer with reply_to_ticket. Replies wait for the support team's approval, so write each one ready to send.",
+      "Answer up to three open support tickets, most urgent first. For each, read it with get_ticket, check the related order, look up the policy and how similar tickets were resolved in the knowledge base, then reply to the customer with reply_to_ticket. Replies wait for the support team's approval, so write each one ready to send.",
     audience: ["admin", "support"],
   },
 ];
@@ -134,7 +150,7 @@ export const agent = createAgentServer({
       "lmstudio/qwen/qwen3.6-35b-a3b",
     ],
   },
-  tools,
+  tools: [...tools, ...knowledgeBase],
   mcpServers: {
     carrier: {
       // Node runs the TypeScript server directly (type stripping, Node 22.18+).

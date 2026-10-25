@@ -227,6 +227,12 @@ export default {
   "media.file": "Plik",
   "media.open": "Otwórz {name}",
 
+  "sources.title": "Źródła",
+  "sources.count": "{count, plural, one {# źródło} few {# źródła} many {# źródeł} other {# źródła}}",
+  "sources.open": "Otwórz {title}",
+  "sources.expand": "Przeczytaj cały fragment",
+  "sources.collapse": "Pokaż mniej",
+
   "chart.label": "{title}: {count, plural, one {# punkt danych} few {# punkty danych} many {# punktów danych} other {# punktu danych}}",
   "chart.defaultTitle": "Wykres",
 

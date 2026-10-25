@@ -30,6 +30,7 @@ export { ChartView } from "./components/blocks/ChartView";
 export { StatGrid } from "./components/blocks/StatGrid";
 export { KeyValueList } from "./components/blocks/KeyValueList";
 export { MediaGallery } from "./components/blocks/MediaGallery";
+export { SourceList } from "./components/blocks/SourceList";
 
 export { KlymbakProvider, useAgentStore, useChatActions, useI18n, useRenderers } from "./context";
 export type { KlymbakProviderProps, KlymbakRenderers, ChatActions, I18nSource } from "./context";

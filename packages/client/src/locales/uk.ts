@@ -227,6 +227,12 @@ export default {
   "media.file": "Файл",
   "media.open": "Відкрити {name}",
 
+  "sources.title": "Джерела",
+  "sources.count": "{count, plural, one {# джерело} few {# джерела} many {# джерел} other {# джерела}}",
+  "sources.open": "Відкрити {title}",
+  "sources.expand": "Прочитати весь уривок",
+  "sources.collapse": "Згорнути",
+
   "chart.label": "{title}: {count, plural, one {# точка даних} few {# точки даних} many {# точок даних} other {# точки даних}}",
   "chart.defaultTitle": "Діаграма",
 

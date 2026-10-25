@@ -81,5 +81,4 @@ export default {
 
   "action.open": "打开",
   "action.openInContentManager": "在内容管理器中打开",
-  "action.openDocs": "在 Strapi 文档中打开",
 } satisfies PluginMessages;

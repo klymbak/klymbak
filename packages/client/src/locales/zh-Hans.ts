@@ -226,6 +226,12 @@ export default {
   "media.file": "文件",
   "media.open": "打开 {name}",
 
+  "sources.title": "来源",
+  "sources.count": "{count} 个来源",
+  "sources.open": "打开{title}",
+  "sources.expand": "阅读完整段落",
+  "sources.collapse": "收起",
+
   "chart.label": "{title}：{count} 个数据点",
   "chart.defaultTitle": "图表",
 

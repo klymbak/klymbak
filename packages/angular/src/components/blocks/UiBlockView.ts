@@ -10,11 +10,12 @@ import { ChartView } from "./ChartView.ts";
 import { DataTable } from "./DataTable.ts";
 import { KeyValueList } from "./KeyValueList.ts";
 import { MediaGallery } from "./MediaGallery.ts";
+import { SourceList } from "./SourceList.ts";
 import { StatGrid } from "./StatGrid.ts";
 
 @Component({
   selector: "kl-ui-block-view",
-  imports: [ActionBar, ChartView, DataTable, KeyValueList, KlIcon, MarkdownContent, MediaGallery, NgComponentOutlet, StatGrid],
+  imports: [ActionBar, ChartView, DataTable, KeyValueList, KlIcon, MarkdownContent, MediaGallery, NgComponentOutlet, SourceList, StatGrid],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: "display: contents" },
   template: `
@@ -34,6 +35,9 @@ import { StatGrid } from "./StatGrid.ts";
       }
       @case ("media") {
         <kl-media-gallery [block]="b" />
+      }
+      @case ("sources") {
+        <kl-source-list [block]="b" />
       }
       @case ("actions") {
         <kl-action-bar [block]="b" />

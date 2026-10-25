@@ -9,6 +9,7 @@ import { ChartView } from "./ChartView";
 import { DataTable } from "./DataTable";
 import { KeyValueList } from "./KeyValueList";
 import { MediaGallery } from "./MediaGallery";
+import { SourceList } from "./SourceList";
 import { StatGrid } from "./StatGrid";
 
 export function UiBlockView({ block }: { block: UiBlock }) {
@@ -24,6 +25,8 @@ export function UiBlockView({ block }: { block: UiBlock }) {
       return <KeyValueList block={block} />;
     case "media":
       return <MediaGallery block={block} />;
+    case "sources":
+      return <SourceList block={block} />;
     case "actions":
       return <ActionBar block={block} />;
     case "markdown":

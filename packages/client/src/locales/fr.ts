@@ -227,6 +227,12 @@ export default {
   "media.file": "Fichier",
   "media.open": "Ouvrir {name}",
 
+  "sources.title": "Sources",
+  "sources.count": "{count, plural, one {# source} other {# sources}}",
+  "sources.open": "Ouvrir {title}",
+  "sources.expand": "Lire tout le passage",
+  "sources.collapse": "Afficher moins",
+
   "chart.label": "{title} : {count, plural, one {# point de données} other {# points de données}}",
   "chart.defaultTitle": "Graphique",
 

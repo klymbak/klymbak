@@ -38,5 +38,14 @@
     "@klymbak/protocol": "workspace:*",
     "croner": "^9.1.0",
     "hono": "^4.10.4"
+  },
+  "peerDependencies": {
+    "unpdf": "^1.9.1"
+  },
+  "peerDependenciesMeta": {
+    "unpdf": { "optional": true }
+  },
+  "devDependencies": {
+    "unpdf": "1.9.1"
   }
 }
