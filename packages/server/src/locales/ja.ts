@@ -55,6 +55,8 @@ export default {
   "error.idle": "エージェントは実行中ではありません。通常のメッセージとして送ってください。",
   "error.approvalGone": "この承認はもう判断を待っていません。",
   "error.approvalsPending": "ここには承認待ちの操作があります。先に承認するか拒否してください。",
+  "error.editNotAllowed": "変更できるのは承認に表示されている項目だけで、テキストのみです。",
+  "error.editInvalid": "{fields}の内容はこの操作では使えません。修正してからもう一度承認してください。",
   "error.unknownAgent": "不明なエージェント「{agent}」です。",
   "error.noScheduler": "このサーバーではスケジュール機能が無効です。",
   "error.scheduleFields": "スケジュールには名前と指示が必要です。",

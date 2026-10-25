@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "da {name}",
   "approval.reason": "«{reason}»",
   "approval.expiredNote": "Nessuno ha deciso in tempo",
+  "approval.edited": "modificato",
+
+  "inbox.title": "Approvazioni",
+  "inbox.intro": "Azioni che l'agente ha lasciato alla decisione di una persona, a partire dalla più vecchia. Ognuna resta in attesa finché qualcuno non la approva o la rifiuta.",
+  "inbox.empty": "Niente attende la tua approvazione.",
+  "inbox.open": "Apri la conversazione",
+  "inbox.source.schedule": "Attività pianificata",
+  "inbox.source.api": "Attività in background",
+  "inbox.source.chat": "Conversazione",
 
   "subagent.working": "al lavoro",
   "subagent.showSteps": "Mostra {count, plural, one {# passaggio} other {# passaggi}}",

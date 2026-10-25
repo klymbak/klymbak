@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import type { ApprovalView } from "@klymbak/protocol";
+import { computed, ref } from "vue";
+import type { ApprovalDecision, ApprovalView } from "@klymbak/protocol";
 import { useI18n, useOptionalAgentStore } from "../context";
 import KlIcon from "./KlIcon.vue";
 
-const props = defineProps<{ approval: ApprovalView }>();
-const emit = defineEmits<{ decide: [decision: { approved: boolean; reason?: string; remember?: boolean }] }>();
+const props = defineProps<{
+  approval: ApprovalView;
+  /** The conversation the approval belongs to, when it isn't the open one (the inbox's items). */
+  sessionId?: string;
+}>();
+const emit = defineEmits<{ decide: [decision: ApprovalDecision] }>();
 const store = useOptionalAgentStore();
 const i18n = useI18n();
 
@@ -13,6 +17,9 @@ const remember = ref(false);
 const reason = ref("");
 const denying = ref(false);
 const busy = ref(false);
+/** What the person typed into the fields, by name. */
+const drafts = ref<Record<string, string>>({});
+const fields = computed(() => props.approval.fields ?? []);
 
 const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
 
@@ -22,10 +29,20 @@ async function decide(approved: boolean) {
     return;
   }
   busy.value = true;
-  const decision = { approved, reason: reason.value.trim() || undefined, remember: approved && remember.value };
+  const edits: Record<string, string> = {};
+  for (const field of fields.value) {
+    const draft = drafts.value[field.name];
+    if (draft !== undefined && draft !== field.value) edits[field.name] = draft;
+  }
+  const decision: ApprovalDecision = {
+    approved,
+    reason: reason.value.trim() || undefined,
+    remember: approved && remember.value,
+    ...(approved && Object.keys(edits).length ? { edits } : {}),
+  };
   emit("decide", decision);
   try {
-    await store?.decide(props.approval.id, decision);
+    await store?.decide(props.approval.id, decision, props.sessionId);
   } finally {
     busy.value = false;
   }
@@ -42,6 +59,27 @@ async function decide(approved: boolean) {
       </div>
       <p class="kl-approval__title">{{ approval.title }}</p>
       <p v-if="approval.description" class="kl-approval__desc">{{ approval.description }}</p>
+      <div v-if="fields.length" class="kl-approval__fields">
+        <label v-for="field in fields" :key="field.name" class="kl-label">
+          {{ field.label }}
+          <textarea
+            v-if="field.multiline"
+            class="kl-textarea"
+            rows="4"
+            :value="drafts[field.name] ?? field.value"
+            :disabled="busy"
+            @input="drafts[field.name] = ($event.target as HTMLTextAreaElement).value"
+          />
+          <input
+            v-else
+            class="kl-input"
+            type="text"
+            :value="drafts[field.name] ?? field.value"
+            :disabled="busy"
+            @input="drafts[field.name] = ($event.target as HTMLInputElement).value"
+          />
+        </label>
+      </div>
       <label v-if="denying" class="kl-label kl-approval__reason">
         {{ i18n.t("approval.reasonLabel") }}
         <input v-model="reason" class="kl-input" type="text" :placeholder="i18n.t('approval.reasonPlaceholder')" @keydown.enter="decide(false)" />
@@ -65,6 +103,7 @@ async function decide(approved: boolean) {
         <span class="kl-approval__title">{{ approval.title }}</span>
         <span class="kl-faint">
           <template v-if="approval.decidedBy">{{ i18n.t("approval.decidedBy", { name: approval.decidedBy }) }}</template>
+          <template v-if="approval.edited"> · {{ i18n.t("approval.edited") }}</template>
           <template v-if="approval.reason"> · {{ i18n.t("approval.reason", { reason: approval.reason }) }}</template>
           <template v-if="approval.status === 'expired'">{{ i18n.t("approval.expiredNote") }}</template>
         </span>

@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "由 {name} 决定",
   "approval.reason": "“{reason}”",
   "approval.expiredNote": "无人及时决定",
+  "approval.edited": "已编辑",
+
+  "inbox.title": "审批",
+  "inbox.intro": "智能体留给人来决定的操作，按时间从早到晚排列。每项操作都会等待，直到有人批准或拒绝。",
+  "inbox.empty": "没有等待你批准的内容。",
+  "inbox.open": "打开对话",
+  "inbox.source.schedule": "定时任务",
+  "inbox.source.api": "后台任务",
+  "inbox.source.chat": "对话",
 
   "subagent.working": "工作中",
   "subagent.showSteps": "显示 {count} 个步骤",

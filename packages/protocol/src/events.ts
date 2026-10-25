@@ -41,4 +41,6 @@ export type NotificationEvent =
   | { type: "session_update"; session: SessionSummary }
   | { type: "session_delete"; sessionId: string }
   | { type: "mcp_update"; server: McpServerInfo }
-  | { type: "approval_pending"; sessionId: string; approvalId: string; title: string };
+  | { type: "approval_pending"; sessionId: string; approvalId: string; title: string }
+  /** Someone decided an approval that was waiting, so it leaves everyone's inbox. */
+  | { type: "approval_decided"; sessionId: string; approvalId: string };

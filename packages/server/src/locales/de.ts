@@ -55,6 +55,8 @@ export default {
   "error.idle": "Der Agent läuft gerade nicht. Sende dies als normale Nachricht.",
   "error.approvalGone": "Diese Freigabe wartet nicht mehr auf eine Entscheidung.",
   "error.approvalsPending": "Hier wartet eine Aktion auf Freigabe. Gib sie zuerst frei oder lehne sie ab.",
+  "error.editNotAllowed": "Nur die Felder der Freigabe lassen sich ändern, und nur als Text.",
+  "error.editInvalid": "Die Aktion kann mit dem Inhalt von {fields} nichts anfangen. Ändere ihn und gib erneut frei.",
   "error.unknownAgent": "Unbekannter Agent „{agent}“.",
   "error.noScheduler": "Zeitpläne sind auf diesem Server ausgeschaltet.",
   "error.scheduleFields": "Ein Zeitplan braucht einen Namen und einen Auftrag.",

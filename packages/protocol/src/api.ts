@@ -1,4 +1,4 @@
-import type { ChatMessage, ModelRef, ThinkingLevel, ToolSource, UsageInfo } from "./messages.ts";
+import type { ApprovalView, ChatMessage, ModelRef, ThinkingLevel, ToolSource, UsageInfo } from "./messages.ts";
 
 export interface AgentUserInfo {
   id: string;
@@ -239,6 +239,23 @@ export interface ApprovalDecision {
   reason?: string;
   /** Allow this tool without asking for the rest of the session. */
   remember?: boolean;
+  /** New values for the approval's `fields`, by name, when approving. The call runs with them. */
+  edits?: Record<string, string>;
+}
+
+/** An approval an unattended run left waiting, as the approval inbox lists it for someone who may decide it. */
+export interface ApprovalInboxItem {
+  sessionId: string;
+  sessionTitle: string;
+  source: SessionSource;
+  approval: ApprovalView;
+  /** The tool the call is for. */
+  tool: string;
+  /** Its name in the person's language. */
+  label: string;
+  args?: unknown;
+  /** When the run stopped to wait. */
+  createdAt: number;
 }
 
 export interface CreateScheduleRequest {

@@ -55,6 +55,8 @@ export default {
   "error.idle": "智能体没有在运行，请以普通消息发送。",
   "error.approvalGone": "此批准已不再等待决定。",
   "error.approvalsPending": "此处有操作正在等待批准。请先批准或拒绝。",
+  "error.editNotAllowed": "只能修改审批中显示的字段，且只能改为文本。",
+  "error.editInvalid": "该操作无法接受“{fields}”中的内容。请修改后重新批准。",
   "error.unknownAgent": "未知的智能体“{agent}”。",
   "error.noScheduler": "此服务器已关闭定时任务功能。",
   "error.scheduleFields": "定时任务需要名称和指令。",

@@ -5,6 +5,7 @@ import { createAgentClient, type AgentClientOptions, type Messages } from "@klym
 import { provideAgentStore, provideI18n, provideRenderers, provideRoot, useOptionalAgentStore, type KlymbakRenderers } from "../context";
 import { createAgentStore, type AgentStore } from "../store";
 import AgentChat from "./AgentChat.vue";
+import ApprovalInbox from "./ApprovalInbox.vue";
 import CapabilitiesPanel from "./CapabilitiesPanel.vue";
 import KlIcon from "./KlIcon.vue";
 import SchedulePanel from "./SchedulePanel.vue";
@@ -54,6 +55,8 @@ watch(() => i18n.locale, (locale) => store.setLocale(locale ?? "en"), { immediat
 type Tab = "chats" | "schedules" | "capabilities";
 const tab = ref<Tab>("chats");
 const drawer = ref(false);
+/** While approvals wait, the sidebar offers the approval inbox, which takes the chat's place. */
+const view = ref<"chat" | "inbox">("chat");
 const state = store.state;
 const tabs = computed(() =>
   [
@@ -65,6 +68,12 @@ const tabs = computed(() =>
 
 function showChat() {
   tab.value = "chats";
+  view.value = "chat";
+  drawer.value = false;
+}
+
+function showInbox() {
+  view.value = "inbox";
   drawer.value = false;
 }
 
@@ -93,6 +102,18 @@ onBeforeUnmount(() => {
           <KlIcon name="close" :size="16" />
         </button>
       </div>
+      <button
+        v-if="state.inbox.length || view === 'inbox'"
+        type="button"
+        class="kl-workspace__inbox"
+        :class="{ active: view === 'inbox' }"
+        :aria-pressed="view === 'inbox'"
+        @click="showInbox"
+      >
+        <KlIcon name="shield" :size="15" />
+        <span class="kl-workspace__inbox-label">{{ i18n.t("inbox.title") }}</span>
+        <span v-if="state.inbox.length" class="kl-workspace__badge">{{ i18n.number(state.inbox.length) }}</span>
+      </button>
       <div class="kl-workspace__tabs" role="tablist">
         <button
           v-for="item in tabs"
@@ -109,7 +130,7 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <div class="kl-workspace__panel kl-scroll">
-        <SessionList v-if="tab === 'chats'" @open="drawer = false" />
+        <SessionList v-if="tab === 'chats'" @open="showChat" />
         <SchedulePanel v-else-if="tab === 'schedules'" @open-session="showChat" />
         <CapabilitiesPanel v-else />
       </div>
@@ -127,19 +148,36 @@ onBeforeUnmount(() => {
     </aside>
     <div class="kl-workspace__scrim" @click="drawer = false" />
     <main class="kl-workspace__main">
-      <AgentChat :title="title" :description="description" :suggestions="suggestions" :show-meta="showMeta" @action="emit('action', $event)">
-        <template #header-start>
-          <button
-            type="button"
-            class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
-            :aria-label="i18n.t('workspace.openMenu')"
-            @click="drawer = true"
-          >
-            <KlIcon name="menu" :size="18" />
-          </button>
-        </template>
-        <template #header-end><slot name="header-end" /></template>
-      </AgentChat>
+      <!-- Hidden rather than unmounted, so a half-written message survives a look at the inbox. -->
+      <div class="kl-workspace__view" :hidden="view !== 'chat'">
+        <AgentChat :title="title" :description="description" :suggestions="suggestions" :show-meta="showMeta" @action="emit('action', $event)">
+          <template #header-start>
+            <button
+              type="button"
+              class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
+              :aria-label="i18n.t('workspace.openMenu')"
+              @click="drawer = true"
+            >
+              <KlIcon name="menu" :size="18" />
+            </button>
+          </template>
+          <template #header-end><slot name="header-end" /></template>
+        </AgentChat>
+      </div>
+      <div v-if="view === 'inbox'" class="kl-workspace__view">
+        <ApprovalInbox @open-session="showChat">
+          <template #header-start>
+            <button
+              type="button"
+              class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
+              :aria-label="i18n.t('workspace.openMenu')"
+              @click="drawer = true"
+            >
+              <KlIcon name="menu" :size="18" />
+            </button>
+          </template>
+        </ApprovalInbox>
+      </div>
     </main>
     <ToastStack @open-session="showChat" />
   </div>

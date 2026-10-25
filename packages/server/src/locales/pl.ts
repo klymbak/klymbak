@@ -56,6 +56,8 @@ export default {
   "error.idle": "Agent nie działa, więc wyślij to jako zwykłą wiadomość.",
   "error.approvalGone": "To zatwierdzenie nie czeka już na decyzję.",
   "error.approvalsPending": "Tu czeka działanie na zatwierdzenie. Najpierw je zatwierdź albo odrzuć.",
+  "error.editNotAllowed": "Można zmienić tylko pola widoczne przy zatwierdzeniu, i tylko na tekst.",
+  "error.editInvalid": "Działanie nie przyjmuje tego, co jest w polu {fields}. Popraw to i zatwierdź ponownie.",
   "error.unknownAgent": "Nieznany agent „{agent}”.",
   "error.noScheduler": "Planowanie jest wyłączone na tym serwerze.",
   "error.scheduleFields": "Harmonogram wymaga nazwy i polecenia.",

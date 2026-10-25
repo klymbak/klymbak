@@ -71,9 +71,26 @@ export type ToolOutput =
 
 export interface ApprovalRequest {
   title: string;
-  /** The card's body. Left out, it lists the call's arguments; set it to undefined for a card with the title alone. */
+  /**
+   * The card's body. Left out, it lists the call's arguments, except those in `edit`; set it to undefined for a card
+   * with the title alone.
+   */
   description?: string;
   risk?: Risk;
+  /**
+   * Text arguments the person deciding may change before approving, such as a drafted reply: names, or fields with a
+   * label (in the person's language when it's a function) and `multiline: false` for a single line. The call runs
+   * with their version, and the model is told what changed.
+   */
+  edit?: (string | ApprovalEdit)[];
+}
+
+export interface ApprovalEdit {
+  /** The argument's name. */
+  name: string;
+  label?: Localized;
+  /** A text area (the default) or a single line. */
+  multiline?: boolean;
 }
 
 export type ApprovalPolicy<A> =

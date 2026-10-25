@@ -1,7 +1,7 @@
 import { Component, input, type Provider, type Type } from "@angular/core";
 import { TestBed, type ComponentFixture } from "@angular/core/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AgentConfigInfo, AgentEvent, ChatMessage, MediaBlock, SessionDetail, TableBlock, ToolPart } from "@klymbak/protocol";
+import type { AgentConfigInfo, AgentEvent, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, SessionDetail, TableBlock, ToolPart } from "@klymbak/protocol";
 import { createAgentClient, createAgentStore, formatValue, type AgentStore } from "@klymbak/client";
 import de from "@klymbak/client/locales/de";
 import fr from "@klymbak/client/locales/fr";
@@ -307,6 +307,57 @@ describe("AgentWorkspace", () => {
     await click(view, button(view.el, "Tools"));
     expect(view.el.querySelector(".kl-caps__intro")?.textContent).toContain("Ada");
   });
+
+  it("offers the approval inbox while approvals wait, where a drafted reply can be edited before approving", async () => {
+    const waiting: ApprovalInboxItem = {
+      sessionId: "s7",
+      sessionTitle: "Ticket #7",
+      source: "api",
+      tool: "send_reply",
+      label: "Reply to customer",
+      createdAt: Date.now() - 60_000,
+      approval: { id: "ap1", title: "Reply on ticket #7", status: "pending", waits: true, fields: [{ name: "body", label: "Reply", value: "Your parcel is lost.", multiline: true }] },
+    };
+    let inbox = [waiting];
+    const decisions: unknown[] = [];
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace("http://test", "");
+      if (path === "/config") return json(config);
+      if (path === "/sessions") return json([]);
+      if (path === "/approvals") return json(inbox);
+      if (path === "/sessions/s7/approvals/ap1") {
+        decisions.push(JSON.parse(String(init!.body)));
+        inbox = [];
+        return new Response(null, { status: 204 });
+      }
+      if (path === "/events") return new Response(new ReadableStream(), { headers: { "content-type": "text/event-stream" } });
+      return json({ error: "nope" }, 404);
+    }) as unknown as typeof globalThis.fetch;
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch }), persist: false });
+    cleanups.push(() => store.dispose());
+
+    const view = await render(AgentWorkspace, { inputs: { store, locale: "en" } });
+    await store.init();
+    await until(view, () => expect(store.state.inbox).toHaveLength(1));
+    expect(view.el.querySelector(".kl-workspace__inbox")?.textContent?.replace(/\s+/g, "")).toBe("Approvals1");
+
+    await click(view, view.el.querySelector(".kl-workspace__inbox"));
+    const inboxView = view.el.querySelector(".kl-inbox")!;
+    expect(view.el.querySelector<HTMLElement>("kl-agent-chat")!.closest<HTMLElement>(".kl-workspace__view")!.hidden).toBe(true);
+    expect(inboxView.querySelector(".kl-inbox__meta")?.textContent?.trim()).toBe("Ticket #7Background job · 1 minute ago");
+    expect(inboxView.querySelector(".kl-approval__title")?.textContent).toBe("Reply on ticket #7");
+
+    await type(view, inboxView.querySelector("textarea")!, "Your parcel is on its way.");
+    await click(view, button(inboxView, "Approve"));
+    await until(view, () => expect(decisions).toEqual([{ approved: true, remember: false, edits: { body: "Your parcel is on its way." } }]));
+    expect(view.el.querySelector(".kl-inbox__empty")?.textContent).toBe("Nothing is waiting for your approval.");
+    expect(view.el.querySelector(".kl-workspace__badge")).toBeNull();
+
+    // The entry stays while the inbox is open; going back to the chats hides it.
+    await click(view, view.el.querySelector(".kl-sessions__new"));
+    expect(view.el.querySelector(".kl-inbox")).toBeNull();
+    expect(view.el.querySelector(".kl-workspace__inbox")).toBeNull();
+  });
 });
 
 describe("ToastStack", () => {
@@ -585,7 +636,33 @@ describe("components", () => {
     expect(decide).not.toHaveBeenCalled();
     await type(view, view.el.querySelector<HTMLInputElement>("input[type=text]")!, "Too much");
     await click(view, button(view.el, "Confirm deny"));
-    expect(decide).toHaveBeenCalledWith("ap1", { approved: false, reason: "Too much", remember: false });
+    expect(decide).toHaveBeenCalledWith("ap1", { approved: false, reason: "Too much", remember: false }, undefined);
+  });
+
+  it("sends only the fields a person changed, and shows that the approval was edited", async () => {
+    const decide = vi.fn(async () => true);
+    const approval: ApprovalView = {
+      id: "ap2",
+      title: "Reply on ticket #7",
+      status: "pending",
+      fields: [
+        { name: "body", label: "Reply", value: "Draft", multiline: true },
+        { name: "subject", label: "Subject", value: "Your order", multiline: false },
+      ],
+    };
+    const view = await render(ApprovalPrompt, {
+      inputs: { approval, sessionId: "s7" },
+      providers: [provideAgentStore({ decide } as unknown as AgentStore)],
+    });
+    expect([...view.el.querySelectorAll(".kl-approval__fields .kl-label")].map((label) => label.textContent?.trim())).toEqual(["Reply", "Subject"]);
+    expect(view.el.querySelector<HTMLInputElement>(".kl-approval__fields input")!.value).toBe("Your order");
+    await type(view, view.el.querySelector("textarea")!, "Better draft");
+    await click(view, button(view.el, "Approve"));
+    expect(decide).toHaveBeenCalledWith("ap2", { approved: true, remember: false, edits: { body: "Better draft" } }, "s7");
+
+    view.fixture.componentRef.setInput("approval", { ...approval, status: "approved", decidedBy: "Sam", edited: true });
+    await view.stable();
+    expect(view.el.querySelector(".kl-approval__summary .kl-faint")?.textContent).toBe("by Sam · edited");
   });
 
   it("renders tool cards with their status and UI blocks", async () => {

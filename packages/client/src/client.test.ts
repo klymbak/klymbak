@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { AgentConfigInfo, AgentEvent, SessionDetail } from "@klymbak/protocol";
+import type { AgentConfigInfo, AgentEvent, ApprovalInboxItem, SessionDetail } from "@klymbak/protocol";
 import { createAgentClient } from "./client.ts";
 import { describeCron } from "./format.ts";
 import { renderMarkdown } from "./markdown.ts";
@@ -250,6 +250,73 @@ describe("agent store", () => {
     await vi.waitFor(() => expect(store.state.messages[0]!.parts[0]).toMatchObject({ status: "done", approval: { status: "approved" } }));
     expect(paths).toContain("GET /sessions/s1/stream");
     expect(store.state.running).toBe(false);
+    store.dispose();
+  });
+
+  it("keeps the approval inbox current: loads it, follows notifications and drops what gets decided", async () => {
+    const item = (id: string, sessionId: string): ApprovalInboxItem => ({
+      sessionId,
+      sessionTitle: `Ticket for ${id}`,
+      source: "api",
+      tool: "send_reply",
+      label: "Reply to customer",
+      createdAt: 1,
+      approval: { id, title: `Reply ${id}`, status: "pending", waits: true, fields: [{ name: "body", label: "Reply", value: "Draft", multiline: true }] },
+    });
+    let inbox = [item("ap1", "s1"), item("ap2", "s2")];
+    let notify!: (event: unknown) => void;
+    const encoder = new TextEncoder();
+    const notifications = new ReadableStream({
+      start: (controller) => {
+        notify = (event) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+      },
+    });
+    const decisions: unknown[] = [];
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace("http://test", "");
+      if (path === "/config") return json(config);
+      if (path === "/sessions") return json([]);
+      if (path === "/approvals") return json(inbox);
+      if (path === "/sessions/s2/approvals/ap2") return decisions.push(JSON.parse(String(init!.body))), new Response(null, { status: 204 });
+      if (path === "/sessions/s1/approvals/ap1") return json({ error: "This approval is no longer waiting for a decision.", code: "approval_gone" }, 404);
+      if (path === "/events") return new Response(notifications, { headers: { "content-type": "text/event-stream" } });
+      return json({ error: "nope" }, 404);
+    });
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch: fetch as unknown as typeof globalThis.fetch }), persist: false });
+    const ids = () => store.state.inbox.map((entry) => entry.approval.id);
+    await store.init();
+    await vi.waitFor(() => expect(ids()).toEqual(["ap1", "ap2"]));
+
+    // From the inbox, in a conversation that isn't open, with an edited reply.
+    expect(await store.decide("ap2", { approved: true, edits: { body: "Edited" } }, "s2")).toBe(true);
+    expect(decisions).toEqual([{ approved: true, edits: { body: "Edited" } }]);
+    expect(ids()).toEqual(["ap1"]);
+
+    // Someone else decided this one first: a toast says so, and the inbox catches up.
+    inbox = [];
+    expect(await store.decide("ap1", { approved: false }, "s1")).toBe(false);
+    expect(store.state.toasts.at(-1)).toMatchObject({ tone: "danger", body: "This approval is no longer waiting for a decision." });
+    await vi.waitFor(() => expect(ids()).toEqual([]));
+
+    // A run elsewhere stops at an approval, and someone else decides it.
+    inbox = [item("ap3", "s3")];
+    notify({ type: "approval_pending", sessionId: "s3", approvalId: "ap3", title: "Reply ap3" });
+    await vi.waitFor(() => expect(ids()).toEqual(["ap3"]));
+    notify({ type: "approval_decided", sessionId: "s3", approvalId: "ap3" });
+    await vi.waitFor(() => expect(ids()).toEqual([]));
+
+    // Deleting a conversation takes its approvals along.
+    inbox = [item("ap4", "s4")];
+    notify({ type: "approval_pending", sessionId: "s4", approvalId: "ap4", title: "Reply ap4" });
+    await vi.waitFor(() => expect(ids()).toEqual(["ap4"]));
+    notify({ type: "session_delete", sessionId: "s4" });
+    await vi.waitFor(() => expect(ids()).toEqual([]));
+
+    // After a reconnect, it catches up on what it missed.
+    inbox = [item("ap5", "s5")];
+    notify({ type: "hello", at: 1 });
+    notify({ type: "hello", at: 2 });
+    await vi.waitFor(() => expect(ids()).toEqual(["ap5"]));
     store.dispose();
   });
 

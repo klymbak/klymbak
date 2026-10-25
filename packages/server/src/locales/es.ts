@@ -55,6 +55,8 @@ export default {
   "error.idle": "El agente no está en marcha, así que envía esto como un mensaje normal.",
   "error.approvalGone": "Esta aprobación ya no está esperando una decisión.",
   "error.approvalsPending": "Aquí hay una acción esperando aprobación. Apruébala o recházala primero.",
+  "error.editNotAllowed": "Solo se pueden cambiar los campos que muestra la aprobación, y solo con texto.",
+  "error.editInvalid": "La acción no acepta lo que hay en {fields}. Cámbialo y vuelve a aprobar.",
   "error.unknownAgent": "Agente desconocido «{agent}».",
   "error.noScheduler": "La programación de tareas está desactivada en este servidor.",
   "error.scheduleFields": "Una tarea programada necesita un nombre y una instrucción.",

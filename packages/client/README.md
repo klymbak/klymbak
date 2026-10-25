@@ -3,7 +3,7 @@
 The framework-agnostic browser side of a Klymbak chat, shared by [`@klymbak/vue`](../vue) and any other UI binding:
 
 - `createAgentClient(options)`: typed client for the [`@klymbak/server`](../server) HTTP + SSE API
-- `createAgentStore({ client })`: config, sessions, the open conversation, schedules and toasts, with every action (`send`, `steer`, `abort`, `decide`, `openSession`, schedules…)
+- `createAgentStore({ client })`: config, sessions, the open conversation, schedules, the approval inbox and toasts, with every action (`send`, `steer`, `abort`, `decide`, `openSession`, schedules…). `state.inbox` holds what unattended runs left waiting for this person, kept current from the server's notifications, and `decide(approvalId, decision, sessionId)` decides one in a conversation that isn't open, with `edits` to its fields
 - `subscribe(listener)` and `getVersion()`: change notifications for frameworks without deep reactivity
 - Selectors: `selectModels`, `selectCurrentModel`, `selectApprovals`, `selectCurrentSession`, `selectUnreadCount`
 - `createI18n({ locale, messages })`: every word the components show, with the numbers, dates and schedules around them, in one language (see [Languages](#languages))

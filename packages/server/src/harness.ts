@@ -20,6 +20,7 @@ import {
   addUsage,
   emptyUsage,
   type AgentEvent,
+  type ApprovalField,
   type ChatMessage,
   type MessagePart,
   type PromptPart,
@@ -29,6 +30,7 @@ import {
   type ThinkingLevel,
   type UsageInfo,
 } from "@klymbak/protocol";
+import { applyEdits, editNote, withValues } from "./approvals.ts";
 import { createContextManager } from "./context.ts";
 import { errorText } from "./errors.ts";
 import { attachEventMapper, toolEndPatch, toUsageInfo, type Refusal, type ToolMeta } from "./events.ts";
@@ -37,6 +39,8 @@ import { turnContext } from "./prompt.ts";
 import type { AgentRuntime } from "./runtime.ts";
 import type { PendingApproval } from "./storage.ts";
 import {
+  approvalFields,
+  approvalRequest,
   contentText,
   defineTool,
   resolveApproval,
@@ -127,6 +131,8 @@ export class Harness {
   private readonly parked = new Set<string>();
   /** Calls a person approved after the run that asked ended; `resume` runs them without asking again. */
   private readonly approved = new Set<string>();
+  /** Fields a person changed before approving, so the result tells the model. */
+  private readonly edits = new Map<string, ApprovalField[]>();
   private readonly startedAt = new Map<string, number>();
   private readonly hookFollowUps = new Set<string>();
   private readonly unsubscribe: () => void;
@@ -419,17 +425,18 @@ export class Harness {
 
     let request: ApprovalRequest | undefined;
     if (decision === "ask") {
-      const base = (await resolveApproval({ ...tool, approval: true }, args, ctx))!;
-      request = { ...base, ...approvalOverride, description: approvalOverride.description ?? askReason ?? base.description };
+      const description = approvalOverride.description ?? askReason;
+      request = approvalRequest(tool, description === undefined ? approvalOverride : { ...approvalOverride, description }, args, locale);
     } else if (decision !== "allow") {
       request = await resolveApproval(tool, args, ctx);
       if (request && this.options.allowedTools.has(name)) request = undefined;
     }
 
     if (!request) return undefined;
+    const fields = approvalFields(tool, request, args, locale);
 
     if (ctx.headless) {
-      if (this.options.onPark) return this.park(toolCallId, name, args, request, ctx.user);
+      if (this.options.onPark) return this.park(toolCallId, name, args, request, fields, ctx.user);
       return this.refuse(
         toolCallId,
         "denied",
@@ -438,7 +445,10 @@ export class Harness {
       );
     }
 
-    const approval = runtime.approvals.create(this.options.sessionId, toolCallId);
+    // An edit the tool can't take is refused when it's sent, and the approval keeps waiting.
+    const approval = runtime.approvals.create(this.options.sessionId, toolCallId, (choice) => {
+      if (choice.approved) applyEdits(tool, fields, args, choice.edits);
+    });
     const view = {
       id: approval.id,
       title: request.title,
@@ -446,6 +456,7 @@ export class Harness {
       risk: request.risk,
       status: "pending" as const,
       rememberable: decision !== "ask",
+      fields,
     };
     this.emitTool(toolCallId, { status: "awaiting_approval", approval: view });
     runtime.notify({ type: "approval_pending", sessionId: this.options.sessionId, approvalId: approval.id, title: request.title }, ctx.user);
@@ -483,15 +494,28 @@ export class Harness {
       this.options.allowedTools.add(name);
       this.options.onAllowedToolsChange?.();
     }
+    // Checked when the decision came in. The tool runs with these arguments; the transcript keeps the model's own.
+    const edited = applyEdits(tool, fields, args, outcome.edits);
+    if (edited) {
+      Object.assign(args as Record<string, unknown>, edited.args);
+      this.edits.set(toolCallId, edited.changed);
+    }
     this.emitTool(toolCallId, {
       status: "pending",
-      approval: { ...view, status: "approved", decidedBy: outcome.decidedBy, reason: outcome.reason },
+      ...(edited ? { args: edited.args } : {}),
+      approval: {
+        ...view,
+        status: "approved",
+        decidedBy: outcome.decidedBy,
+        reason: outcome.reason,
+        ...(edited ? { fields: withValues(fields!, edited.changed), edited: true } : {}),
+      },
     });
     return undefined;
   }
 
   /** Leaves a call for a person to decide after the run ends. Until `resume`, the model has a placeholder result. */
-  private park(toolCallId: string, name: string, args: unknown, request: ApprovalRequest, user: AgentUser) {
+  private park(toolCallId: string, name: string, args: unknown, request: ApprovalRequest, fields: ApprovalField[] | undefined, user: AgentUser) {
     const approval: PendingApproval = {
       id: randomUUID(),
       toolCallId,
@@ -500,6 +524,7 @@ export class Harness {
       title: request.title,
       description: request.description,
       risk: request.risk,
+      fields,
       user: { ...user },
       createdAt: Date.now(),
     };
@@ -507,7 +532,7 @@ export class Harness {
     this.parkedInTurn = true;
     this.emitTool(toolCallId, {
       status: "awaiting_approval",
-      approval: { id: approval.id, title: request.title, description: request.description, risk: request.risk, status: "pending", waits: true },
+      approval: { id: approval.id, title: request.title, description: request.description, risk: request.risk, status: "pending", waits: true, fields },
     });
     this.options.onPark!(approval);
     return { block: true, reason: "Waiting for a person's approval. The run continues once they decide." };
@@ -516,8 +541,10 @@ export class Harness {
   /** Runs a call a person approved, as them, or reports the denial, and finishes its card. */
   private async settle(approval: PendingApproval, signal: AbortSignal): Promise<AgentToolCallOutcome> {
     const toolCallId = approval.toolCallId;
-    const toolCall: AgentToolCall = { type: "toolCall", id: toolCallId, name: approval.tool, arguments: approval.args as AgentToolCall["arguments"] };
     const decision = approval.decision!;
+    // With the person's edits, if they made any. The transcript keeps the model's own arguments.
+    const args = (decision.args ?? approval.args) as AgentToolCall["arguments"];
+    const toolCall: AgentToolCall = { type: "toolCall", id: toolCallId, name: approval.tool, arguments: args };
     if (!decision.approved) {
       const result = {
         content: [{ type: "text" as const, text: `A person denied this action${decision.reason ? `: "${decision.reason}"` : ""}. Don't retry it.` }],
@@ -539,6 +566,7 @@ export class Harness {
     );
     const missing = { content: [{ type: "text" as const, text: "This call is no longer in the conversation." }], details: {} };
     this.approved.add(toolCallId);
+    if (decision.edited) this.edits.set(toolCallId, decision.edited);
     const outcome: AgentToolCallOutcome = assistantMessage
       ? await runToolCall(toolCall, {
           // Unknown tools (removed since the run asked) come back as errors.
@@ -555,6 +583,7 @@ export class Harness {
         })
       : { toolCall, result: missing, isError: true };
     this.approved.delete(toolCallId);
+    this.edits.delete(toolCallId);
     const refused = this.blocked.get(toolCallId);
     this.blocked.delete(toolCallId);
     const started = this.startedAt.get(toolCallId);
@@ -573,9 +602,12 @@ export class Harness {
   ) {
     const raw = this.rawOutputs.get(toolCallId);
     this.rawOutputs.delete(toolCallId);
+    const edited = this.edits.get(toolCallId);
+    this.edits.delete(toolCallId);
+    const note = edited ? [{ type: "text" as const, text: editNote(edited) }] : [];
     const tool = this.toolIndex.get(name);
     const hooks = tool ? this.matchingHooks(name, "postToolUse") : [];
-    if (!tool || hooks.length === 0) return undefined;
+    if (!tool || hooks.length === 0) return note.length ? { content: [...note, ...result.content] } : undefined;
 
     const original: ToolResultForHooks = {
       text: contentText(result.content),
@@ -592,10 +624,10 @@ export class Harness {
         this.options.runtime.logger.error(`postToolUse hook "${hook.name}" failed`, errorMessage(error));
       }
     }
-    if (current === original) return undefined;
+    if (current === original) return note.length ? { content: [...note, ...result.content] } : undefined;
     const images = result.content.filter((block): block is ImageContent => block.type === "image");
     return {
-      content: [{ type: "text" as const, text: current.text }, ...images],
+      content: [...note, { type: "text" as const, text: current.text }, ...images],
       details: { ...result.details, ui: current.ui },
       isError: current.isError,
     };

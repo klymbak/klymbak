@@ -114,6 +114,15 @@ export const en = {
   "approval.decidedBy": "by {name}",
   "approval.reason": "“{reason}”",
   "approval.expiredNote": "Nobody decided in time",
+  "approval.edited": "edited",
+
+  "inbox.title": "Approvals",
+  "inbox.intro": "Actions the agent left for a person to decide, oldest first. Each one waits until someone approves or denies it.",
+  "inbox.empty": "Nothing is waiting for your approval.",
+  "inbox.open": "Open conversation",
+  "inbox.source.schedule": "Scheduled task",
+  "inbox.source.api": "Background job",
+  "inbox.source.chat": "Conversation",
 
   "subagent.working": "working",
   "subagent.showSteps": "Show {count, plural, one {# step} other {# steps}}",

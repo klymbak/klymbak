@@ -25,6 +25,34 @@ const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
         @if (a.description) {
           <p class="kl-approval__desc">{{ a.description }}</p>
         }
+        @if (a.fields?.length) {
+          <div class="kl-approval__fields">
+            @for (field of a.fields; track field.name) {
+              <label class="kl-label">
+                {{ field.label }}
+                @if (field.multiline) {
+                  <textarea
+                    #box
+                    class="kl-textarea"
+                    rows="4"
+                    [value]="drafts()[field.name] ?? field.value"
+                    [disabled]="busy()"
+                    (input)="draft(field.name, box.value)"
+                  ></textarea>
+                } @else {
+                  <input
+                    #line
+                    class="kl-input"
+                    type="text"
+                    [value]="drafts()[field.name] ?? field.value"
+                    [disabled]="busy()"
+                    (input)="draft(field.name, line.value)"
+                  />
+                }
+              </label>
+            }
+          </div>
+        }
         @if (denying()) {
           <label class="kl-label kl-approval__reason">
             {{ i18n().t("approval.reasonLabel") }}
@@ -67,6 +95,8 @@ const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
 })
 export class ApprovalPrompt {
   readonly approval = input.required<ApprovalView>();
+  /** The conversation the approval belongs to, when it isn't the open one (the inbox's items). */
+  readonly sessionId = input<string>();
   readonly decide = output<ApprovalDecision>();
   private readonly store = injectOptionalStoreRef();
   protected readonly i18n = injectI18n();
@@ -81,14 +111,17 @@ export class ApprovalPrompt {
   protected readonly reason = signal("");
   protected readonly denying = signal(false);
   protected readonly busy = signal(false);
+  /** What the person typed into the fields, by name. */
+  protected readonly drafts = signal<Partial<Record<string, string>>>({});
   protected readonly riskTone = riskTone;
 
   /** Who decided, why, or that nobody did. */
   protected decision() {
-    const { decidedBy, reason, status } = this.approval();
+    const { decidedBy, edited, reason, status } = this.approval();
     const i18n = this.i18n();
     return [
       decidedBy ? i18n.t("approval.decidedBy", { name: decidedBy }) : "",
+      edited ? ` · ${i18n.t("approval.edited")}` : "",
       reason ? ` · ${i18n.t("approval.reason", { reason })}` : "",
       status === "expired" ? i18n.t("approval.expiredNote") : "",
     ].join("");
@@ -100,12 +133,26 @@ export class ApprovalPrompt {
       return;
     }
     this.busy.set(true);
-    const decision = { approved, reason: this.reason().trim() || undefined, remember: approved && this.remember() };
+    const edits: Record<string, string> = {};
+    for (const field of this.approval().fields ?? []) {
+      const draft = this.drafts()[field.name];
+      if (draft !== undefined && draft !== field.value) edits[field.name] = draft;
+    }
+    const decision: ApprovalDecision = {
+      approved,
+      reason: this.reason().trim() || undefined,
+      remember: approved && this.remember(),
+      ...(approved && Object.keys(edits).length ? { edits } : {}),
+    };
     this.decide.emit(decision);
     try {
-      await this.store?.().decide(this.approval().id, decision);
+      await this.store?.().decide(this.approval().id, decision, this.sessionId());
     } finally {
       this.busy.set(false);
     }
+  }
+
+  protected draft(name: string, value: string) {
+    this.drafts.update((current) => ({ ...current, [name]: value }));
   }
 }

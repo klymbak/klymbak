@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type {
+  ApprovalField,
   ChatMessage,
   ModelRef,
   Risk,
@@ -49,11 +50,16 @@ export interface PendingApproval {
   title: string;
   description?: string;
   risk?: Risk;
+  /** Arguments the person deciding may edit first. */
+  fields?: ApprovalField[];
   /** The identity the run acts as, which the run resumes as. */
   user: AgentUser;
   createdAt: number;
-  /** Set once a person decides. An approved call runs as `by`, with their roles and permissions. */
-  decision?: { approved: boolean; reason?: string; by: AgentUser; at: number };
+  /**
+   * Set once a person decides. An approved call runs as `by`, with their roles and permissions, and with `args`
+   * when they edited the fields.
+   */
+  decision?: { approved: boolean; reason?: string; by: AgentUser; at: number; args?: Record<string, unknown>; edited?: ApprovalField[] };
 }
 
 export interface ScheduleRecord {

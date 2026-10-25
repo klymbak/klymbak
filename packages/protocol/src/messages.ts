@@ -61,6 +61,17 @@ export interface ToolResultView {
 
 export type Risk = "low" | "medium" | "high";
 
+/** An argument a person may change before approving, such as the text of a drafted reply. */
+export interface ApprovalField {
+  /** The argument's name. */
+  name: string;
+  label: string;
+  /** The value the call has: the agent's draft, or once approved, what the call ran with. */
+  value: string;
+  /** A text area rather than a single line. */
+  multiline?: boolean;
+}
+
 export interface ApprovalView {
   id: string;
   title: string;
@@ -73,6 +84,10 @@ export interface ApprovalView {
   rememberable?: boolean;
   /** An unattended run ended to wait for this decision; deciding resumes it, however much later. */
   waits?: boolean;
+  /** Arguments the person deciding may edit first. The call runs with their version. */
+  fields?: ApprovalField[];
+  /** The person who approved changed some of the fields. */
+  edited?: boolean;
 }
 
 export interface SubagentView {

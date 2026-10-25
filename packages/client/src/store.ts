@@ -7,6 +7,7 @@ import {
   type AgentConfigInfo,
   type AgentEvent,
   type ApprovalDecision,
+  type ApprovalInboxItem,
   type ChatMessage,
   type CreateScheduleRequest,
   type McpCompleteRequest,
@@ -67,6 +68,8 @@ export interface AgentState {
   model: ModelRef | null;
   thinkingLevel: ThinkingLevel;
   schedules: ScheduleInfo[];
+  /** The approval inbox: what unattended runs left waiting that this person may decide, oldest first. */
+  inbox: ApprovalInboxItem[];
   toasts: Toast[];
 }
 
@@ -136,6 +139,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     model: null,
     thinkingLevel: "off",
     schedules: [],
+    inbox: [],
     toasts: [],
   };
   const state = reactive ? reactive(initial) : observe(initial, changed);
@@ -228,6 +232,11 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
 
   function onNotification(event: NotificationEvent) {
     switch (event.type) {
+      case "hello":
+        // A reconnect, after the first hello: catch up on approvals that came and went meanwhile.
+        if (connected) void refreshInbox();
+        connected = true;
+        break;
       case "session_update":
         upsertSession(event.session);
         if (event.session.id === state.sessionId && !streamController) {
@@ -238,6 +247,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
         break;
       case "session_delete":
         state.sessions = state.sessions.filter((s) => s.id !== event.sessionId);
+        state.inbox = state.inbox.filter((item) => item.sessionId !== event.sessionId);
         if (state.sessionId === event.sessionId) newSession();
         break;
       case "schedule_update":
@@ -260,6 +270,11 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
         if (event.sessionId !== state.sessionId) {
           toast({ tone: "warning", title: { id: "toast.approvalNeeded" }, body: event.title, sessionId: event.sessionId }, 15_000);
         }
+        // The server knows who may decide it.
+        void refreshInbox();
+        break;
+      case "approval_decided":
+        dropFromInbox(event.approvalId);
         break;
       case "mcp_update":
         void refreshConfig();
@@ -278,6 +293,25 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     } catch {
       // Keep the previous config; the next notification will retry.
     }
+  }
+
+  let inboxRequest = 0;
+  /** Whether the notification stream said hello since it was opened, so another hello means it reconnected. */
+  let connected = false;
+
+  /** Loads the approval inbox again. The latest request wins, so a burst of notifications can't leave an older answer. */
+  async function refreshInbox() {
+    const request = ++inboxRequest;
+    try {
+      const items = await client.listApprovals();
+      if (request === inboxRequest) state.inbox = items;
+    } catch {
+      // Keep what's shown; the next notification tries again.
+    }
+  }
+
+  function dropFromInbox(id: string) {
+    if (state.inbox.some((item) => item.approval.id === id)) state.inbox = state.inbox.filter((item) => item.approval.id !== id);
   }
 
   let initializing: Promise<void> | undefined;
@@ -302,8 +336,10 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       state.thinkingLevel = saved.thinkingLevel ?? "off";
       if (config.features.schedules) state.schedules = await client.listSchedules();
       state.ready = true;
+      void refreshInbox();
       eventsController?.abort();
       eventsController = new AbortController();
+      connected = false;
       void client.subscribe({ onEvent: onNotification, signal: eventsController.signal });
     } catch (error) {
       state.error = error instanceof Error ? error.message : { id: "store.unreachable" };
@@ -455,12 +491,21 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     }
   }
 
-  async function decide(approvalId: string, decision: ApprovalDecision) {
-    if (!state.sessionId) return;
+  /**
+   * Approves or denies a call in the open conversation or, with `sessionId`, in another one, such as an inbox item's.
+   * Resolves to whether the decision was recorded; when it wasn't, a toast says why.
+   */
+  async function decide(approvalId: string, decision: ApprovalDecision, sessionId = state.sessionId): Promise<boolean> {
+    if (!sessionId) return false;
     try {
-      await client.decide(state.sessionId, approvalId, decision);
+      await client.decide(sessionId, approvalId, decision);
+      dropFromInbox(approvalId);
+      return true;
     } catch (error) {
       handleError(error, "error.decide");
+      // Someone else may have decided it meanwhile.
+      void refreshInbox();
+      return false;
     }
   }
 
@@ -625,6 +670,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     removeMcpServer,
     completeMcp,
     refreshConfig,
+    refreshInbox,
     toast,
     dismissToast,
   };

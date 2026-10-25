@@ -1,6 +1,6 @@
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { ImageContent, TextContent, TSchema } from "@earendil-works/pi-ai";
-import { humanize, type ToolInfo, type UiBlock } from "@klymbak/protocol";
+import { humanize, type ApprovalField, type ToolInfo, type UiBlock } from "@klymbak/protocol";
 import { localize } from "./i18n.ts";
 import type { ApprovalRequest, HookContext, ToolContext, ToolDefinition, ToolOutput } from "./types.ts";
 
@@ -107,18 +107,48 @@ export async function resolveApproval(
   if (!policy) return undefined;
   const decision = typeof policy === "function" ? await policy(args, ctx) : policy;
   if (!decision) return undefined;
-  const fallback: ApprovalRequest = {
-    title: toolLabel(definition, ctx.user.locale),
-    description: describeArgs(args),
-    risk: definition.readOnly ? "low" : "medium",
-  };
-  return decision === true ? fallback : { ...fallback, ...decision };
+  return approvalRequest(definition, decision === true ? {} : decision, args, ctx.user.locale);
 }
 
-function describeArgs(args: unknown): string | undefined {
+/** Fills in what a request leaves out: the tool's name as its title, and the call's arguments, but the editable ones, as its body. */
+export function approvalRequest(definition: ToolDefinition<any>, request: Partial<ApprovalRequest>, args: unknown, locale: string | undefined): ApprovalRequest {
+  return {
+    title: toolLabel(definition, locale),
+    risk: definition.readOnly ? "low" : "medium",
+    ...request,
+    description: "description" in request ? request.description : describeArgs(args, editNames(request.edit)),
+  };
+}
+
+/** The request's editable arguments with the call's values. Only text arguments can be edited; others are left out. */
+export function approvalFields(
+  definition: ToolDefinition<any> | undefined,
+  request: ApprovalRequest,
+  args: unknown,
+  locale: string | undefined,
+): ApprovalField[] | undefined {
+  const values = (args && typeof args === "object" ? args : {}) as Record<string, unknown>;
+  const properties = ((definition?.parameters as { properties?: Record<string, { type?: unknown }> } | undefined)?.properties ?? {});
+  const fields = (request.edit ?? []).flatMap((entry): ApprovalField[] => {
+    const edit = typeof entry === "string" ? { name: entry } : entry;
+    const value = values[edit.name];
+    const type = properties[edit.name]?.type;
+    const text = typeof value === "string" || (value === undefined && (type === "string" || (Array.isArray(type) && type.includes("string"))));
+    if (!text) return [];
+    const label = edit.label ? localize(edit.label, locale) : humanize(edit.name);
+    return [{ name: edit.name, label, value: (value as string | undefined) ?? "", multiline: edit.multiline !== false }];
+  });
+  return fields.length ? fields : undefined;
+}
+
+function editNames(edit: ApprovalRequest["edit"]): Set<string> {
+  return new Set((edit ?? []).map((entry) => (typeof entry === "string" ? entry : entry.name)));
+}
+
+function describeArgs(args: unknown, skip: Set<string>): string | undefined {
   if (!args || typeof args !== "object") return undefined;
   const lines = Object.entries(args as Record<string, unknown>)
-    .filter(([, value]) => value !== undefined && value !== "")
+    .filter(([key, value]) => value !== undefined && value !== "" && !skip.has(key))
     .map(([key, value]) => `${humanize(key)}: ${typeof value === "object" ? safeJson(value) : String(value)}`);
   return lines.length ? lines.join("\n") : undefined;
 }

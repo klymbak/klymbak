@@ -103,9 +103,15 @@ export const replyToTicket = defineTool({
     message: Type.String({ description: "The email body the customer will receive" }),
     status: Type.Optional(StringEnum(["pending", "closed"], { description: "Default pending" })),
   }),
-  approval: ({ ticketId, message }) => {
+  // The reply is a draft the approver can rewrite before it goes out.
+  approval: ({ ticketId, status = "pending" }) => {
     const ticket = getDb().prepare("SELECT c.name FROM tickets t JOIN customers c ON c.id = t.customer_id WHERE t.id = ?").get(ticketId) as Row | undefined;
-    return { title: `Email ${ticket?.name ?? "the customer"} (ticket #${ticketId})`, description: message, risk: "medium" };
+    return {
+      title: `Email ${ticket?.name ?? "the customer"} (ticket #${ticketId})`,
+      description: `Then marks the ticket ${status}.`,
+      risk: "medium",
+      edit: [{ name: "message", label: "Reply" }],
+    };
   },
   execute: ({ ticketId, message, status = "pending" }, ctx) => {
     const ticket = getDb().prepare("SELECT id FROM tickets WHERE id = ?").get(ticketId) as Row | undefined;
