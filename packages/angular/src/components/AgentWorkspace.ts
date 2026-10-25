@@ -3,6 +3,7 @@ import type { UiAction } from "@klymbak/protocol";
 import { selectUnreadCount } from "@klymbak/client";
 import { HOST_PROVIDERS, StoreHost, agentState } from "../context.ts";
 import { AgentChat } from "./AgentChat.ts";
+import { ApprovalInbox } from "./ApprovalInbox.ts";
 import { CapabilitiesPanel } from "./CapabilitiesPanel.ts";
 import { KlIcon } from "./KlIcon.ts";
 import { SchedulePanel } from "./SchedulePanel.ts";
@@ -12,12 +13,13 @@ import { ToastStack } from "./ToastStack.ts";
 type Tab = "chats" | "schedules" | "capabilities";
 
 /**
- * Full screen: conversations, schedules and capabilities in a sidebar, next to the chat. Content marked `klBrand`
+ * Full screen: conversations, schedules and capabilities in a sidebar, next to the chat. While approvals wait for the
+ * person, the sidebar offers the approval inbox, which takes the chat's place. Content marked `klBrand`
  * replaces the logo and app name, `klSidebarFooter` the signed-in user, and `klHeaderEnd` goes in the chat header.
  */
 @Component({
   selector: "kl-agent-workspace",
-  imports: [AgentChat, CapabilitiesPanel, KlIcon, SchedulePanel, SessionList, ToastStack],
+  imports: [AgentChat, ApprovalInbox, CapabilitiesPanel, KlIcon, SchedulePanel, SessionList, ToastStack],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: StoreHost, useExisting: forwardRef(() => AgentWorkspace) }, HOST_PROVIDERS],
   host: {
@@ -44,6 +46,15 @@ type Tab = "chats" | "schedules" | "capabilities";
           <svg klIcon name="close" [size]="16" />
         </button>
       </div>
+      @if (s.inbox.length || view() === "inbox") {
+        <button type="button" class="kl-workspace__inbox" [class.active]="view() === 'inbox'" [attr.aria-pressed]="view() === 'inbox'" (click)="showInbox()">
+          <svg klIcon name="shield" [size]="15" />
+          <span class="kl-workspace__inbox-label">{{ i18n().t("inbox.title") }}</span>
+          @if (s.inbox.length) {
+            <span class="kl-workspace__badge">{{ i18n().number(s.inbox.length) }}</span>
+          }
+        </button>
+      }
       <div class="kl-workspace__tabs" role="tablist">
         @for (item of tabs(); track item.id) {
           <button type="button" role="tab" [attr.aria-selected]="tab() === item.id" class="kl-workspace__tab" [class.active]="tab() === item.id" (click)="tab.set(item.id)">
@@ -57,7 +68,7 @@ type Tab = "chats" | "schedules" | "capabilities";
       <div class="kl-workspace__panel kl-scroll">
         @switch (tab()) {
           @case ("chats") {
-            <kl-session-list (open)="drawer.set(false)" />
+            <kl-session-list (open)="showChat()" />
           }
           @case ("schedules") {
             <kl-schedule-panel (openSession)="showChat()" />
@@ -81,18 +92,36 @@ type Tab = "chats" | "schedules" | "capabilities";
     </aside>
     <div class="kl-workspace__scrim" (click)="drawer.set(false)"></div>
     <main class="kl-workspace__main">
-      <kl-agent-chat [title]="title()" [description]="description()" [suggestions]="suggestions()" [showMeta]="showMeta()" (action)="action.emit($event)">
-        <button
-          klHeaderStart
-          type="button"
-          class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
-          [attr.aria-label]="i18n().t('workspace.openMenu')"
-          (click)="drawer.set(true)"
-        >
-          <svg klIcon name="menu" [size]="18" />
-        </button>
-        <ng-content select="[klHeaderEnd]" ngProjectAs="[klHeaderEnd]" />
-      </kl-agent-chat>
+      <!-- Hidden rather than destroyed, so a half-written message survives a look at the inbox. -->
+      <div class="kl-workspace__view" [hidden]="view() !== 'chat'">
+        <kl-agent-chat [title]="title()" [description]="description()" [suggestions]="suggestions()" [showMeta]="showMeta()" (action)="action.emit($event)">
+          <button
+            klHeaderStart
+            type="button"
+            class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
+            [attr.aria-label]="i18n().t('workspace.openMenu')"
+            (click)="drawer.set(true)"
+          >
+            <svg klIcon name="menu" [size]="18" />
+          </button>
+          <ng-content select="[klHeaderEnd]" ngProjectAs="[klHeaderEnd]" />
+        </kl-agent-chat>
+      </div>
+      @if (view() === "inbox") {
+        <div class="kl-workspace__view">
+          <kl-approval-inbox (openSession)="showChat()">
+            <button
+              klHeaderStart
+              type="button"
+              class="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
+              [attr.aria-label]="i18n().t('workspace.openMenu')"
+              (click)="drawer.set(true)"
+            >
+              <svg klIcon name="menu" [size]="18" />
+            </button>
+          </kl-approval-inbox>
+        </div>
+      }
     </main>
     <kl-toast-stack (openSession)="showChat()" />
   `,
@@ -111,6 +140,7 @@ export class AgentWorkspace extends StoreHost {
   protected readonly tag = "kl-agent-workspace";
   protected readonly tab = signal<Tab>("chats");
   protected readonly drawer = signal(false);
+  protected readonly view = signal<"chat" | "inbox">("chat");
   protected readonly state = computed(() => agentState(this.store)(), { equal: () => false });
   protected readonly tabs = computed(() => {
     const state = this.state();
@@ -124,6 +154,12 @@ export class AgentWorkspace extends StoreHost {
 
   protected showChat() {
     this.tab.set("chats");
+    this.view.set("chat");
+    this.drawer.set(false);
+  }
+
+  protected showInbox() {
+    this.view.set("inbox");
     this.drawer.set(false);
   }
 }

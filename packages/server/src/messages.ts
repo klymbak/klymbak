@@ -72,6 +72,8 @@ export const en = {
   "error.idle": "The agent isn't running, so send this as a normal message.",
   "error.approvalGone": "This approval is no longer waiting for a decision.",
   "error.approvalsPending": "An action here is waiting for approval. Approve or deny it first.",
+  "error.editNotAllowed": "Only the fields shown on the approval can be changed, and only to text.",
+  "error.editInvalid": "The action can't take what's in {fields}. Change it and approve again.",
   "error.unknownAgent": 'Unknown agent "{agent}".',
   "error.noScheduler": "Scheduling is turned off on this server.",
   "error.scheduleFields": "A schedule needs a name and a prompt.",

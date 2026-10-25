@@ -4,6 +4,7 @@ import {
   type AgentConfigInfo,
   type AgentEvent,
   type ApprovalDecision,
+  type ApprovalInboxItem,
   type CreateScheduleRequest,
   type CreateSessionRequest,
   type McpCompleteRequest,
@@ -137,6 +138,8 @@ export function createAgentClient(options: AgentClientOptions) {
     steer: (id: string, text: string) => request<void>("POST", `/sessions/${enc(id)}/steer`, { text }),
     decide: (id: string, approvalId: string, decision: ApprovalDecision) =>
       request<void>("POST", `/sessions/${enc(id)}/approvals/${enc(approvalId)}`, decision),
+    /** The approval inbox: what unattended runs left waiting that the signed-in person may decide, oldest first. */
+    listApprovals: () => request<ApprovalInboxItem[]>("GET", "/approvals"),
 
     listSchedules: () => request<ScheduleInfo[]>("GET", "/schedules"),
     createSchedule: (body: CreateScheduleRequest) => request<ScheduleInfo>("POST", "/schedules", body),

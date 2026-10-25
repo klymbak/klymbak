@@ -4,9 +4,11 @@ import {
   addUsage,
   applyEvent,
   emptyUsage,
+  humanize,
   parseModelRef,
   type AddMcpServerRequest,
   type AgentConfigInfo,
+  type ApprovalInboxItem,
   type AgentEvent,
   type ApprovalDecision,
   type CreateSessionRequest,
@@ -24,7 +26,7 @@ import {
   type ThinkingLevel,
   type UpdateSessionRequest,
 } from "@klymbak/protocol";
-import { ApprovalBroker } from "./approvals.ts";
+import { applyEdits, ApprovalBroker, withValues, type EditedCall } from "./approvals.ts";
 import { agentError, errorText, notFound } from "./errors.ts";
 import { errorMessage, Harness, type HarnessReference, type HarnessResult } from "./harness.ts";
 import { McpManager, resourceContent, resourceTools } from "./mcp.ts";
@@ -51,7 +53,7 @@ import {
   type SessionRecord,
   type SessionSummaryRecord,
 } from "./storage.ts";
-import { toolInfo, userCanUse } from "./tool.ts";
+import { toolInfo, toolLabel, userCanUse } from "./tool.ts";
 import type {
   AgentRuntimeConfig,
   AgentUser,
@@ -439,12 +441,14 @@ export class AgentRuntime {
       if (handle.run) throw agentError(409, "error.busy", "busy");
     };
     check();
+    let edited: EditedCall | undefined;
     if (decision.approved) {
       // Approving means doing it, so it takes someone who may use the tool. Others leave it waiting for them.
       const tool = this.allTools().find((candidate) => candidate.name === approval.tool);
       if (tool && !userCanUse(tool, user.roles)) {
         throw agentError(403, "refused.role", "forbidden", { roles: roleList(tool.roles!, user.locale) });
       }
+      edited = applyEdits(tool, approval.fields, approval.args, decision.edits);
     }
     const pending = record.pendingApprovals!;
     const last = pending.every((other) => other === approval || other.decision);
@@ -453,12 +457,19 @@ export class AgentRuntime {
     check();
 
     const reason = decision.reason?.trim() || undefined;
-    approval.decision = { approved: decision.approved, reason, by: { ...user }, at: Date.now() };
+    approval.decision = {
+      approved: decision.approved,
+      reason,
+      by: { ...user },
+      at: Date.now(),
+      ...(edited ? { args: edited.args, edited: edited.changed } : {}),
+    };
     handle.emit({
       type: "tool_update",
       toolCallId: approval.toolCallId,
       patch: {
         status: decision.approved ? "pending" : "denied",
+        ...(edited ? { args: edited.args } : {}),
         approval: {
           id: approval.id,
           title: approval.title,
@@ -468,9 +479,12 @@ export class AgentRuntime {
           decidedBy: user.name,
           reason,
           waits: true,
+          fields: edited ? withValues(approval.fields!, edited.changed) : approval.fields,
+          ...(edited ? { edited: true } : {}),
         },
       },
     });
+    this.notify({ type: "approval_decided", sessionId: record.id, approvalId: approval.id }, this.sessionScope(record));
     if (!model) {
       await this.storage.saveSession(record);
       return;
@@ -484,6 +498,45 @@ export class AgentRuntime {
       headless: true,
       origin: "user",
     });
+  }
+
+  /**
+   * The approval inbox: calls unattended runs left waiting that this person may decide, oldest first. That takes
+   * seeing the session (owning it, or a role in its audience) and a role that may use the tool. A chat's own
+   * approvals stay in that chat, with the person watching it.
+   */
+  async listApprovals(user: AgentUser): Promise<ApprovalInboxItem[]> {
+    await this.start();
+    const records = await this.storage.listSessions({ userId: user.id, roles: user.roles });
+    const tools = new Map(this.allTools().map((tool) => [tool.name, tool]));
+    const items: ApprovalInboxItem[] = [];
+    for (const summary of records) {
+      // A session in memory can be ahead of its stored copy, such as one decision into a step of two.
+      const record = this.handles.get(summary.id)?.record ?? summary;
+      for (const approval of record.pendingApprovals ?? []) {
+        const tool = tools.get(approval.tool);
+        if (approval.decision || (tool && !userCanUse(tool, user.roles))) continue;
+        items.push({
+          sessionId: record.id,
+          sessionTitle: record.title,
+          source: record.source,
+          tool: approval.tool,
+          label: tool ? toolLabel(tool, user.locale) : humanize(approval.tool),
+          args: approval.args,
+          createdAt: approval.createdAt,
+          approval: {
+            id: approval.id,
+            title: approval.title,
+            description: approval.description,
+            risk: approval.risk,
+            status: "pending",
+            waits: true,
+            fields: approval.fields,
+          },
+        });
+      }
+    }
+    return items.sort((a, b) => a.createdAt - b.createdAt);
   }
 
   /**

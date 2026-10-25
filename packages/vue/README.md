@@ -4,9 +4,10 @@ Vue 3 components for chat-native admin panels, talking to [`@klymbak/server`](..
 
 | Component | Use |
 |---|---|
-| `AgentWorkspace` | Full screen: conversations, schedules and capabilities sidebar + chat |
+| `AgentWorkspace` | Full screen: conversations, schedules and capabilities sidebar + chat, and the approval inbox while approvals wait |
 | `AgentChat` | A single conversation, for a page or a panel |
 | `AgentWidget` | Floating launcher + chat that drops into any existing page |
+| `ApprovalInbox` | What unattended runs left waiting for the signed-in person, across conversations: approve, deny with a reason, or edit a drafted reply first |
 | `MessageList`, `ToolCallCard`, `ApprovalPrompt`, `SubagentTrace`, `Composer`, `ModelPicker`, `SessionList`, `SchedulePanel`, `CapabilitiesPanel`, `DataTable`, `ChartView`, `StatGrid` … | Building blocks for custom layouts |
 
 ```vue

@@ -59,6 +59,7 @@ The demo database is generated on first start, with dates relative to today. Res
 | Switch to **Priya (Analyst)** and list top customers | A **PII hook** masks emails and phones for that role |
 | Deny an approval with a reason | The agent reads your reason and changes course |
 | Schedules → *Morning ops briefing* → **Run now** | An unattended run that posts to `#ops` and notifies you |
+| Schedules → *Draft replies to open tickets* → **Run now**, then switch to **Marcus (Support)** | The **approval inbox**: rewrite a drafted reply before it goes out, deny another with a reason, and the run carries on |
 
 ---
 
@@ -176,7 +177,7 @@ Install the [plugin](packages/strapi) instead: `npm install @klymbak/strapi`, ad
 
 - `text` is what the model reads. Keep it compact; it is truncated past 24k characters.
 - `ui` blocks go only to the browser: `table`, `stats`, `chart` (bar/line/area), `keyvalue`, `media` (images and videos as previews, other files as tiles that open them), `markdown`, `alert`, `actions` (buttons that send a prompt or emit an event to your app) and `custom` (your own Vue component). A 500-row table costs no tokens.
-- Options: `label` (the tool card's name) and `summary` (what the Tools panel says it does, in place of the description written for the model), each a string or a function of the person's locale; `approval` (boolean or a function of the arguments returning `{ title, description, risk }`), `roles`, `readOnly`, `sequential`, `maxResultChars`.
+- Options: `label` (the tool card's name) and `summary` (what the Tools panel says it does, in place of the description written for the model), each a string or a function of the person's locale; `approval` (boolean or a function of the arguments returning `{ title, description, risk, edit }`), `roles`, `readOnly`, `sequential`, `maxResultChars`.
 
 `ctx` gives every tool the signed-in `user`, `sessionId`, `signal`, `headless` (unattended) and `progress(text)` for live status lines.
 
@@ -187,6 +188,10 @@ When a tool needs approval, the run pauses and the UI shows a card with the exac
 In unattended runs (schedules, and `runHeadless` from your own code) nobody is there to click, so the run ends at the approval and waits. The call is stored with the session, its card shows in the conversation, and everyone who can see the session gets a notification. Approving or denying it, hours later or after a restart, resumes the session as a new run. Denied calls tell the model why. An approved call runs as the person who approved it: the tool's `roles`, the policy hooks and the tool itself see them, with `ctx.headless` false, so it takes someone who may use the tool to approve it. The model then carries on as the run's own user. When one step asks for several approvals, the run resumes once all of them are decided, and new messages in that conversation wait until then. Delegated tasks can't pause inside the parent's call, so subagents still refuse approvals in unattended runs.
 
 Policy hooks run when the run asks, as the run's user with `ctx.headless` true, and again when an approved call runs, as the approver. A limit that depends on who acts, such as "support refunds up to $150", can return `{ decision: "ask" }` while `ctx.headless` is true and leave the check to the approver.
+
+A tool can let the person deciding rewrite some of its text arguments first, such as a drafted reply: `approval: () => ({ title: "Email Jane", edit: [{ name: "message", label: "Reply" }] })`. The card shows each one as a field holding the agent's draft. The call runs with the person's version, the card says it was edited, and the model is told what changed, while its transcript keeps what it asked for. Only text arguments can be edited, and an edit the tool's parameters reject is refused before anything runs. A `preToolUse` hook can add `edit` through its `approval`, for MCP tools.
+
+**The approval inbox** lists what unattended runs left waiting for each person, across conversations, oldest first: in sessions they can see (their own, or with a role in the session's `audience`) and for tools their roles may use. `AgentWorkspace` offers it in the sidebar, with a count, while something waits, and it is also a component of its own (`ApprovalInbox`, `<kl-approval-inbox>`) for a page of its own. A chat's own approvals stay in that chat, with the person watching it.
 
 ### Hooks
 
@@ -302,11 +307,12 @@ Sessions persist through an `AgentStorage` adapter (`memoryStorage()`, `fileStor
 | GET / PATCH / DELETE | `/sessions/:id` | read (with transcript) / rename, change model / delete |
 | POST | `/sessions/:id/runs` | start a run, with MCP `resources` and an `mcpPrompt` if any; the response is an SSE stream until `run_end` |
 | GET | `/sessions/:id/stream` | snapshot + live events (reconnect) |
-| POST | `/sessions/:id/abort`, `/steer`, `/approvals/:approvalId` | stop, steer, decide |
+| POST | `/sessions/:id/abort`, `/steer`, `/approvals/:approvalId` | stop, steer, decide (with `edits` to an approval's fields) |
+| GET | `/approvals` | the approval inbox: what unattended runs left waiting that the caller may decide |
 | GET / POST / PATCH / DELETE | `/schedules[/:id]`, POST `/schedules/:id/run` | scheduled tasks |
 | GET / POST / DELETE | `/mcp[/:name]` | integrations |
 | POST | `/mcp/complete` | values a server suggests for a prompt's argument or a resource template's variable |
-| GET | `/events` | notifications (schedule results, approvals waiting, session list) |
+| GET | `/events` | notifications (schedule results, approvals waiting and decided, session list) |
 
 </details>
 

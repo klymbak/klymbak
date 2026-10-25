@@ -55,6 +55,8 @@ export default {
   "error.idle": "에이전트가 실행 중이 아니므로 일반 메시지로 보내세요.",
   "error.approvalGone": "이 승인은 더 이상 결정을 기다리고 있지 않습니다.",
   "error.approvalsPending": "승인을 기다리는 작업이 있습니다. 먼저 승인하거나 거부하세요.",
+  "error.editNotAllowed": "승인에 표시된 항목만, 텍스트로만 변경할 수 있습니다.",
+  "error.editInvalid": "이 작업은 {fields}의 내용을 받을 수 없습니다. 수정한 뒤 다시 승인하세요.",
   "error.unknownAgent": "알 수 없는 에이전트 \"{agent}\"입니다.",
   "error.noScheduler": "이 서버에서는 예약 기능이 꺼져 있습니다.",
   "error.scheduleFields": "예약 작업에는 이름과 지시가 필요합니다.",

@@ -6,13 +6,23 @@ import { KlIcon } from "./KlIcon";
 
 const riskTone = { low: "info", medium: "warning", high: "danger" } as const;
 
-export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView; onDecide?: (decision: ApprovalDecision) => void }) {
+export interface ApprovalPromptProps {
+  approval: ApprovalView;
+  /** The conversation the approval belongs to, when it isn't the open one (the inbox's items). */
+  sessionId?: string;
+  onDecide?: (decision: ApprovalDecision) => void;
+}
+
+export function ApprovalPrompt({ approval, sessionId, onDecide }: ApprovalPromptProps) {
   const store = useOptionalAgentStore();
   const i18n = useI18n();
   const [remember, setRemember] = useState(false);
   const [reason, setReason] = useState("");
   const [denying, setDenying] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** What the person typed into the fields, by name. */
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const fields = approval.fields ?? [];
 
   async function decide(approved: boolean) {
     if (!approved && !denying) {
@@ -20,10 +30,20 @@ export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView;
       return;
     }
     setBusy(true);
-    const decision = { approved, reason: reason.trim() || undefined, remember: approved && remember };
+    const edits: Record<string, string> = {};
+    for (const field of fields) {
+      const draft = drafts[field.name];
+      if (draft !== undefined && draft !== field.value) edits[field.name] = draft;
+    }
+    const decision: ApprovalDecision = {
+      approved,
+      reason: reason.trim() || undefined,
+      remember: approved && remember,
+      ...(approved && Object.keys(edits).length ? { edits } : {}),
+    };
     onDecide?.(decision);
     try {
-      await store?.decide(approval.id, decision);
+      await store?.decide(approval.id, decision, sessionId);
     } finally {
       setBusy(false);
     }
@@ -40,6 +60,24 @@ export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView;
           </div>
           <p className="kl-approval__title">{approval.title}</p>
           {approval.description && <p className="kl-approval__desc">{approval.description}</p>}
+          {fields.length > 0 && (
+            <div className="kl-approval__fields">
+              {fields.map((field) => {
+                const value = drafts[field.name] ?? field.value;
+                const change = (event: { target: { value: string } }) => setDrafts((current) => ({ ...current, [field.name]: event.target.value }));
+                return (
+                  <label key={field.name} className="kl-label">
+                    {field.label}
+                    {field.multiline ? (
+                      <textarea className="kl-textarea" rows={4} value={value} disabled={busy} onChange={change} />
+                    ) : (
+                      <input className="kl-input" type="text" value={value} disabled={busy} onChange={change} />
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+          )}
           {denying && (
             <label className="kl-label kl-approval__reason">
               {i18n.t("approval.reasonLabel")}
@@ -77,6 +115,7 @@ export function ApprovalPrompt({ approval, onDecide }: { approval: ApprovalView;
             <span className="kl-approval__title">{approval.title}</span>
             <span className="kl-faint">
               {approval.decidedBy && i18n.t("approval.decidedBy", { name: approval.decidedBy })}
+              {approval.edited && ` · ${i18n.t("approval.edited")}`}
               {approval.reason && ` · ${i18n.t("approval.reason", { reason: approval.reason })}`}
               {approval.status === "expired" && i18n.t("approval.expiredNote")}
             </span>

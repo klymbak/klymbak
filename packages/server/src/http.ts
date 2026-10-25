@@ -103,6 +103,8 @@ export function createAgentRoutes(runtime: AgentRuntime, options: AgentHttpOptio
     await runtime.steer(c.get("user"), c.req.param("id"), text ?? "");
     return c.body(null, 204);
   });
+  /** The approval inbox: what unattended runs left waiting that the caller may decide. */
+  app.get("/approvals", async (c) => c.json(await runtime.listApprovals(c.get("user"))));
   app.post("/sessions/:id/approvals/:approvalId", async (c) => {
     const decision = await body<ApprovalDecision>(c);
     if (typeof decision.approved !== "boolean") throw new AgentError(400, "Send { approved: true | false }.");

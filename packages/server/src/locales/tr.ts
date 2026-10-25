@@ -55,6 +55,8 @@ export default {
   "error.idle": "Ajan çalışmıyor, bu yüzden bunu normal bir mesaj olarak gönderin.",
   "error.approvalGone": "Bu onay artık bir karar beklemiyor.",
   "error.approvalsPending": "Burada onay bekleyen bir işlem var. Önce onaylayın ya da reddedin.",
+  "error.editNotAllowed": "Yalnızca onayda gösterilen alanlar ve yalnızca metin olarak değiştirilebilir.",
+  "error.editInvalid": "İşlem {fields} içeriğini kabul etmiyor. Değiştirip yeniden onaylayın.",
   "error.unknownAgent": "Bilinmeyen ajan \"{agent}\".",
   "error.noScheduler": "Bu sunucuda zamanlama kapalı.",
   "error.scheduleFields": "Bir zamanlamanın adı ve talimatı olmalıdır.",

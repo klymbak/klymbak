@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { h, isReactive, nextTick, watch } from "vue";
-import type { AgentConfigInfo, ChatMessage, MediaBlock, TableBlock } from "@klymbak/protocol";
+import type { AgentConfigInfo, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, TableBlock } from "@klymbak/protocol";
 import { createAgentClient, formatValue, type Text } from "@klymbak/client";
 import de from "@klymbak/client/locales/de";
 import fr from "@klymbak/client/locales/fr";
@@ -133,7 +133,82 @@ describe("components", () => {
     await wrapper.find("input[type=text]").setValue("Too much");
     await wrapper.findAll("button").find((b) => b.text().includes("Confirm deny"))!.trigger("click");
     await flushPromises();
-    expect(decide).toHaveBeenCalledWith("ap1", { approved: false, reason: "Too much", remember: false });
+    expect(decide).toHaveBeenCalledWith("ap1", { approved: false, reason: "Too much", remember: false }, undefined);
+  });
+
+  it("sends only the fields a person changed, and shows that the approval was edited", async () => {
+    const decide = vi.fn(async () => true);
+    const approval: ApprovalView = {
+      id: "ap2",
+      title: "Reply on ticket #7",
+      status: "pending",
+      fields: [
+        { name: "body", label: "Reply", value: "Draft", multiline: true },
+        { name: "subject", label: "Subject", value: "Your order", multiline: false },
+      ],
+    };
+    const wrapper = mount({
+      setup() {
+        provideAgentStore({ decide } as unknown as AgentStore);
+        return () => h(ApprovalPrompt, { approval, sessionId: "s7" });
+      },
+    });
+    expect(wrapper.findAll(".kl-approval__fields .kl-label").map((label) => label.text())).toEqual(["Reply", "Subject"]);
+    expect((wrapper.find(".kl-approval__fields input").element as HTMLInputElement).value).toBe("Your order");
+    await wrapper.find("textarea").setValue("Better draft");
+    await wrapper.findAll("button").find((b) => b.text().includes("Approve"))!.trigger("click");
+    await flushPromises();
+    expect(decide).toHaveBeenCalledWith("ap2", { approved: true, remember: false, edits: { body: "Better draft" } }, "s7");
+
+    const decided = mount(ApprovalPrompt, { props: { approval: { ...approval, status: "approved", decidedBy: "Sam", edited: true } } });
+    expect(decided.find(".kl-approval__summary .kl-faint").text()).toBe("by Sam · edited");
+  });
+
+  it("offers the approval inbox while approvals wait, where a drafted reply can be edited before approving", async () => {
+    const waiting: ApprovalInboxItem = {
+      sessionId: "s7",
+      sessionTitle: "Ticket #7",
+      source: "api",
+      tool: "send_reply",
+      label: "Reply to customer",
+      createdAt: Date.now() - 60_000,
+      approval: { id: "ap1", title: "Reply on ticket #7", status: "pending", waits: true, fields: [{ name: "body", label: "Reply", value: "Your parcel is lost.", multiline: true }] },
+    };
+    let inbox = [waiting];
+    const decisions: unknown[] = [];
+    const fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      const path = url.replace("http://test", "");
+      if (path === "/config") return json(config);
+      if (path === "/approvals") return json(inbox);
+      if (path === "/sessions/s7/approvals/ap1") {
+        decisions.push(JSON.parse(String(init!.body)));
+        inbox = [];
+        return new Response(null, { status: 204 });
+      }
+      if (path === "/events") return new Response(new ReadableStream(), { headers: { "content-type": "text/event-stream" } });
+      return json([]);
+    }) as unknown as typeof globalThis.fetch;
+    const store = createAgentStore({ client: createAgentClient({ baseUrl: "http://test", fetch }), persist: false });
+    const wrapper = mount(AgentWorkspace, { props: { store, locale: "en" } });
+    await flushPromises();
+    expect(wrapper.find(".kl-workspace__inbox").text()).toBe("Approvals1");
+
+    await wrapper.find(".kl-workspace__inbox").trigger("click");
+    expect((wrapper.find(".kl-chat").element.closest(".kl-workspace__view") as HTMLElement).hidden).toBe(true);
+    expect(wrapper.find(".kl-inbox__meta").text()).toBe("Ticket #7Background job · 1 minute ago");
+    await wrapper.find(".kl-inbox textarea").setValue("Your parcel is on its way.");
+    await wrapper.find(".kl-inbox").findAll("button").find((b) => b.text().includes("Approve"))!.trigger("click");
+    await flushPromises();
+    expect(decisions).toEqual([{ approved: true, remember: false, edits: { body: "Your parcel is on its way." } }]);
+    expect(wrapper.find(".kl-inbox__empty").text()).toBe("Nothing is waiting for your approval.");
+    expect(wrapper.find(".kl-workspace__badge").exists()).toBe(false);
+
+    // The entry stays while the inbox is open; going back to the chats hides it.
+    await wrapper.find(".kl-sessions__new").trigger("click");
+    expect(wrapper.find(".kl-inbox").exists()).toBe(false);
+    expect(wrapper.find(".kl-workspace__inbox").exists()).toBe(false);
+    wrapper.unmount();
+    store.dispose();
   });
 
   it("renders tool cards with their status and UI blocks", async () => {

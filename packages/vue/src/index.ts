@@ -3,6 +3,7 @@ import "@klymbak/client/style.css";
 export { default as AgentWorkspace } from "./components/AgentWorkspace.vue";
 export { default as AgentChat } from "./components/AgentChat.vue";
 export { default as AgentWidget } from "./components/AgentWidget.vue";
+export { default as ApprovalInbox } from "./components/ApprovalInbox.vue";
 
 // Building blocks, for custom layouts.
 export { default as MessageList } from "./components/MessageList.vue";

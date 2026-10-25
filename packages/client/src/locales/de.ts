@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "von {name}",
   "approval.reason": "„{reason}“",
   "approval.expiredNote": "Niemand hat rechtzeitig entschieden",
+  "approval.edited": "bearbeitet",
+
+  "inbox.title": "Freigaben",
+  "inbox.intro": "Aktionen, die der Agent einer Person zur Entscheidung überlassen hat, die ältesten zuerst. Jede wartet, bis jemand sie freigibt oder ablehnt.",
+  "inbox.empty": "Nichts wartet auf deine Freigabe.",
+  "inbox.open": "Unterhaltung öffnen",
+  "inbox.source.schedule": "Geplante Aufgabe",
+  "inbox.source.api": "Hintergrundjob",
+  "inbox.source.chat": "Unterhaltung",
 
   "subagent.working": "arbeitet",
   "subagent.showSteps": "{count, plural, one {# Schritt} other {# Schritte}} anzeigen",

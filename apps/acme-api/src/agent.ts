@@ -72,6 +72,15 @@ const schedules: ScheduleDefinition[] = [
       "Check products at or below their reorder level. If any are out of stock, post them to #ops with notify_team. Report suggested reorder quantities with suppliers.",
     audience: ["admin"],
   },
+  {
+    id: "ticket-replies",
+    name: "Draft replies to open tickets",
+    cron: "0 * * * *",
+    enabled: false,
+    prompt:
+      "Answer up to three open support tickets, most urgent first. For each, read it with get_ticket, check the related order, then reply to the customer with reply_to_ticket. Replies wait for the support team's approval, so write each one ready to send.",
+    audience: ["admin", "support"],
+  },
 ];
 
 const local = env.LOCAL_MODELS !== "0";

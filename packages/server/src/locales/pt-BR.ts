@@ -55,6 +55,8 @@ export default {
   "error.idle": "O agente não está em execução, então envie isso como uma mensagem normal.",
   "error.approvalGone": "Esta aprovação não está mais aguardando uma decisão.",
   "error.approvalsPending": "Uma ação aqui está aguardando aprovação. Aprove ou negue primeiro.",
+  "error.editNotAllowed": "Só é possível alterar os campos mostrados na aprovação, e apenas com texto.",
+  "error.editInvalid": "A ação não aceita o que está em {fields}. Altere e aprove de novo.",
   "error.unknownAgent": "Agente desconhecido \"{agent}\".",
   "error.noScheduler": "O agendamento está desativado neste servidor.",
   "error.scheduleFields": "Um agendamento precisa de um nome e de uma instrução.",

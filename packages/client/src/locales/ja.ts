@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "{name} が決定",
   "approval.reason": "「{reason}」",
   "approval.expiredNote": "期限内に誰も決定しませんでした",
+  "approval.edited": "編集済み",
+
+  "inbox.title": "承認",
+  "inbox.intro": "エージェントが人の判断に委ねた操作です。古い順に並んでいます。誰かが承認または拒否するまで待機します。",
+  "inbox.empty": "承認待ちのものはありません。",
+  "inbox.open": "会話を開く",
+  "inbox.source.schedule": "スケジュールされたタスク",
+  "inbox.source.api": "バックグラウンドジョブ",
+  "inbox.source.chat": "会話",
 
   "subagent.working": "作業中",
   "subagent.showSteps": "{count} ステップを表示",

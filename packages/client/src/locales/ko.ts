@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "{name} 님이 결정",
   "approval.reason": "“{reason}”",
   "approval.expiredNote": "제한 시간 안에 아무도 결정하지 않았습니다",
+  "approval.edited": "수정됨",
+
+  "inbox.title": "승인",
+  "inbox.intro": "에이전트가 사람의 결정을 위해 남겨 둔 작업입니다. 오래된 순서로 표시되며, 누군가 승인하거나 거부할 때까지 기다립니다.",
+  "inbox.empty": "승인을 기다리는 항목이 없습니다.",
+  "inbox.open": "대화 열기",
+  "inbox.source.schedule": "예약 작업",
+  "inbox.source.api": "백그라운드 작업",
+  "inbox.source.chat": "대화",
 
   "subagent.working": "작업 중",
   "subagent.showSteps": "{count}단계 보기",

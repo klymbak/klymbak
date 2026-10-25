@@ -1,6 +1,7 @@
 export { AgentWorkspace } from "./components/AgentWorkspace.ts";
 export { AgentChat } from "./components/AgentChat.ts";
 export { AgentWidget } from "./components/AgentWidget.ts";
+export { ApprovalInbox } from "./components/ApprovalInbox.ts";
 
 // Building blocks, for custom layouts.
 export { MessageList } from "./components/MessageList.ts";

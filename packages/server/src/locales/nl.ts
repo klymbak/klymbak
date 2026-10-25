@@ -55,6 +55,8 @@ export default {
   "error.idle": "De agent draait niet, dus stuur dit als gewoon bericht.",
   "error.approvalGone": "Deze goedkeuring wacht niet meer op een beslissing.",
   "error.approvalsPending": "Hier wacht een actie op goedkeuring. Keur hem eerst goed of weiger hem.",
+  "error.editNotAllowed": "Alleen de velden op de goedkeuring kunnen worden gewijzigd, en alleen in tekst.",
+  "error.editInvalid": "De actie kan niet overweg met wat er in {fields} staat. Pas het aan en keur opnieuw goed.",
   "error.unknownAgent": "Onbekende agent \"{agent}\".",
   "error.noScheduler": "Plannen is uitgeschakeld op deze server.",
   "error.scheduleFields": "Een planning heeft een naam en een opdracht nodig.",

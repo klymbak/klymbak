@@ -765,6 +765,127 @@ describe("approvals that wait", () => {
   });
 });
 
+describe("approval inbox", () => {
+  const opsBot: AgentUser = { id: "ops-bot", name: "Ops bot", roles: ["admin"] };
+  const analyst: AgentUser = { id: "u3", name: "Ana Analyst", roles: ["analyst"] };
+  const replies: { ticket: number; body: string }[] = [];
+
+  const sendReply = defineTool({
+    name: "send_reply",
+    label: "Reply to customer",
+    description: "Email a reply on a ticket",
+    parameters: Type.Object({ ticket: Type.Integer(), body: Type.String({ maxLength: 200 }), note: Type.Optional(Type.String()) }),
+    approval: ({ ticket }) => ({ title: `Reply on ticket #${ticket}`, edit: [{ name: "body", label: "Reply" }, { name: "note", multiline: false }] }),
+    execute: ({ ticket, body }) => (replies.push({ ticket, body }), `Sent on #${ticket}.`),
+  });
+  const payout = defineTool({
+    name: "send_payout",
+    description: "Pay a supplier",
+    parameters: Type.Object({ amount: Type.Number() }),
+    roles: ["admin"],
+    approval: true,
+    execute: ({ amount }) => (executed.push(`payout:${amount}`), "Paid."),
+  });
+
+  /** An unattended run that stops at these calls, for support and admins to decide. */
+  async function waitingRun(...calls: [string, Parameters<typeof fauxToolCall>[1]][]) {
+    faux.setResponses([fauxAssistantMessage(calls.map(([name, args]) => fauxToolCall(name, args)), { stopReason: "toolUse" })]);
+    return runtime.runHeadless({ user: opsBot, prompt: "Work through the queue", audience: ["support", "admin"] });
+  }
+
+  beforeEach(() => {
+    replies.length = 0;
+    setup({ tools: [refundOrder, sendReply, payout] });
+  });
+
+  it("lists what unattended runs left waiting for the people who may decide it, oldest first", async () => {
+    const first = await waitingRun(["refund_order", { id: "A1", amount: 99 }], ["send_payout", { amount: 500 }]);
+    const second = await waitingRun(["send_reply", { ticket: 7, body: "Your parcel is on its way." }]);
+
+    const forSupport = await runtime.listApprovals(support);
+    expect(forSupport.map((item) => [item.sessionId, item.tool, item.approval.title])).toEqual([
+      [first.sessionId, "refund_order", "Refund $99"],
+      [second.sessionId, "send_reply", "Reply on ticket #7"],
+    ]);
+    expect(forSupport[1]).toMatchObject({ source: "api", sessionTitle: "Work through the queue", label: "Reply to customer", args: { ticket: 7 } });
+    expect((await runtime.listApprovals(admin)).map((item) => item.tool)).toEqual(["refund_order", "send_payout", "send_reply"]);
+    expect(await runtime.listApprovals(analyst)).toEqual([]);
+
+    const decided: string[] = [];
+    runtime.subscribe(admin, (event) => {
+      if (event.type === "approval_decided") decided.push(event.approvalId);
+    });
+    await runtime.decide(support, first.sessionId, forSupport[0]!.approval.id, { approved: false, reason: "Not this one" });
+    expect(decided).toEqual([forSupport[0]!.approval.id]);
+    expect((await runtime.listApprovals(admin)).map((item) => item.tool)).toEqual(["send_payout", "send_reply"]);
+
+    const app = createAgentRoutes(runtime, { auth: () => support });
+    expect(((await (await app.request("/approvals")).json()) as { tool: string }[]).map((item) => item.tool)).toEqual(["send_reply"]);
+  });
+
+  it("offers a drafted reply for editing, and runs the call with the approver's version", async () => {
+    const { sessionId } = await waitingRun(["send_reply", { ticket: 7, body: "Your parcel is lost.", note: "" }]);
+    const [item] = await runtime.listApprovals(support);
+    expect(item!.approval).toMatchObject({
+      description: "Ticket: 7",
+      fields: [
+        { name: "body", label: "Reply", value: "Your parcel is lost.", multiline: true },
+        { name: "note", label: "Note", value: "", multiline: false },
+      ],
+    });
+
+    let seen = "";
+    faux.setResponses([(context: { messages: Message[] }) => ((seen = lastToolResult(context.messages)), fauxAssistantMessage("Replied."))]);
+    await runtime.decide(support, sessionId, item!.approval.id, { approved: true, edits: { body: "Your parcel is on its way.", note: "" } });
+    await vi.waitFor(async () => expect((await runtime.getSession(support, sessionId)).running).toBe(false));
+
+    expect(replies).toEqual([{ ticket: 7, body: "Your parcel is on its way." }]);
+    expect(seen).toContain('Before approving, a person changed body. The call ran with their version: {"body":"Your parcel is on its way."}');
+    expect(seen).toContain("Sent on #7.");
+    const [part] = tools((await runtime.getSession(support, sessionId)).messages);
+    expect(part).toMatchObject({ status: "done", args: { ticket: 7, body: "Your parcel is on its way." } });
+    expect(part!.approval).toMatchObject({ status: "approved", decidedBy: "Sam Support", edited: true, fields: [{ value: "Your parcel is on its way." }, { value: "" }] });
+  });
+
+  it("refuses edits the tool can't take, and leaves the approval waiting", async () => {
+    const { sessionId } = await waitingRun(["send_reply", { ticket: 7, body: "Draft" }]);
+    const [item] = await runtime.listApprovals(support);
+    const id = item!.approval.id;
+
+    await expect(runtime.decide(support, sessionId, id, { approved: true, edits: { ticket: "8" } })).rejects.toMatchObject({ status: 400, code: "bad_edit" });
+    await expect(runtime.decide(support, sessionId, id, { approved: true, edits: { body: "x".repeat(201) } })).rejects.toMatchObject({
+      status: 400,
+      message: "The action can't take what's in Reply. Change it and approve again.",
+    });
+    expect(await runtime.listApprovals(support)).toHaveLength(1);
+
+    faux.setResponses([fauxAssistantMessage("Replied.")]);
+    await runtime.decide(support, sessionId, id, { approved: true, edits: { body: "Draft" } });
+    await vi.waitFor(() => expect(replies).toEqual([{ ticket: 7, body: "Draft" }]));
+    expect(tools((await runtime.getSession(support, sessionId)).messages)[0]!.approval?.edited).toBeUndefined();
+  });
+
+  it("takes edits in a chat's own approvals too", async () => {
+    faux.setResponses([fauxAssistantMessage(fauxToolCall("send_reply", { ticket: 9, body: "Sorry!" }), { stopReason: "toolUse" }), fauxAssistantMessage("Sent.")]);
+    const refused: unknown[] = [];
+    const { detail } = await run(support, "Answer ticket 9", (event, sessionId) => {
+      if (event.type === "tool_update" && event.patch.approval?.status === "pending") {
+        const approval = event.patch.approval;
+        expect(approval.fields?.map((field) => field.name)).toEqual(["body", "note"]);
+        // Refused, and still waiting for a decision that fits.
+        void runtime.decide(support, sessionId, approval.id, { approved: true, edits: { body: "x".repeat(201) } }).catch((error) => {
+          refused.push(error.code);
+          void runtime.decide(support, sessionId, approval.id, { approved: true, edits: { body: "Sorry for the wait!" } });
+        });
+      }
+    });
+    expect(refused).toEqual(["bad_edit"]);
+    expect(replies).toEqual([{ ticket: 9, body: "Sorry for the wait!" }]);
+    expect(tools(detail.messages)[0]).toMatchObject({ args: { body: "Sorry for the wait!" }, approval: { status: "approved", edited: true } });
+    expect(await runtime.listApprovals(support)).toEqual([]);
+  });
+});
+
 describe("languages", () => {
   const german: AgentUser = { ...admin, locale: "de" };
   const t = createTranslator(

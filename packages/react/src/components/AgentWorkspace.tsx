@@ -16,6 +16,7 @@ import {
 } from "../context";
 import { cx } from "../util";
 import { AgentChat } from "./AgentChat";
+import { ApprovalInbox } from "./ApprovalInbox";
 import { CapabilitiesPanel } from "./CapabilitiesPanel";
 import { KlIcon } from "./KlIcon";
 import { SchedulePanel } from "./SchedulePanel";
@@ -42,7 +43,10 @@ export interface AgentWorkspaceProps extends StoreSource, I18nSource {
 
 type Tab = "chats" | "schedules" | "capabilities";
 
-/** Full screen: conversations, schedules and capabilities in a sidebar, next to the chat. */
+/**
+ * Full screen: conversations, schedules and capabilities in a sidebar, next to the chat. While approvals wait for the
+ * person, the sidebar offers the approval inbox, which takes the chat's place.
+ */
 export function AgentWorkspace(props: AgentWorkspaceProps) {
   const { title, description, suggestions, theme = "auto", renderers, showMeta = true, onAction, brand, sidebarFooter, headerEnd } = props;
   const i18n = useResolvedI18n(props);
@@ -50,7 +54,9 @@ export function AgentWorkspace(props: AgentWorkspaceProps) {
   const inherited = useRenderers();
   const [tab, setTab] = useState<Tab>("chats");
   const [drawer, setDrawer] = useState(false);
+  const [view, setView] = useState<"chat" | "inbox">("chat");
   const { state } = store;
+  const waiting = state.inbox.length;
 
   const tabs = [
     { id: "chats" as const, label: i18n.t("workspace.chats"), icon: "chat", badge: selectUnreadCount(state) || undefined },
@@ -60,8 +66,20 @@ export function AgentWorkspace(props: AgentWorkspaceProps) {
 
   function showChat() {
     setTab("chats");
+    setView("chat");
     setDrawer(false);
   }
+
+  const menu = (
+    <button
+      type="button"
+      className="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
+      aria-label={i18n.t("workspace.openMenu")}
+      onClick={() => setDrawer(true)}
+    >
+      <KlIcon name="menu" size={18} />
+    </button>
+  );
 
   return (
     <StoreProvider value={store}>
@@ -88,6 +106,21 @@ export function AgentWorkspace(props: AgentWorkspaceProps) {
                     <KlIcon name="close" size={16} />
                   </button>
                 </div>
+                {(waiting > 0 || view === "inbox") && (
+                  <button
+                    type="button"
+                    className={cx("kl-workspace__inbox", view === "inbox" && "active")}
+                    aria-pressed={view === "inbox"}
+                    onClick={() => {
+                      setView("inbox");
+                      setDrawer(false);
+                    }}
+                  >
+                    <KlIcon name="shield" size={15} />
+                    <span className="kl-workspace__inbox-label">{i18n.t("inbox.title")}</span>
+                    {waiting > 0 && <span className="kl-workspace__badge">{i18n.number(waiting)}</span>}
+                  </button>
+                )}
                 <div className="kl-workspace__tabs" role="tablist">
                   {tabs.map((item) => (
                     <button
@@ -105,7 +138,7 @@ export function AgentWorkspace(props: AgentWorkspaceProps) {
                 </div>
                 <div className="kl-workspace__panel kl-scroll">
                   {tab === "chats" ? (
-                    <SessionList onOpen={() => setDrawer(false)} />
+                    <SessionList onOpen={showChat} />
                   ) : tab === "schedules" ? (
                     <SchedulePanel onOpenSession={showChat} />
                   ) : (
@@ -127,24 +160,23 @@ export function AgentWorkspace(props: AgentWorkspaceProps) {
               </aside>
               <div className="kl-workspace__scrim" onClick={() => setDrawer(false)} />
               <main className="kl-workspace__main">
-                <AgentChat
-                  title={title}
-                  description={description}
-                  suggestions={suggestions}
-                  showMeta={showMeta}
-                  onAction={onAction}
-                  headerStart={
-                    <button
-                      type="button"
-                      className="kl-btn kl-btn--ghost kl-btn--icon kl-workspace__menu"
-                      aria-label={i18n.t("workspace.openMenu")}
-                      onClick={() => setDrawer(true)}
-                    >
-                      <KlIcon name="menu" size={18} />
-                    </button>
-                  }
-                  headerEnd={headerEnd}
-                />
+                {/* Hidden rather than unmounted, so a half-written message survives a look at the inbox. */}
+                <div className="kl-workspace__view" hidden={view !== "chat"}>
+                  <AgentChat
+                    title={title}
+                    description={description}
+                    suggestions={suggestions}
+                    showMeta={showMeta}
+                    onAction={onAction}
+                    headerStart={menu}
+                    headerEnd={headerEnd}
+                  />
+                </div>
+                {view === "inbox" && (
+                  <div className="kl-workspace__view">
+                    <ApprovalInbox headerStart={menu} onOpenSession={showChat} />
+                  </div>
+                )}
               </main>
               <ToastStack onOpenSession={showChat} />
             </div>

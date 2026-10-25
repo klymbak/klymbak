@@ -93,3 +93,14 @@
 .kl-stamp--expired {
   color: var(--kl-text-faint);
 }
+.kl-approval__fields {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+/* A draft shows whole, up to a point, where browsers can size a field to its content. */
+.kl-approval__fields .kl-textarea {
+  field-sizing: content;
+  min-height: 84px;
+  max-height: 320px;
+}

@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "karar veren: {name}",
   "approval.reason": "“{reason}”",
   "approval.expiredNote": "Kimse zamanında karar vermedi",
+  "approval.edited": "düzenlendi",
+
+  "inbox.title": "Onaylar",
+  "inbox.intro": "Ajanın bir kişinin kararına bıraktığı işlemler, en eskisi önce. Her işlem, biri onaylayana ya da reddedene kadar bekler.",
+  "inbox.empty": "Onayınızı bekleyen bir şey yok.",
+  "inbox.open": "Sohbeti aç",
+  "inbox.source.schedule": "Zamanlanmış görev",
+  "inbox.source.api": "Arka plan işi",
+  "inbox.source.chat": "Sohbet",
 
   "subagent.working": "çalışıyor",
   "subagent.showSteps": "{count} adımı göster",

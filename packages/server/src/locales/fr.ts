@@ -55,6 +55,8 @@ export default {
   "error.idle": "L'agent ne tourne pas, envoyez donc ceci comme un message normal.",
   "error.approvalGone": "Cette approbation n'attend plus de décision.",
   "error.approvalsPending": "Une action attend une approbation ici. Approuvez-la ou refusez-la d'abord.",
+  "error.editNotAllowed": "Seuls les champs affichés sur l'approbation peuvent être modifiés, et uniquement avec du texte.",
+  "error.editInvalid": "L'action n'accepte pas le contenu de {fields}. Modifiez-le et approuvez à nouveau.",
   "error.unknownAgent": "Agent inconnu « {agent} ».",
   "error.noScheduler": "La planification est désactivée sur ce serveur.",
   "error.scheduleFields": "Une tâche planifiée a besoin d'un nom et d'une consigne.",

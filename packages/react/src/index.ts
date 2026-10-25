@@ -6,12 +6,15 @@ export { AgentChat } from "./components/AgentChat";
 export type { AgentChatProps, AgentChatHandle } from "./components/AgentChat";
 export { AgentWidget } from "./components/AgentWidget";
 export type { AgentWidgetProps } from "./components/AgentWidget";
+export { ApprovalInbox } from "./components/ApprovalInbox";
+export type { ApprovalInboxProps } from "./components/ApprovalInbox";
 
 // Building blocks, for custom layouts.
 export { MessageList } from "./components/MessageList";
 export { MessageItem } from "./components/MessageItem";
 export { ToolCallCard } from "./components/ToolCallCard";
 export { ApprovalPrompt } from "./components/ApprovalPrompt";
+export type { ApprovalPromptProps } from "./components/ApprovalPrompt";
 export { SubagentTrace } from "./components/SubagentTrace";
 export { Composer } from "./components/Composer";
 export type { ComposerProps, ComposerHandle } from "./components/Composer";

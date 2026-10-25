@@ -55,6 +55,8 @@ export default {
   "error.idle": "L'agente non è in esecuzione, quindi invialo come un messaggio normale.",
   "error.approvalGone": "Questa approvazione non è più in attesa di una decisione.",
   "error.approvalsPending": "Qui c'è un'azione in attesa di approvazione. Prima approvala o rifiutala.",
+  "error.editNotAllowed": "Si possono modificare solo i campi mostrati nell'approvazione, e solo con del testo.",
+  "error.editInvalid": "L'azione non accetta il contenuto di {fields}. Modificalo e approva di nuovo.",
   "error.unknownAgent": "Agente sconosciuto «{agent}».",
   "error.noScheduler": "La pianificazione è disattivata su questo server.",
   "error.scheduleFields": "Un'attività pianificata ha bisogno di un nome e di un'istruzione.",

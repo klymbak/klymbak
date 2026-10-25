@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "decyzja: {name}",
   "approval.reason": "„{reason}”",
   "approval.expiredNote": "Nikt nie zdecydował na czas",
+  "approval.edited": "edytowano",
+
+  "inbox.title": "Zatwierdzenia",
+  "inbox.intro": "Działania, które agent zostawił do decyzji człowieka, od najstarszych. Każde czeka, aż ktoś je zatwierdzi albo odrzuci.",
+  "inbox.empty": "Nic nie czeka na twoje zatwierdzenie.",
+  "inbox.open": "Otwórz rozmowę",
+  "inbox.source.schedule": "Zaplanowane zadanie",
+  "inbox.source.api": "Zadanie w tle",
+  "inbox.source.chat": "Rozmowa",
 
   "subagent.working": "pracuje",
   "subagent.showSteps": "Pokaż {count, plural, one {# krok} few {# kroki} many {# kroków} other {# kroku}}",

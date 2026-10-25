@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "рішення: {name}",
   "approval.reason": "«{reason}»",
   "approval.expiredNote": "Ніхто не ухвалив рішення вчасно",
+  "approval.edited": "змінено",
+
+  "inbox.title": "Підтвердження",
+  "inbox.intro": "Дії, які агент залишив на рішення людини, від найстаріших. Кожна чекає, доки хтось її підтвердить або відхилить.",
+  "inbox.empty": "Ніщо не чекає на ваше підтвердження.",
+  "inbox.open": "Відкрити розмову",
+  "inbox.source.schedule": "Заплановане завдання",
+  "inbox.source.api": "Фонове завдання",
+  "inbox.source.chat": "Розмова",
 
   "subagent.working": "працює",
   "subagent.showSteps": "Показати {count, plural, one {# крок} few {# кроки} many {# кроків} other {# кроку}}",

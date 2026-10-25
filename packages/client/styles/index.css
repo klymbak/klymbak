@@ -20,6 +20,7 @@
 @import "./capabilities-panel.css";
 @import "./schedule-panel.css";
 @import "./session-list.css";
+@import "./approval-inbox.css";
 @import "./toast-stack.css";
 @import "./agent-workspace.css";
 @import "./agent-widget.css";

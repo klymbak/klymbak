@@ -109,6 +109,15 @@ export default {
   "approval.decidedBy": "door {name}",
   "approval.reason": "‘{reason}’",
   "approval.expiredNote": "Niemand heeft op tijd beslist",
+  "approval.edited": "bewerkt",
+
+  "inbox.title": "Goedkeuringen",
+  "inbox.intro": "Acties die de agent aan een persoon heeft overgelaten, de oudste eerst. Elke actie wacht tot iemand haar goedkeurt of weigert.",
+  "inbox.empty": "Er wacht niets op je goedkeuring.",
+  "inbox.open": "Gesprek openen",
+  "inbox.source.schedule": "Geplande taak",
+  "inbox.source.api": "Achtergrondtaak",
+  "inbox.source.chat": "Gesprek",
 
   "subagent.working": "bezig",
   "subagent.showSteps": "{count, plural, one {# stap} other {# stappen}} tonen",
