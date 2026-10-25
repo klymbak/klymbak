@@ -29,6 +29,8 @@ export interface EventMapperOptions {
   /** When each call was allowed to start, for durations that exclude approval wait time. */
   startedAt: Map<string, number>;
   userOrigin(message: UserMessage, index: number): ChatMessage["origin"];
+  /** How a user message shows, when the harness knows better than its content (MCP resources and prompts). */
+  userParts?(message: UserMessage): MessagePart[] | undefined;
   onAssistantEnd?(message: AssistantMessage): void;
 }
 
@@ -46,7 +48,7 @@ export function attachEventMapper(agent: Agent, options: EventMapperOptions): ()
       case "message_start": {
         const message = event.message;
         if (message.role === "user") {
-          const chat = userToChat(message, options.userOrigin(message, userIndex++));
+          const chat = userToChat(message, options.userOrigin(message, userIndex++), options.userParts?.(message));
           if (chat) emit({ type: "message_start", message: chat });
         } else if (message.role === "assistant") {
           assistantId = randomUUID();
@@ -180,18 +182,23 @@ function toolPart(block: ToolCall, status: ToolPart["status"], options: EventMap
   };
 }
 
-export function userToChat(message: UserMessage, origin: ChatMessage["origin"]): ChatMessage | undefined {
-  const parts: MessagePart[] = [];
-  if (typeof message.content === "string") {
-    if (!message.content.startsWith(SYSTEM_CONTEXT_TAG)) parts.push({ type: "text", text: message.content });
-  } else {
-    for (const block of message.content) {
-      if (block.type === "text" && !block.text.startsWith(SYSTEM_CONTEXT_TAG)) parts.push({ type: "text", text: block.text });
-      else if (block.type === "image") parts.push({ type: "image", mimeType: block.mimeType, data: block.data });
-    }
-  }
+/** A user message for the transcript: `shown` parts when the harness gives them, otherwise its visible content. */
+export function userToChat(message: UserMessage, origin: ChatMessage["origin"], shown?: MessagePart[]): ChatMessage | undefined {
+  const parts = shown ?? visibleParts(message);
   if (parts.length === 0) return undefined;
   return { id: randomUUID(), role: "user", parts, createdAt: message.timestamp || Date.now(), status: "done", origin };
+}
+
+function visibleParts(message: UserMessage): MessagePart[] {
+  if (typeof message.content === "string") {
+    return message.content.startsWith(SYSTEM_CONTEXT_TAG) ? [] : [{ type: "text", text: message.content }];
+  }
+  const parts: MessagePart[] = [];
+  for (const block of message.content) {
+    if (block.type === "text" && !block.text.startsWith(SYSTEM_CONTEXT_TAG)) parts.push({ type: "text", text: block.text });
+    else if (block.type === "image") parts.push({ type: "image", mimeType: block.mimeType, data: block.data });
+  }
+  return parts;
 }
 
 export function assistantToChat(message: AssistantMessage, id: string, options: Pick<EventMapperOptions, "toolMeta">): ChatMessage {

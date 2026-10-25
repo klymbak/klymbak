@@ -1,12 +1,19 @@
 import {
   applyEvent,
+  expandTemplate,
   pendingApprovals,
+  templatedName,
   touchedMessages,
   type AgentConfigInfo,
   type AgentEvent,
   type ApprovalDecision,
   type ChatMessage,
   type CreateScheduleRequest,
+  type McpCompleteRequest,
+  type McpPromptInfo,
+  type McpResourceInfo,
+  type McpResourceTemplateInfo,
+  type MessagePart,
   type ModelInfo,
   type ModelRef,
   type NotificationEvent,
@@ -16,6 +23,7 @@ import {
   type UpdateScheduleRequest,
 } from "@klymbak/protocol";
 import { AgentApiError, type AgentClient } from "./client.ts";
+import { templateValues } from "./mentions.ts";
 import type { Message, Text } from "./i18n.ts";
 import type { MessageId } from "./messages.ts";
 import { observe } from "./observe.ts";
@@ -33,6 +41,16 @@ export interface Attachment {
   name: string;
   mimeType: string;
   data: string;
+}
+
+/** What a message brings along from MCP servers: resources mentioned with @ and a prompt chosen with /. */
+export interface McpReferences {
+  resources?: McpResourceInfo[];
+  /** Resources from templates, each with its variables' values by name. */
+  templates?: { template: McpResourceTemplateInfo; values: Record<string, string> }[];
+  prompt?: McpPromptInfo;
+  /** The prompt's argument values, by argument name. */
+  arguments?: Record<string, string>;
 }
 
 export interface AgentState {
@@ -340,10 +358,22 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       });
   }
 
-  async function send(text: string, attachments: Attachment[] = []) {
+  /**
+   * Sends a message, or steers the run under way with its text. MCP references go with new messages only: the server
+   * reads the resources and gets the prompt before the run starts.
+   */
+  async function send(text: string, attachments: Attachment[] = [], references: McpReferences = {}) {
     const prompt = text.trim();
-    if (!prompt && !attachments.length) return;
+    const { resources = [], prompt: chosen } = references;
+    const templated = (references.templates ?? []).map(({ template, values }) => ({ template, variables: templateValues(template, values) }));
+    if (!prompt && !attachments.length && !resources.length && !templated.length && !chosen) return;
     if (state.running && state.sessionId) return steer(prompt);
+    const values = Object.fromEntries(
+      Object.entries(references.arguments ?? {})
+        .map(([name, value]) => [name, value.trim()])
+        .filter(([, value]) => value),
+    );
+    const args = Object.keys(values).length ? values : undefined;
     state.runError = null;
     try {
       if (!state.sessionId) {
@@ -356,16 +386,21 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
       return;
     }
     const sessionId = state.sessionId!;
-    state.messages.push({
-      id: `local-${Date.now()}`,
-      role: "user",
-      createdAt: Date.now(),
-      status: "done",
-      parts: [
-        ...(prompt ? [{ type: "text" as const, text: prompt }] : []),
-        ...attachments.map((a) => ({ type: "image" as const, mimeType: a.mimeType, data: a.data })),
-      ],
-    });
+    // In the order the server shows them: the prompt, the text, images, then resources.
+    const parts: MessagePart[] = [
+      ...(chosen ? [{ type: "prompt" as const, server: chosen.server, name: chosen.name, title: chosen.title, arguments: args }] : []),
+      ...(prompt ? [{ type: "text" as const, text: prompt }] : []),
+      ...attachments.map((a) => ({ type: "image" as const, mimeType: a.mimeType, data: a.data })),
+      ...resources.map(({ server, uri, name, mimeType }) => ({ type: "resource" as const, server, uri, name, mimeType })),
+      ...templated.map(({ template, variables }) => ({
+        type: "resource" as const,
+        server: template.server,
+        uri: expandTemplate(template.uriTemplate, variables),
+        name: templatedName(template.name, variables),
+        mimeType: template.mimeType,
+      })),
+    ];
+    state.messages.push({ id: `local-${Date.now()}`, role: "user", createdAt: Date.now(), status: "done", parts });
     state.running = true;
     stopStream();
     const controller = new AbortController();
@@ -379,6 +414,14 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
           model: state.model ?? undefined,
           thinkingLevel: state.thinkingLevel,
           context: pageContext,
+          resources:
+            resources.length || templated.length
+              ? [
+                  ...resources.map(({ server, uri }) => ({ server, uri })),
+                  ...templated.map(({ template, variables }) => ({ server: template.server, template: template.uriTemplate, variables })),
+                ]
+              : undefined,
+          mcpPrompt: chosen ? { server: chosen.server, name: chosen.name, arguments: args } : undefined,
         },
         { signal: controller.signal, onEvent: (event) => onSessionEvent(sessionId, event) },
       );
@@ -505,6 +548,15 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     }
   }
 
+  /** Values an MCP server suggests for a prompt's argument or a template's variable; none when asking fails. */
+  async function completeMcp(request: McpCompleteRequest): Promise<string[]> {
+    try {
+      return (await client.completeMcp(request)).values;
+    } catch {
+      return [];
+    }
+  }
+
   /**
    * Tells the agent what the person has open (the record on screen, the selected rows). It goes
    * with every message sent from now on, for the model only. Pass undefined to clear it.
@@ -571,6 +623,7 @@ export function createAgentStore({ client, persist = "klymbak", reactive }: Agen
     runSchedule,
     addMcpServer,
     removeMcpServer,
+    completeMcp,
     refreshConfig,
     toast,
     dismissToast,

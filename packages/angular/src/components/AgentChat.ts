@@ -86,7 +86,18 @@ import { ModelPicker } from "./ModelPicker.ts";
       @if (s.runError) {
         <div class="kl-chat__error" role="alert"><svg klIcon name="alert" [size]="14" /> {{ i18n().text(s.runError) }}</div>
       }
-      <kl-composer [running]="s.running" [disabled]="!s.ready" [placeholder]="placeholder()" [acceptImages]="acceptImages()" (send)="send($event)" (stop)="store.abort()">
+      <kl-composer
+        [running]="s.running"
+        [disabled]="!s.ready"
+        [placeholder]="placeholder()"
+        [acceptImages]="acceptImages()"
+        [resources]="s.config?.resources"
+        [resourceTemplates]="s.config?.resourceTemplates"
+        [prompts]="s.config?.prompts"
+        [complete]="store.completeMcp"
+        (send)="send($event)"
+        (stop)="store.abort()"
+      >
         <kl-model-picker />
       </kl-composer>
     </div>
@@ -145,7 +156,7 @@ export class AgentChat extends StoreHost {
     this.composer().setText(text);
   }
 
-  protected send({ text, attachments }: ComposerSend) {
-    void this.store.send(text, attachments);
+  protected send({ text, attachments, references }: ComposerSend) {
+    void this.store.send(text, attachments, references);
   }
 }

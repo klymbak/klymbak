@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from "@angular/core";
-import type { McpServerInfo, ToolInfo } from "@klymbak/protocol";
+import type { McpPromptInfo, McpServerInfo, ToolInfo } from "@klymbak/protocol";
+import { promptLabel } from "@klymbak/client";
 import { injectAgentState, injectI18n, injectStoreRef } from "../context.ts";
 import { KlIcon } from "./KlIcon.ts";
 
@@ -66,6 +67,48 @@ type Field = keyof typeof EMPTY_FORM;
                 </div>
                 <p class="kl-cap__desc">{{ skill.description }}</p>
               </div>
+            }
+          </section>
+        }
+
+        @if (config.prompts.length > 0) {
+          <section class="kl-caps__section">
+            <h4><svg klIcon name="chat" [size]="14" /> {{ i18n().t("caps.prompts") }} <span class="kl-faint">{{ config.prompts.length }}</span></h4>
+            <p class="kl-caps__hint">{{ i18n().t("caps.promptsHint") }}</p>
+            @for (prompt of config.prompts; track prompt.server + prompt.name) {
+              <div class="kl-cap">
+                <div class="kl-cap__top">
+                  <span class="kl-cap__name">/{{ promptLabel(prompt) }}</span>
+                  <span class="kl-pill">{{ prompt.server }}</span>
+                </div>
+                @if (prompt.description) {
+                  <p class="kl-cap__desc">{{ prompt.description }}</p>
+                }
+              </div>
+            }
+          </section>
+        }
+
+        @if (resources().length > 0) {
+          <section class="kl-caps__section">
+            <h4><svg klIcon name="file" [size]="14" /> {{ i18n().t("caps.resources") }} <span class="kl-faint">{{ resources().length }}</span></h4>
+            <p class="kl-caps__hint">{{ i18n().t("caps.resourcesHint") }}</p>
+            @for (resource of shownResources(); track resource.key) {
+              <div class="kl-cap">
+                <div class="kl-cap__top">
+                  <span class="kl-cap__name">{{ resource.name }}</span>
+                  <span class="kl-pill">{{ resource.server }}</span>
+                </div>
+                @if (resource.description) {
+                  <p class="kl-cap__desc">{{ resource.description }}</p>
+                }
+                <p class="kl-cap__uri">{{ resource.uri }}</p>
+              </div>
+            }
+            @if (resources().length > resourcesShown) {
+              <button type="button" class="kl-btn kl-btn--ghost kl-btn--sm kl-caps__more" (click)="allResources.set(!allResources())">
+                {{ allResources() ? i18n().t("common.showFewer") : i18n().t("common.showMore", { count: resources().length - resourcesShown }) }}
+              </button>
             }
           </section>
         }
@@ -172,6 +215,22 @@ export class CapabilitiesPanel {
     const i18n = this.i18n();
     return user ? i18n.parts("caps.intro", { name: user.name, roles: user.roles.join(", "), asksFirst: i18n.t("caps.asksFirst") }) : [];
   });
+
+  /** Resources and templates, shown a few at a time: a server can list hundreds. */
+  protected readonly resourcesShown = 10;
+  protected readonly allResources = signal(false);
+  protected readonly resources = computed(() => {
+    const config = this.state().config;
+    return [
+      ...(config?.resources ?? []).map((r) => ({ key: `${r.server}\n${r.uri}`, name: r.name, server: r.server, description: r.description, uri: r.uri })),
+      ...(config?.resourceTemplates ?? []).map((tpl) => ({ key: `${tpl.server}\n${tpl.uriTemplate}`, name: tpl.name, server: tpl.server, description: tpl.description, uri: tpl.uriTemplate })),
+    ];
+  });
+  protected readonly shownResources = computed(() => (this.allResources() ? this.resources() : this.resources().slice(0, this.resourcesShown)));
+
+  protected promptLabel(prompt: McpPromptInfo) {
+    return promptLabel(prompt);
+  }
 
   protected readonly groups = computed(() => {
     const tools = this.state().config?.tools ?? [];

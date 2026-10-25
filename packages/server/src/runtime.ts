@@ -10,9 +10,12 @@ import {
   type AgentEvent,
   type ApprovalDecision,
   type CreateSessionRequest,
+  type McpCompleteRequest,
+  type McpResourceRef,
   type McpServerInfo,
   type ModelRef,
   type NotificationEvent,
+  type PromptPart,
   type RunRequest,
   type RunStatus,
   type SessionDetail,
@@ -23,8 +26,8 @@ import {
 } from "@klymbak/protocol";
 import { ApprovalBroker } from "./approvals.ts";
 import { agentError, errorText, notFound } from "./errors.ts";
-import { errorMessage, Harness, type HarnessResult } from "./harness.ts";
-import { McpManager } from "./mcp.ts";
+import { errorMessage, Harness, type HarnessReference, type HarnessResult } from "./harness.ts";
+import { McpManager, resourceContent, resourceTools } from "./mcp.ts";
 import { roleList, t } from "./messages.ts";
 import { ModelRegistry } from "./models.ts";
 import {
@@ -33,6 +36,7 @@ import {
   environmentSection,
   HARNESS_GUIDELINES,
   HEADLESS_SECTION,
+  MCP_RESOURCES_NOTE,
   reportLanguage,
   SCHEDULING_SECTION,
   turnContext,
@@ -65,6 +69,8 @@ const SCHEDULING_TOOLS = new Set(["schedule_task", "cancel_scheduled_task"]);
 const MAX_PAGE_CONTEXT_CHARS = 4_000;
 /** Nor is an unattended run's, though a record can run longer. */
 const MAX_RUN_CONTEXT_CHARS = 16_000;
+/** MCP resources one message can mention with @. */
+const MAX_MENTIONED_RESOURCES = 20;
 
 type Listener = (event: AgentEvent) => void;
 
@@ -137,6 +143,8 @@ export class AgentRuntime {
   models!: ModelRegistry;
 
   private readonly skillTool?: ToolDefinition<any>;
+  /** list_resources and read_resource, for people who can read some server's resources. */
+  private readonly resourceTools: ToolDefinition<any>[];
   private readonly handles = new Map<string, SessionHandle>();
   private readonly subscribers = new Set<{ user: AgentUser; fn: (event: NotificationEvent) => void }>();
   private starting?: Promise<void>;
@@ -154,6 +162,9 @@ export class AgentRuntime {
     this.storage = config.storage ?? memoryStorage();
     this.systemUser = config.systemUser ?? { id: "system", name: "Scheduler", roles: ["admin"] };
     this.mcp = new McpManager(this.logger, (server) => this.notify({ type: "mcp_update", server }));
+    // An app's own tool of the same name wins over a built-in one.
+    const own = new Set((config.tools ?? []).map((tool) => tool.name));
+    this.resourceTools = resourceTools(this.mcp).filter((tool) => !own.has(tool.name));
     if (config.schedules !== false) this.scheduler = new Scheduler(this, this.storage, config.schedules ?? []);
 
     for (const tool of config.tools ?? []) {
@@ -185,16 +196,24 @@ export class AgentRuntime {
   // -------------------------------------------------------------------------
 
   allTools(): ToolDefinition<any>[] {
-    return [...(this.config.tools ?? []), ...(this.skillTool ? [this.skillTool] : []), ...(this.scheduler?.tools() ?? []), ...this.mcp.tools()];
+    return [
+      ...(this.config.tools ?? []),
+      ...(this.skillTool ? [this.skillTool] : []),
+      ...(this.scheduler?.tools() ?? []),
+      ...this.resourceTools,
+      ...this.mcp.tools(),
+    ];
   }
 
   toolsFor(user: AgentUser, options: { headless?: boolean } = {}): ToolDefinition<any>[] {
     const noSkills = !skillsFor(this.skills, user).length;
+    const noResources = !this.mcp.canRead(user.roles);
     return this.allTools().filter(
       (tool) =>
         userCanUse(tool, user.roles) &&
         !(options.headless && SCHEDULING_TOOLS.has(tool.name)) &&
-        !(noSkills && tool === this.skillTool),
+        !(noSkills && tool === this.skillTool) &&
+        !(noResources && this.resourceTools.includes(tool)),
     );
   }
 
@@ -258,6 +277,9 @@ export class AgentRuntime {
       })),
       skills: skillsFor(this.skills, user).map(({ name, description }) => ({ name, description })),
       mcpServers: this.mcp.info(),
+      resources: this.mcp.resources(user.roles),
+      resourceTemplates: this.mcp.resourceTemplates(user.roles),
+      prompts: this.mcp.prompts(user.roles),
       features: {
         schedules: Boolean(this.scheduler),
         steering: true,
@@ -344,14 +366,22 @@ export class AgentRuntime {
     if (handle.run) throw agentError(409, "error.busy", "busy");
     if (handle.record.pendingApprovals?.length) throw agentError(409, "error.approvalsPending", "approvals_pending");
     const text = request.prompt?.trim() ?? "";
-    if (!text && !request.images?.length) throw agentError(400, "error.emptyPrompt", "empty_prompt");
+    const mentioned = mentionedResources(request.resources);
+    if (!text && !request.images?.length && !request.mcpPrompt && !mentioned.length) throw agentError(400, "error.emptyPrompt", "empty_prompt");
+    if (mentioned.length > MAX_MENTIONED_RESOURCES) {
+      throw agentError(400, "error.tooManyResources", "too_many_resources", { max: MAX_MENTIONED_RESOURCES });
+    }
 
     const model = await this.models.resolve(request.model ?? handle.record.model);
     const thinking = this.models.clampThinking(model, request.thinkingLevel ?? handle.record.thinkingLevel);
+    const references = await this.mcpReferences(user, mentioned, request.mcpPrompt, model.input.includes("image"));
+    // Reading them took a while: another run may have started meanwhile.
+    if (handle.run) throw agentError(409, "error.busy", "busy");
     if (listener) handle.listeners.add(listener);
     const id = this.beginRun(handle, user, {
       text,
       images: request.images,
+      references,
       pageContext: pageContext(request.context),
       model,
       thinking,
@@ -516,6 +546,47 @@ export class AgentRuntime {
     return this.mcp.connect(request.name, { url: url.toString(), headers: request.headers }, true);
   }
 
+  /**
+   * Reads the MCP resources a message mentions and gets the prompt it starts with, before its run starts: when one
+   * can't be had, the request fails rather than the agent answering without it.
+   */
+  private async mcpReferences(
+    user: AgentUser,
+    resources: McpResourceRef[],
+    prompt: RunRequest["mcpPrompt"],
+    images: boolean,
+  ): Promise<HarnessReference[]> {
+    const opening = prompt
+      ? this.mcp.getPrompt(prompt.server, prompt.name, prompt.arguments, user.roles).then(
+          ({ prompt: info, arguments: values, content }): HarnessReference => ({
+            part: {
+              type: "prompt",
+              server: info.server,
+              name: info.name,
+              title: info.title,
+              arguments: Object.keys(values).length ? values : undefined,
+            },
+            content,
+          }),
+        )
+      : undefined;
+    const read = resources.map((ref) =>
+      this.mcp.readResource(ref, user.roles).then(
+        ({ resource, contents }): HarnessReference => ({
+          part: { type: "resource", server: resource.server, uri: resource.uri, name: resource.name, mimeType: resource.mimeType },
+          content: resourceContent(resource, contents, images),
+        }),
+      ),
+    );
+    return Promise.all(opening ? [opening, ...read] : read);
+  }
+
+  /** Values an MCP server suggests for a prompt's argument or a resource template's variable, as the person types. */
+  async complete(user: AgentUser, request: McpCompleteRequest): Promise<{ values: string[] }> {
+    await this.start();
+    return { values: await this.mcp.complete(request, user.roles) };
+  }
+
   async removeMcpServer(user: AgentUser, name: string): Promise<void> {
     if (!this.canManageMcp(user)) throw agentError(403, "error.cantRemoveMcp", "forbidden");
     if (!this.mcp.isRuntime(name)) throw agentError(400, "error.mcpNotRuntime");
@@ -554,6 +625,8 @@ export class AgentRuntime {
     options: {
       text: string;
       images?: { mimeType: string; data: string }[];
+      /** MCP resources and a prompt the person attached. */
+      references?: HarnessReference[];
       /** What the person has open in the host app (RunRequest.context). */
       pageContext?: string;
       /** An unattended run's context (HeadlessRunOptions.context). */
@@ -568,7 +641,8 @@ export class AgentRuntime {
   ): string {
     const runId = randomUUID();
     const { record } = handle;
-    if (DEFAULT_TITLES.has(record.title)) record.title = titleFrom(options.text) || record.title;
+    const prompt = options.references?.find((reference) => reference.part.type === "prompt")?.part as PromptPart | undefined;
+    if (DEFAULT_TITLES.has(record.title)) record.title = titleFrom(options.text || prompt?.title || prompt?.name || "") || record.title;
     record.model = { provider: options.model.provider, id: options.model.id };
     record.thinkingLevel = options.thinking;
     const emit = this.emitter(handle, user, options.headless);
@@ -604,6 +678,7 @@ export class AgentRuntime {
       } else {
         const contexts: string[] = options.pageContext ? [`Open in the app right now: ${options.pageContext}`] : [];
         if (options.context) contexts.push(options.context);
+        if (options.references?.some((reference) => reference.part.type === "resource")) contexts.push(MCP_RESOURCES_NOTE);
         const language = options.headless ? reportLanguage(user.locale) : undefined;
         if (language) contexts.push(language);
         let blocked: string | undefined;
@@ -632,6 +707,7 @@ export class AgentRuntime {
           result = await harness.run({
             text: prompt,
             images: options.images,
+            references: options.references,
             context: turnContext(this.timezone, contexts.join("\n")),
             origin: options.origin,
           });
@@ -859,6 +935,27 @@ function pageContext(value: unknown): string | undefined {
   const text = value.trim();
   if (!text) return undefined;
   return text.length > MAX_PAGE_CONTEXT_CHARS ? `${text.slice(0, MAX_PAGE_CONTEXT_CHARS)}…` : text;
+}
+
+/** The resources a request mentions, by URI or by template and values, each once; anything malformed is left out. */
+function mentionedResources(value: unknown): McpResourceRef[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const refs: McpResourceRef[] = [];
+  for (const item of value as Partial<McpResourceRef>[]) {
+    if (typeof item?.server !== "string") continue;
+    let ref: McpResourceRef;
+    if (typeof item.uri === "string") ref = { server: item.server, uri: item.uri };
+    else if (typeof item.template === "string") {
+      const variables = Object.fromEntries(Object.entries(item.variables ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+      ref = { server: item.server, template: item.template, variables };
+    } else continue;
+    const key = JSON.stringify([ref.server, ref.uri, ref.template, ref.variables]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    refs.push(ref);
+  }
+  return refs;
 }
 
 /** An unattended run's context, marked as data: records carry text anyone wrote, such as a customer's message. */

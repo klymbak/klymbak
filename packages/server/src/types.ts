@@ -295,6 +295,11 @@ interface McpServerCommon {
   approval?: McpToolFilter;
   /** Tools that never change data: true for all, a list, or a function. Default: readOnlyHint. */
   readOnly?: McpToolFilter;
+  /** Let people mention the server's resources with @ in the composer. Default true. */
+  resources?: boolean;
+  /** Let people start a message with one of the server's prompts by typing / in the composer. Default true. */
+  prompts?: boolean;
+  /** Only people with one of these roles get the server's tools, resources and prompts. */
   roles?: string[];
   timeoutMs?: number;
 }

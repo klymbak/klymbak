@@ -159,7 +159,11 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
                     disabled={!state.ready}
                     placeholder={placeholder}
                     acceptImages={acceptImages}
-                    onSend={(text, attachments) => void store.send(text, attachments)}
+                    resources={state.config?.resources}
+                    resourceTemplates={state.config?.resourceTemplates}
+                    prompts={state.config?.prompts}
+                    complete={store.completeMcp}
+                    onSend={(text, attachments, references) => void store.send(text, attachments, references)}
                     onStop={() => void store.abort()}
                     tools={<ModelPicker />}
                   />

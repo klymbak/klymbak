@@ -79,6 +79,79 @@ export interface McpServerInfo {
   runtime: boolean;
 }
 
+/** A resource an MCP server lists, which a person can mention in a message with @. */
+export interface McpResourceInfo {
+  /** The MCP server that lists it. */
+  server: string;
+  uri: string;
+  /** The resource's title, or its name when it has none. */
+  name: string;
+  description?: string;
+  mimeType?: string;
+}
+
+/** A family of resources an MCP server addresses by URI template (`orders://{id}`), mentioned with @ and a value for each variable. */
+export interface McpResourceTemplateInfo {
+  /** The MCP server that offers it. */
+  server: string;
+  uriTemplate: string;
+  /** The template's title, or its name when it has none. */
+  name: string;
+  description?: string;
+  mimeType?: string;
+  /** The server suggests values for the variables (MCP completions). */
+  completes?: boolean;
+}
+
+export interface McpPromptArgument {
+  name: string;
+  title?: string;
+  description?: string;
+  required?: boolean;
+}
+
+/** A prompt an MCP server offers, which a person can start a message with by typing /. */
+export interface McpPromptInfo {
+  /** The MCP server that offers it. */
+  server: string;
+  name: string;
+  title?: string;
+  description?: string;
+  arguments: McpPromptArgument[];
+  /** The server suggests values for the arguments (MCP completions). */
+  completes?: boolean;
+}
+
+/** An MCP resource to read into a message: a listed one by `uri`, or one from a `template` with values for its variables. */
+export interface McpResourceRef {
+  server: string;
+  uri?: string;
+  template?: string;
+  variables?: Record<string, string>;
+}
+
+/** Asks an MCP server for values that fit a prompt's argument or a resource template's variable, as the person types. */
+export interface McpCompleteRequest {
+  server: string;
+  /** The prompt's name, for one of its arguments. */
+  prompt?: string;
+  /** The resource template, for one of its variables. */
+  template?: string;
+  /** The argument or variable. */
+  argument: string;
+  /** What the person has typed so far. */
+  value: string;
+  /** Values already given for the others. */
+  context?: Record<string, string>;
+}
+
+/** An MCP prompt to start a message with, and its arguments. */
+export interface McpPromptRef {
+  server: string;
+  name: string;
+  arguments?: Record<string, string>;
+}
+
 export interface ScheduleRunInfo {
   at: number;
   status: "completed" | "aborted" | "error";
@@ -118,6 +191,12 @@ export interface AgentConfigInfo {
   /** Procedures and house rules the agent loads when a task calls for them. */
   skills: SkillInfo[];
   mcpServers: McpServerInfo[];
+  /** MCP resources the person can mention with @. */
+  resources: McpResourceInfo[];
+  /** MCP resource templates the person can mention with @, giving a value for each variable. */
+  resourceTemplates: McpResourceTemplateInfo[];
+  /** MCP prompts the person can start a message with, by typing /. */
+  prompts: McpPromptInfo[];
   features: {
     schedules: boolean;
     steering: boolean;
@@ -149,6 +228,10 @@ export interface RunRequest {
    * model only. It is added to this message and never shown in the transcript.
    */
   context?: string;
+  /** MCP resources mentioned with @. The server reads them and adds their contents to this message, for the model. */
+  resources?: McpResourceRef[];
+  /** An MCP prompt chosen with /. The server gets it with these arguments, and its text opens this message. */
+  mcpPrompt?: McpPromptRef;
 }
 
 export interface ApprovalDecision {

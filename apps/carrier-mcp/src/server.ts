@@ -5,14 +5,50 @@
  * Any MCP client can use it (Claude Desktop, Cursor, or the Acme back-office agent),
  * which is the point: integrations written once as MCP servers plug into any agent.
  */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { DatabaseSync } from "node:sqlite";
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { shipmentProgress } from "./rules.ts";
+import { shipmentProgress, type ShipmentProgress } from "./rules.ts";
 
 const server = new McpServer({ name: "parcelpoint-carrier", version: "1.0.0" });
 
 const ZONES: Record<string, number> = { US: 1, CA: 1, UK: 2, DE: 2, FR: 2, NL: 2, SE: 2, AU: 3 };
+
+/** A shipment's status and scan history, as text. */
+function describeShipment(progress: ShipmentProgress): string {
+  const fmt = (t: number) => new Date(t).toISOString().replace("T", " ").slice(0, 16) + " UTC";
+  return [
+    `${progress.carrier} ${progress.trackingNumber}: ${progress.status.replace(/_/g, " ")}`,
+    progress.deliveredAt ? `Delivered ${fmt(progress.deliveredAt)}` : `Estimated delivery ${fmt(progress.estimatedDelivery)}${progress.delayed ? " (delayed, may slip)" : ""}`,
+    "History:",
+    ...progress.events.map((e) => `- ${fmt(e.at)} · ${e.location} · ${e.detail}`),
+  ].join("\n");
+}
+
+/**
+ * Tracking numbers of the account's shipments that start with what's typed, newest first, to suggest as people type.
+ * A real carrier lists an account's shipments through its API; in the demo the store passes its database
+ * (CARRIER_SHIPMENTS_DB), read here read-only.
+ */
+function suggestTrackingNumbers(typed: string): string[] {
+  const path = process.env.CARRIER_SHIPMENTS_DB;
+  if (!path) return [];
+  try {
+    const db = new DatabaseSync(path, { readOnly: true });
+    try {
+      const rows = db
+        .prepare("SELECT tracking_number FROM orders WHERE tracking_number LIKE ? ORDER BY shipped_at DESC LIMIT 20")
+        .all(`${typed.trim().toUpperCase()}%`) as { tracking_number: string }[];
+      return rows.map((row) => row.tracking_number);
+    } finally {
+      db.close();
+    }
+  } catch {
+    return [];
+  }
+}
 
 server.registerTool(
   "track_shipment",
@@ -28,15 +64,8 @@ server.registerTool(
     if (!progress) {
       return { isError: true, content: [{ type: "text", text: `No shipment found for tracking number ${trackingNumber}.` }] };
     }
-    const fmt = (t: number) => new Date(t).toISOString().replace("T", " ").slice(0, 16) + " UTC";
-    const lines = [
-      `${progress.carrier} ${progress.trackingNumber}: ${progress.status.replace(/_/g, " ")}`,
-      progress.deliveredAt ? `Delivered ${fmt(progress.deliveredAt)}` : `Estimated delivery ${fmt(progress.estimatedDelivery)}${progress.delayed ? " (delayed, may slip)" : ""}`,
-      "History:",
-      ...progress.events.map((e) => `- ${fmt(e.at)} · ${e.location} · ${e.detail}`),
-    ];
     return {
-      content: [{ type: "text", text: lines.join("\n") }],
+      content: [{ type: "text", text: describeShipment(progress) }],
       structuredContent: {
         status: progress.status,
         carrier: progress.carrier,
@@ -110,6 +139,117 @@ server.registerTool(
       structuredContent: { label, orderId, emailedTo: customerEmail, expiresInDays: 14 },
     };
   },
+);
+
+// Resources: reference documents people can mention in the chat with @.
+
+server.registerResource(
+  "return-policy",
+  "parcelpoint://policies/returns",
+  { title: "Return policy", description: "Who pays for returns, how long labels last and where parcels go", mimeType: "text/markdown" },
+  async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: [
+          "# ParcelPoint return policy",
+          "",
+          "- The store pays return postage on every prepaid label it creates.",
+          "- A return label is valid for 14 days and can be dropped off at any UPS location.",
+          "- Returns are scanned at the store's warehouse within 2 business days of arrival.",
+          "- A parcel lost on its way back is the carrier's responsibility once it has a drop-off scan.",
+          "- Oversize items (over 30 kg or 150 cm) need a pickup instead of a label.",
+        ].join("\n"),
+      },
+    ],
+  }),
+);
+
+server.registerResource(
+  "service-levels",
+  "parcelpoint://service-levels",
+  { title: "Service levels", description: "Carriers, services and transit times by zone", mimeType: "text/markdown" },
+  async (uri) => ({
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: "text/markdown",
+        text: [
+          "| Carrier | Service | Domestic transit | Per extra zone | Notes |",
+          "|---|---|---|---|---|",
+          "| USPS | Ground Advantage | 5 days | n/a | Domestic only |",
+          "| UPS | Ground | 4 days | +2 days | |",
+          "| FedEx | Express Saver | 2 days | +2 days | |",
+          "| DHL | Express Worldwide | 3 days | +2 days | Best for zone 3 |",
+          "",
+          `Zones: ${Object.entries(ZONES)
+            .map(([country, zone]) => `${country} ${zone}`)
+            .join(", ")}. International parcels take one more day.`,
+        ].join("\n"),
+      },
+    ],
+  }),
+);
+
+server.registerResource(
+  "shipment",
+  new ResourceTemplate("parcelpoint://shipments/{trackingNumber}", { list: undefined, complete: { trackingNumber: suggestTrackingNumbers } }),
+  { title: "Shipment", description: "A parcel's status and scan history, by tracking number", mimeType: "text/markdown" },
+  async (uri, { trackingNumber }) => {
+    const progress = shipmentProgress(String(trackingNumber));
+    if (!progress) throw new Error(`No shipment found for tracking number ${trackingNumber}.`);
+    return { contents: [{ uri: uri.href, mimeType: "text/markdown", text: describeShipment(progress) }] };
+  },
+);
+
+// Prompts: tasks people start from the chat with /.
+
+server.registerPrompt(
+  "delay_notice",
+  {
+    title: "Delay notice",
+    description: "Draft an email to a customer whose parcel is late",
+    argsSchema: {
+      trackingNumber: completable(z.string().describe("Tracking number of the late parcel"), suggestTrackingNumbers),
+      tone: z.string().optional().describe("friendly or formal"),
+    },
+  },
+  ({ trackingNumber, tone }) => ({
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `The parcel ${trackingNumber} is late. Look it up with track_shipment, then draft a short, ${tone || "friendly"} email to the customer: apologize, give the new estimated delivery and say what happens if it slips again. Don't promise compensation in the email; if the delay is over 3 days, suggest one to me separately.`,
+        },
+      },
+    ],
+  }),
+);
+
+server.registerPrompt(
+  "compare_rates",
+  {
+    title: "Compare shipping rates",
+    description: "Find the cheapest carrier that delivers within 5 days",
+    argsSchema: {
+      fromCountry: z.string().describe("ISO code, e.g. US"),
+      toCountry: z.string().describe("ISO code, e.g. DE"),
+      weightKg: z.string().describe("Weight in kg"),
+    },
+  },
+  ({ fromCountry, toCountry, weightKg }) => ({
+    messages: [
+      {
+        role: "user",
+        content: {
+          type: "text",
+          text: `Compare carrier rates for a ${weightKg} kg parcel from ${fromCountry} to ${toCountry} with get_shipping_quote, and recommend the cheapest option that arrives within 5 days.`,
+        },
+      },
+    ],
+  }),
 );
 
 await server.connect(new StdioServerTransport());

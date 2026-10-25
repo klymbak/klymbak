@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { ChatMessage } from "@klymbak/protocol";
-import { formatTokens } from "@klymbak/client";
+import { formatTokens, referenceParts, referenceView } from "@klymbak/client";
 import { useI18n } from "../context";
 import MarkdownContent from "./MarkdownContent.vue";
 import KlIcon from "./KlIcon.vue";
@@ -11,6 +11,7 @@ import ToolCallCard from "./ToolCallCard.vue";
 const props = defineProps<{ message: ChatMessage; compact?: boolean; showMeta?: boolean }>();
 const i18n = useI18n();
 
+const references = computed(() => referenceParts(props.message.parts).map(referenceView));
 const streaming = computed(() => props.message.status === "streaming");
 const lastIndex = computed(() => props.message.parts.length - 1);
 const isFinalAnswer = computed(() => !props.message.parts.some((p) => p.type === "tool"));
@@ -26,6 +27,13 @@ const origin = computed(() => (props.message.origin && props.message.origin !== 
       <KlIcon :name="message.origin === 'schedule' ? 'clock' : 'sparkle'" :size="12" /> {{ origin }}
     </span>
     <div class="kl-msg__bubble">
+      <div v-if="references.length" class="kl-msg__refs">
+        <span v-for="(reference, i) in references" :key="i" class="kl-ref" :class="{ 'kl-ref--prompt': reference.icon === 'chat' }" :title="reference.title">
+          <KlIcon :name="reference.icon" :size="12" />
+          <span class="kl-ref__name">{{ reference.name }}</span>
+          <span v-if="reference.detail" class="kl-ref__detail">{{ reference.detail }}</span>
+        </span>
+      </div>
       <template v-for="(part, i) in message.parts" :key="i">
         <p v-if="part.type === 'text'" class="kl-msg__text">{{ part.text }}</p>
         <img v-else-if="part.type === 'image'" class="kl-msg__image" :src="`data:${part.mimeType};base64,${part.data}`" :alt="i18n.t('message.attachedImage')" />

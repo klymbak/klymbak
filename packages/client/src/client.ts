@@ -6,6 +6,7 @@ import {
   type ApprovalDecision,
   type CreateScheduleRequest,
   type CreateSessionRequest,
+  type McpCompleteRequest,
   type McpServerInfo,
   type NotificationEvent,
   type RunRequest,
@@ -146,6 +147,8 @@ export function createAgentClient(options: AgentClientOptions) {
     listMcpServers: () => request<McpServerInfo[]>("GET", "/mcp"),
     addMcpServer: (body: AddMcpServerRequest) => request<McpServerInfo>("POST", "/mcp", body),
     removeMcpServer: (name: string) => request<void>("DELETE", `/mcp/${enc(name)}`),
+    /** Values an MCP server suggests for a prompt's argument or a resource template's variable. */
+    completeMcp: (body: McpCompleteRequest) => request<{ values: string[] }>("POST", "/mcp/complete", body),
 
     /**
      * Subscribes to notifications (schedule results, session list changes...).

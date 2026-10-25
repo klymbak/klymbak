@@ -8,6 +8,7 @@ import type {
   ApprovalDecision,
   CreateScheduleRequest,
   CreateSessionRequest,
+  McpCompleteRequest,
   NotificationEvent,
   RunRequest,
   UpdateScheduleRequest,
@@ -133,6 +134,7 @@ export function createAgentRoutes(runtime: AgentRuntime, options: AgentHttpOptio
   // MCP -----------------------------------------------------------------------
   app.get("/mcp", (c) => c.json(runtime.mcp.info()));
   app.post("/mcp", async (c) => c.json(await runtime.addMcpServer(c.get("user"), await body<AddMcpServerRequest>(c)), 201));
+  app.post("/mcp/complete", async (c) => c.json(await runtime.complete(c.get("user"), await body<McpCompleteRequest>(c))));
   app.delete("/mcp/:name", async (c) => {
     await runtime.removeMcpServer(c.get("user"), c.req.param("name"));
     return c.body(null, 204);
