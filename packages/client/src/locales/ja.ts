@@ -226,6 +226,12 @@ export default {
   "media.file": "ファイル",
   "media.open": "{name} を開く",
 
+  "sources.title": "出典",
+  "sources.count": "{count} 件の出典",
+  "sources.open": "{title} を開く",
+  "sources.expand": "全文を読む",
+  "sources.collapse": "折りたたむ",
+
   "chart.label": "{title}: {count} 件のデータ",
   "chart.defaultTitle": "グラフ",
 

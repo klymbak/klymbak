@@ -25,6 +25,7 @@ export { ChartView } from "./components/blocks/ChartView.ts";
 export { StatGrid } from "./components/blocks/StatGrid.ts";
 export { KeyValueList } from "./components/blocks/KeyValueList.ts";
 export { MediaGallery } from "./components/blocks/MediaGallery.ts";
+export { SourceList } from "./components/blocks/SourceList.ts";
 export { ActionBar } from "./components/blocks/ActionBar.ts";
 
 export {

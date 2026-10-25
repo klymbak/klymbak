@@ -2,7 +2,7 @@
 import { act, StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AgentConfigInfo, AgentEvent, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, SessionDetail, TableBlock } from "@klymbak/protocol";
+import type { AgentConfigInfo, AgentEvent, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, SessionDetail, SourcesBlock, TableBlock } from "@klymbak/protocol";
 import { createAgentClient, createAgentStore, formatValue, type AgentStore } from "@klymbak/client";
 import de from "@klymbak/client/locales/de";
 import { ChatActionsProvider, KlymbakProvider, StoreProvider } from "./context";
@@ -14,6 +14,7 @@ import { CapabilitiesPanel } from "./components/CapabilitiesPanel";
 import { Composer } from "./components/Composer";
 import { DataTable } from "./components/blocks/DataTable";
 import { MediaGallery } from "./components/blocks/MediaGallery";
+import { SourceList } from "./components/blocks/SourceList";
 import { MessageItem } from "./components/MessageItem";
 import { ToastStack } from "./components/ToastStack";
 
@@ -417,6 +418,35 @@ describe("components", () => {
     expect(tiles()).toHaveLength(12);
     await click(button(container, "Show 3 more"));
     expect(tiles()).toHaveLength(15);
+  });
+
+  it("cites sources with links, where each passage is, and a long excerpt that opens", async () => {
+    const block: SourcesBlock = {
+      type: "sources",
+      items: [
+        { title: "Returns and refunds", url: "https://help.acme.test/returns", source: "Help center", location: "Damaged items", excerpt: "If an item arrives damaged, we send a replacement." },
+        { title: "Torn rainfly", url: "javascript:alert(1)", source: "Resolved tickets", excerpt: "We sent a replacement rainfly. ".repeat(12).trim() },
+        ...Array.from({ length: 4 }, (_, i) => ({ title: `Page ${i + 3}` })),
+      ],
+    };
+    const container = render(<SourceList block={block} />);
+    const items = () => container.querySelectorAll(".kl-sources__item");
+    expect(container.querySelector(".kl-sources__title")?.textContent).toBe("Sources");
+    expect(container.querySelector(".kl-sources__count")?.textContent).toBe("6 sources");
+    const link = items()[0]!.querySelector("a")!;
+    expect([link.getAttribute("href"), link.target, link.textContent]).toEqual(["https://help.acme.test/returns", "_blank", "Returns and refunds"]);
+    expect(items()[0]!.querySelector(".kl-sources__where")?.textContent).toBe("Help center · Damaged items");
+    expect(items()[0]!.querySelector(".kl-sources__excerpt")?.textContent).toBe("If an item arrives damaged, we send a replacement.");
+    expect(items()[0]!.querySelector("button")).toBeNull();
+    // A script URL never becomes a link; a long excerpt shows three lines until opened.
+    expect(items()[1]!.querySelector("a")).toBeNull();
+    expect(items()[1]!.querySelector(".kl-sources__excerpt")?.classList.contains("kl-sources__excerpt--clamped")).toBe(true);
+    await click(button(container, "Read the whole passage"));
+    expect(items()[1]!.querySelector(".kl-sources__excerpt")?.classList.contains("kl-sources__excerpt--clamped")).toBe(false);
+    expect(items()[1]!.querySelector("button")?.getAttribute("aria-expanded")).toBe("true");
+    expect(items()).toHaveLength(4);
+    await click(button(container, "Show 2 more"));
+    expect(items()).toHaveLength(6);
   });
 
   it("asks for a reason before denying and sends the decision to the store", async () => {

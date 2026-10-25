@@ -18,6 +18,21 @@ export { createTranslator, localize, preferredLocale } from "./i18n.ts";
 export type { Localized, Translator } from "./i18n.ts";
 export { HARNESS_GUIDELINES } from "./prompt.ts";
 export { loadSkills, parseSkill } from "./skills.ts";
+export { knowledgeTools } from "./knowledge/tools.ts";
+export type { KnowledgeToolsOptions } from "./knowledge/tools.ts";
+export { knowledge, parseLlmsTxt, parseLlmsFullTxt } from "./knowledge/sources.ts";
+export type { DocumentsOptions, FolderOptions, LlmsTxtOptions, SitemapOptions, TableOptions, TicketsOptions } from "./knowledge/sources.ts";
+export { openAIEmbeddings } from "./knowledge/embeddings.ts";
+export type { EmbeddingsAdapter, OpenAIEmbeddingsOptions } from "./knowledge/embeddings.ts";
+export { ticketRedactor } from "./knowledge/redact.ts";
+export type { KnowledgeTicket, RedactOptions, TicketMessage } from "./knowledge/redact.ts";
+export { KnowledgeIndex } from "./knowledge/search.ts";
+export type { Hit, Passage } from "./knowledge/search.ts";
+export { excerpt, htmlToMarkdown, splitSections } from "./knowledge/markdown.ts";
+export { parseCsv, readXlsx } from "./knowledge/table.ts";
+export type { TableData } from "./knowledge/table.ts";
+export { stem, tokenize } from "./knowledge/text.ts";
+export type { KnowledgeDocument, KnowledgeSource, SourceContent, SourceContext } from "./knowledge/types.ts";
 export type * from "./types.ts";
 
 // Schema helpers, so tool authors need no extra dependency.

@@ -15,6 +15,7 @@
     "@hono/node-server": "^1.19.5",
     "@klymbak/server": "workspace:*",
     "carrier-mcp": "workspace:*",
-    "hono": "^4.10.4"
+    "hono": "^4.10.4",
+    "unpdf": "^1.9.1"
   }
 }

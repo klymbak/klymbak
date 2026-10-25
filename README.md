@@ -59,7 +59,8 @@ The demo database is generated on first start, with dates relative to today. Res
 | Switch to **Priya (Analyst)** and list top customers | A **PII hook** masks emails and phones for that role |
 | Deny an approval with a reason | The agent reads your reason and changes course |
 | Schedules → *Morning ops briefing* → **Run now** | An unattended run that posts to `#ops` and notifies you |
-| Schedules → *Draft replies to open tickets* → **Run now**, then switch to **Marcus (Support)** | The **approval inbox**: rewrite a drafted reply before it goes out, deny another with a reason, and the run carries on |
+| Schedules → *Draft replies to open tickets* → **Run now**, then switch to **Marcus (Support)** | The **approval inbox**: rewrite a drafted reply before it goes out, deny another with a reason, and the run carries on; each reply follows the **knowledge base**'s policies and how similar tickets were resolved |
+| *Does the Ridgeline 3P footprint fit the 2P? What's our warranty on zippers?* | **Knowledge**: a lookup in the parts table, and a policy answered from the handbook with its sources cited |
 
 ---
 
@@ -176,7 +177,7 @@ Install the [plugin](packages/strapi) instead: `npm install @klymbak/strapi`, ad
 `defineTool({ name, description, parameters, execute })`, with parameters as a TypeBox schema (re-exported as `Type`). Arguments are validated before `execute` runs. A tool returns a string or `{ text, data, ui, isError, images }`:
 
 - `text` is what the model reads. Keep it compact; it is truncated past 24k characters.
-- `ui` blocks go only to the browser: `table`, `stats`, `chart` (bar/line/area), `keyvalue`, `media` (images and videos as previews, other files as tiles that open them), `markdown`, `alert`, `actions` (buttons that send a prompt or emit an event to your app) and `custom` (your own Vue component). A 500-row table costs no tokens.
+- `ui` blocks go only to the browser: `table`, `stats`, `chart` (bar/line/area), `keyvalue`, `media` (images and videos as previews, other files as tiles that open them), `sources` (citations: documents with links, where in them, and the passage), `markdown`, `alert`, `actions` (buttons that send a prompt or emit an event to your app) and `custom` (your own Vue component). A 500-row table costs no tokens.
 - Options: `label` (the tool card's name) and `summary` (what the Tools panel says it does, in place of the description written for the model), each a string or a function of the person's locale; `approval` (boolean or a function of the arguments returning `{ title, description, risk, edit }`), `roles`, `readOnly`, `sequential`, `maxResultChars`.
 
 `ctx` gives every tool the signed-in `user`, `sessionId`, `signal`, `headless` (unattended) and `progress(text)` for live status lines.
@@ -243,6 +244,39 @@ skills: [
 ```
 
 Procedures and house rules: how we write an article, what to check before publishing, the refund policy. They use Anthropic's [Agent Skills](https://agentskills.io) format, a folder per skill with a `SKILL.md` (frontmatter `name` and `description`, then Markdown). Only each skill's name and description go into the prompt. The agent loads a skill's text with the `use_skill` tool when a task matches, and reads the documents it refers to (Markdown, text, CSV, JSON or YAML in the folder) the same way. `roles` limits who sees a skill. Scripts in a skill folder are ignored: nothing runs them.
+
+### Knowledge
+
+Skills say how to do something; knowledge holds the facts: policies, manuals, help-center articles, how past tickets were resolved, which part fits which model. `knowledgeTools` gives the agent tools to search and read it:
+
+```ts
+import { knowledge, knowledgeTools, openAIEmbeddings } from "@klymbak/server";
+
+tools: [
+  ...knowledgeTools({
+    description: "Acme's policies, product manuals and resolved support tickets",
+    sources: [
+      knowledge.folder("./knowledge"),                                    // Markdown, HTML, text and PDF files
+      knowledge.llmsTxt("https://docs.example.com/llms.txt"),             // a docs site's llms.txt, with llms-full.txt's text
+      knowledge.sitemap("https://help.example.com/sitemap.xml"),          // a website's pages
+      knowledge.documents({ name: "articles", load: () => helpdesk.articles() }), // anything your code loads
+      knowledge.tickets({ load: () => helpdesk.resolvedTickets(), roles: ["support"] }),
+      knowledge.table({ name: "parts", description: "Which spare part fits which product", file: "./parts.csv" }), // CSV or .xlsx
+    ],
+    cacheDir: "./data/knowledge",
+  }),
+]
+```
+
+- **`search_knowledge`** searches every source section by section: documents are split at their headings (PDFs by page), and titles, headings, summaries and text are scored with stemmed keywords (BM25F), code samples counting little. It returns the best passages with their document ids, and a `sources` block shows people each passage and a link to check it.
+- **`read_knowledge`** reads a document, a long one as its outline first and then one section at a time.
+- **`lookup_knowledge`**, when there are tables, finds rows by column value, ignoring case and punctuation, with items of lists in a cell and number comparisons (`">= 40"`). For "does part X fit model Y" a lookup is exact where search would guess, and when no row matches it suggests the closest values.
+
+**Resolved tickets** carry other customers' names, addresses and orders, and a reply drafted from them must not pass those on. `knowledge.tickets` replaces each ticket's customer (name, also in parts, email, phone, address, and the `private` values you list, such as order and tracking numbers) and any email, phone or card number with placeholders before the ticket is indexed, so neither search nor the model ever sees them. Names it isn't told about stay, so limit the source with `roles` too. `redact: false` keeps the details, for sources only some roles may use.
+
+**Semantic search** is optional: with `embeddings`, passages are embedded when they load and both rankings are merged, so a question finds the passage that says the same thing in other words ("my order never showed up" finds "Where is my order?"). `openAIEmbeddings({ baseUrl, model })` works with OpenAI, LM Studio, Ollama or any compatible endpoint. Turn it on when an eval of past tickets shows search missing articles that exist.
+
+Sources load on first use. Remote ones refresh daily, and with `cacheDir` a copy is kept for when a site can't be reached, along with the embeddings. `roles` on a source limits who searches it. What the agent reads is marked as data, not instructions, since documents and tickets can carry text anyone wrote. The tools' names follow `name` (`search_<name>`, …), which is how the Strapi plugin's `search_strapi_docs` is built on the same tools.
 
 ### Scheduled tasks
 

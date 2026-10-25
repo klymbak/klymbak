@@ -84,14 +84,50 @@ const PLACES: [string, string[], number, string][] = [
   ["AU", ["Melbourne", "Sydney", "Brisbane"], 7, "+61 3 5550 0"],
 ];
 
-const TICKET_TEMPLATES: [string, string, string][] = [
-  ["Where is my order?", "Hi, my order #{order} hasn't arrived yet and the tracking hasn't updated in a few days. Can you check?", "high"],
-  ["Wrong size", "I ordered the wrong size on order #{order}. Can I exchange it for one size up?", "normal"],
-  ["Discount code not working", "The code TRAIL15 says it's invalid at checkout. Is it still active?", "low"],
-  ["Zipper broke after one trip", "The main zipper on my purchase from order #{order} broke on the first trip. Is this covered by warranty?", "normal"],
-  ["Cancel my order", "Please cancel order #{order}, I ordered twice by mistake.", "high"],
-  ["Invoice for my company", "Could you send a VAT invoice for order #{order}? Our accounting needs it this week.", "low"],
-  ["Item missing from package", "My package for order #{order} arrived but one item is missing.", "high"],
+/** Subject, message, priority, and the reply that resolved it when the ticket is closed. */
+const TICKET_TEMPLATES: [string, string, string, string][] = [
+  [
+    "Where is my order?",
+    "Hi, my order #{order} hasn't arrived yet and the tracking hasn't updated in a few days. Can you check?",
+    "high",
+    "Good news: the carrier found your parcel held at the local depot, and it's out for delivery today. I asked them to trace it, so the tracking will catch up this evening. Sorry for the wait!",
+  ],
+  [
+    "Wrong size",
+    "I ordered the wrong size on order #{order}. Can I exchange it for one size up?",
+    "normal",
+    "Of course! Your first exchange is free: I've emailed you a prepaid return label, and we'll ship the new size as soon as the carrier scans your parcel.",
+  ],
+  [
+    "Discount code not working",
+    "The code TRAIL15 says it's invalid at checkout. Is it still active?",
+    "low",
+    "Sorry about that: TRAIL15 reached its limit of 500 uses last week, so it no longer works. You can use WELCOME10 for 10% off instead.",
+  ],
+  [
+    "Zipper broke after one trip",
+    "The main zipper on my purchase from order #{order} broke on the first trip. Is this covered by warranty?",
+    "normal",
+    "Yes, that's covered by our warranty. Since it's within 90 days, we've shipped you a replacement by express, and you don't need to send the old one back first.",
+  ],
+  [
+    "Cancel my order",
+    "Please cancel order #{order}, I ordered twice by mistake.",
+    "high",
+    "Done: the duplicate order is cancelled and fully refunded. The refund shows up on your card within 5 to 7 business days.",
+  ],
+  [
+    "Invoice for my company",
+    "Could you send a VAT invoice for order #{order}? Our accounting needs it this week.",
+    "low",
+    "Here is the VAT invoice for your order, made out to your company. Let me know if your accounting needs anything else.",
+  ],
+  [
+    "Item missing from package",
+    "My package for order #{order} arrived but one item is missing.",
+    "high",
+    "Sorry! The missing item was left out at packing. We've shipped it by express today, and there's nothing to return.",
+  ],
 ];
 
 const REFUND_REASONS = ["Item damaged in transit", "Wrong size", "Changed mind", "Arrived too late", "Defective zipper"];
@@ -324,7 +360,7 @@ export function seed(db: DatabaseSync, now = Date.now()) {
     const eligible = orders.filter((o) => o.status !== "pending" && now - o.createdAt < 60 * DAY && o !== janeOrder && o !== liamOrder);
     for (let i = 0; i < 38; i++) {
       const order = pick(eligible);
-      const [subject, body, priority] = pick(TICKET_TEMPLATES);
+      const [subject, body, priority, resolution] = pick(TICKET_TEMPLATES);
       const createdAt = Math.min(now - 0.1 * DAY, order.createdAt + (1 + rand() * 6) * DAY);
       const age = (now - createdAt) / DAY;
       const status = age > 6 ? (rand() < 0.85 ? "closed" : "pending") : weighted(["open", "pending", "closed"], (s) => ({ open: 50, pending: 25, closed: 25 })[s]!);
@@ -332,7 +368,9 @@ export function seed(db: DatabaseSync, now = Date.now()) {
       if (status !== "open") {
         insertReply.run(Number(result.lastInsertRowid), "Marcus Lee", "Thanks for reaching out! I'm looking into this now and will update you shortly.", iso(createdAt + 0.2 * DAY));
       }
+      if (status === "closed") insertReply.run(Number(result.lastInsertRowid), "Marcus Lee", resolution, iso(createdAt + 0.8 * DAY));
     }
+
     insertTicket.run(
       jane.id,
       janeOrder.id,
@@ -352,6 +390,59 @@ export function seed(db: DatabaseSync, now = Date.now()) {
       "high",
       iso(now - 0.9 * DAY),
       iso(now - 0.9 * DAY),
+    );
+
+    // Resolved tickets like the open ones above, which the knowledge base shows how they were handled (customers'
+    // details removed).
+    const resolved = eligible.filter((o) => o.status === "delivered" && now - o.createdAt > 25 * DAY).slice(0, 3);
+    const contact = (order: Order) => db.prepare("SELECT c.phone, c.city, o.tracking_number FROM customers c JOIN orders o ON o.customer_id = c.id WHERE o.id = ?").get(order.id) as { phone: string; city: string; tracking_number: string };
+    const firstName = (order: Order) => order.customer.name.split(" ")[0]!;
+    const resolvedTicket = (order: Order, ageDays: number, subject: string, body: string, priority: string, replies: [string, string][]) => {
+      const at = now - ageDays * DAY;
+      const id = Number(insertTicket.run(order.customer.id, order.id, subject, body, "closed", priority, iso(at), iso(at + 2 * DAY)).lastInsertRowid);
+      replies.forEach(([author, text], i) => insertReply.run(id, author, text, iso(at + (i + 1) * 0.4 * DAY)));
+    };
+    const [torn, bent, lost] = resolved as [Order, Order, Order];
+    resolvedTicket(
+      torn,
+      24,
+      "Rainfly ripped at the seam",
+      `Hi, I pitched my new Ridgeline 2P for the first time and the rainfly ripped along the seam at the back. We're camping again in ten days. Can you help? You can reach me on ${contact(torn).phone}, I'm in ${contact(torn).city}. ${firstName(torn)}`,
+      "high",
+      [
+        [
+          "Marcus Lee",
+          `So sorry, ${firstName(torn)}! A seam tear isn't something a patch fixes, so I've shipped you a new Ridgeline 2P rainfly (RF-R2) by express today, free of charge, with a prepaid label for the torn one. Keep the tent, and there's no need to send anything back before your trip.`,
+        ],
+        [torn.customer.name, "The new rainfly came two days later and fits perfectly. Thanks!"],
+      ],
+    );
+    resolvedTicket(
+      bent,
+      40,
+      "Bent tent pole",
+      `One of the poles of my Ridgeline 3P bent on the first night, in light wind. Order #${bent.id}, photo attached. Is this covered? ${bent.customer.name}`,
+      "normal",
+      [
+        [
+          "Marcus Lee",
+          `Thanks for the photo, ${firstName(bent)}. That's covered by the warranty. Pole sets are cheaper to ship than a repair, so I've sent you a complete Ridgeline pole set (PK-R) by express. Until it arrives, the splint sleeve in the repair kit will hold the bent section.`,
+        ],
+      ],
+    );
+    resolvedTicket(
+      lost,
+      55,
+      "Parcel hasn't moved in a week",
+      `My order #${lost.id} has said "in transit" for 8 days now (tracking ${contact(lost).tracking_number}). I'm getting worried. ${lost.customer.name}`,
+      "high",
+      [
+        ["Marcus Lee", "I've asked the carrier to trace your parcel and will update you within two business days."],
+        [
+          "Marcus Lee",
+          `I'm sorry, ${firstName(lost)}: the carrier couldn't find the parcel, so we've treated it as lost and reshipped your order by express today at no cost. If the first parcel turns up, keep it or refuse it, whichever is easier.`,
+        ],
+      ],
     );
 
     // Discount codes, inventory history, audit log -----------------------------------

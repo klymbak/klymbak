@@ -9,6 +9,7 @@ import ChartView from "./ChartView.vue";
 import DataTable from "./DataTable.vue";
 import KeyValueList from "./KeyValueList.vue";
 import MediaGallery from "./MediaGallery.vue";
+import SourceList from "./SourceList.vue";
 import StatGrid from "./StatGrid.vue";
 
 defineProps<{ block: UiBlock }>();
@@ -21,6 +22,7 @@ const renderers = useRenderers();
   <ChartView v-else-if="block.type === 'chart'" :block="block" />
   <KeyValueList v-else-if="block.type === 'keyvalue'" :block="block" />
   <MediaGallery v-else-if="block.type === 'media'" :block="block" />
+  <SourceList v-else-if="block.type === 'sources'" :block="block" />
   <ActionBar v-else-if="block.type === 'actions'" :block="block" />
   <div v-else-if="block.type === 'markdown'" class="kl-block-md"><MarkdownContent :source="block.text" /></div>
   <div v-else-if="block.type === 'alert'" class="kl-alert" :class="toneClass(block.tone)" role="status">

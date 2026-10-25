@@ -96,7 +96,6 @@ export const en = {
 
   "action.open": "Open",
   "action.openInContentManager": "Open in Content Manager",
-  "action.openDocs": "Open in Strapi docs",
 };
 
 export type PluginMessages = Record<keyof typeof en, string>;

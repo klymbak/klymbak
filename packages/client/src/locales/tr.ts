@@ -227,6 +227,12 @@ export default {
   "media.file": "Dosya",
   "media.open": "{name} aç",
 
+  "sources.title": "Kaynaklar",
+  "sources.count": "{count} kaynak",
+  "sources.open": "{title} aç",
+  "sources.expand": "Bölümün tamamını oku",
+  "sources.collapse": "Daha az göster",
+
   "chart.label": "{title}: {count} veri noktası",
   "chart.defaultTitle": "Grafik",
 

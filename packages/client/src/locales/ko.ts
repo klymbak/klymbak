@@ -226,6 +226,12 @@ export default {
   "media.file": "파일",
   "media.open": "{name} 열기",
 
+  "sources.title": "출처",
+  "sources.count": "출처 {count}개",
+  "sources.open": "{title} 열기",
+  "sources.expand": "전체 내용 읽기",
+  "sources.collapse": "간단히 보기",
+
   "chart.label": "{title}: 데이터 {count}개",
   "chart.defaultTitle": "차트",
 

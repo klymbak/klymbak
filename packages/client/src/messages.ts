@@ -232,6 +232,12 @@ export const en = {
   "media.file": "File",
   "media.open": "Open {name}",
 
+  "sources.title": "Sources",
+  "sources.count": "{count, plural, one {# source} other {# sources}}",
+  "sources.open": "Open {title}",
+  "sources.expand": "Read the whole passage",
+  "sources.collapse": "Show less",
+
   "chart.label": "{title}: {count, plural, one {# data point} other {# data points}}",
   "chart.defaultTitle": "Chart",
 

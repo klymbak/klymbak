@@ -227,6 +227,12 @@ export default {
   "media.file": "Bestand",
   "media.open": "{name} openen",
 
+  "sources.title": "Bronnen",
+  "sources.count": "{count, plural, one {# bron} other {# bronnen}}",
+  "sources.open": "{title} openen",
+  "sources.expand": "Hele passage lezen",
+  "sources.collapse": "Minder tonen",
+
   "chart.label": "{title}: {count, plural, one {# datapunt} other {# datapunten}}",
   "chart.defaultTitle": "Grafiek",
 

@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { seed } from "./seed.ts";
 
-export const DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "data");
+/** The database, conversations and knowledge caches. ACME_DATA_DIR moves them, e.g. for a second copy of the demo. */
+export const DATA_DIR = process.env.ACME_DATA_DIR ?? join(dirname(fileURLToPath(import.meta.url)), "..", "..", "data");
 export const DB_PATH = join(DATA_DIR, "acme.db");
 
 export const SCHEMA = `

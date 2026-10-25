@@ -1,0 +1,104 @@
+.kl-sources {
+  border: 1px solid var(--kl-border);
+  border-radius: var(--kl-radius-sm);
+  background: var(--kl-surface);
+  min-width: 0;
+}
+.kl-sources__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--kl-border);
+  color: var(--kl-text-muted);
+}
+.kl-sources__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kl-text);
+}
+.kl-sources__count {
+  font-size: 12px;
+  color: var(--kl-text-faint);
+}
+.kl-sources__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kl-sources__item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  column-gap: 8px;
+  padding: 8px 12px;
+}
+.kl-sources__item + .kl-sources__item {
+  border-top: 1px dashed var(--kl-border);
+}
+.kl-sources__item > * {
+  grid-column: 2;
+}
+.kl-sources__item > .kl-sources__n {
+  grid-column: 1;
+  grid-row: 1;
+  padding-top: 1px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--kl-text-faint);
+}
+.kl-sources__name {
+  justify-self: start;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kl-text);
+  overflow-wrap: anywhere;
+}
+a.kl-sources__name {
+  color: var(--kl-accent);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+a.kl-sources__name:hover {
+  text-decoration: underline;
+}
+.kl-sources__name svg {
+  margin-left: 4px;
+  vertical-align: -1px;
+}
+.kl-sources__where {
+  font-size: 11.5px;
+  color: var(--kl-text-faint);
+  overflow-wrap: anywhere;
+}
+.kl-sources__excerpt {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--kl-text-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.kl-sources__excerpt--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+.kl-sources__toggle {
+  justify-self: start;
+  margin: 2px 0 0 -8px;
+}
+.kl-sources__foot {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-top: 1px solid var(--kl-border);
+}

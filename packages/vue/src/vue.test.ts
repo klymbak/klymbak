@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { h, isReactive, nextTick, watch } from "vue";
-import type { AgentConfigInfo, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, TableBlock } from "@klymbak/protocol";
+import type { AgentConfigInfo, ApprovalInboxItem, ApprovalView, ChatMessage, MediaBlock, SourcesBlock, TableBlock } from "@klymbak/protocol";
 import { createAgentClient, formatValue, type Text } from "@klymbak/client";
 import de from "@klymbak/client/locales/de";
 import fr from "@klymbak/client/locales/fr";
@@ -14,6 +14,7 @@ import CapabilitiesPanel from "./components/CapabilitiesPanel.vue";
 import Composer from "./components/Composer.vue";
 import DataTable from "./components/blocks/DataTable.vue";
 import MediaGallery from "./components/blocks/MediaGallery.vue";
+import SourceList from "./components/blocks/SourceList.vue";
 import MessageItem from "./components/MessageItem.vue";
 
 const config: AgentConfigInfo = {
@@ -116,6 +117,36 @@ describe("components", () => {
     expect(tiles()).toHaveLength(12);
     await wrapper.findAll("button").find((b) => b.text().includes("Show 3 more"))!.trigger("click");
     expect(tiles()).toHaveLength(15);
+  });
+
+  it("cites sources with links, where each passage is, and a long excerpt that opens", async () => {
+    const block: SourcesBlock = {
+      type: "sources",
+      items: [
+        { title: "Returns and refunds", url: "https://help.acme.test/returns", source: "Help center", location: "Damaged items", excerpt: "If an item arrives damaged, we send a replacement." },
+        { title: "Torn rainfly", url: "javascript:alert(1)", source: "Resolved tickets", excerpt: "We sent a replacement rainfly. ".repeat(12).trim() },
+        ...Array.from({ length: 4 }, (_, i) => ({ title: `Page ${i + 3}` })),
+      ],
+    };
+    const wrapper = mount(SourceList, { props: { block } });
+    const items = () => wrapper.findAll(".kl-sources__item");
+    const press = (text: string) => wrapper.findAll("button").find((b) => b.text().includes(text))!.trigger("click");
+    expect(wrapper.find(".kl-sources__title").text()).toBe("Sources");
+    expect(wrapper.find(".kl-sources__count").text()).toBe("6 sources");
+    const link = items()[0]!.find("a");
+    expect([link.attributes("href"), link.attributes("target"), link.text()]).toEqual(["https://help.acme.test/returns", "_blank", "Returns and refunds"]);
+    expect(items()[0]!.find(".kl-sources__where").text()).toBe("Help center · Damaged items");
+    expect(items()[0]!.find(".kl-sources__excerpt").text()).toBe("If an item arrives damaged, we send a replacement.");
+    expect(items()[0]!.find("button").exists()).toBe(false);
+    // A script URL never becomes a link; a long excerpt shows three lines until opened.
+    expect(items()[1]!.find("a").exists()).toBe(false);
+    expect(items()[1]!.find(".kl-sources__excerpt").classes()).toContain("kl-sources__excerpt--clamped");
+    await press("Read the whole passage");
+    expect(items()[1]!.find(".kl-sources__excerpt").classes()).not.toContain("kl-sources__excerpt--clamped");
+    expect(items()[1]!.find("button").attributes("aria-expanded")).toBe("true");
+    expect(items()).toHaveLength(4);
+    await press("Show 2 more");
+    expect(items()).toHaveLength(6);
   });
 
   it("asks for a reason before denying and sends the decision to the store", async () => {

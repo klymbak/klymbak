@@ -131,6 +131,26 @@ export interface MediaBlock {
   caption?: string;
 }
 
+export interface SourceItem {
+  /** The document's title. */
+  title: string;
+  /** Where people can read it. Without one, the excerpt is what they can check. */
+  url?: string;
+  /** Where in the document: a section, "Returns › Damaged items", or a page, "Page 3". */
+  location?: string;
+  /** The collection it came from, e.g. "Help center" or "Resolved tickets". */
+  source?: string;
+  /** The passage the answer rests on. */
+  excerpt?: string;
+}
+
+/** Where an answer comes from: documents and passages people can open or read to check it. */
+export interface SourcesBlock {
+  type: "sources";
+  title?: string;
+  items: SourceItem[];
+}
+
 export type UiActionKind = "prompt" | "event" | "link";
 
 export interface UiAction {
@@ -165,6 +185,7 @@ export type UiBlock =
   | MarkdownBlock
   | AlertBlock
   | MediaBlock
+  | SourcesBlock
   | ActionsBlock
   | CustomBlock;
 
@@ -177,6 +198,7 @@ export const ui = {
   markdown: (text: string): MarkdownBlock => ({ type: "markdown", text }),
   alert: (tone: Tone, text: string, title?: string): AlertBlock => ({ type: "alert", tone, text, title }),
   media: (items: MediaItem[], title?: string): MediaBlock => ({ type: "media", title, items }),
+  sources: (items: SourceItem[], title?: string): SourcesBlock => ({ type: "sources", title, items }),
   actions: (actions: UiAction[], title?: string): ActionsBlock => ({ type: "actions", title, actions }),
   custom: (component: string, props?: Record<string, unknown>): CustomBlock => ({ type: "custom", component, props }),
 };
