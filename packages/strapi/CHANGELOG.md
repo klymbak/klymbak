@@ -1,5 +1,13 @@
 # @klymbak/strapi
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [[`3daee10`](https://github.com/klymbak/klymbak/commit/3daee1052495426eb010d2964c2dfbc6157e3913)]:
+  - @klymbak/server@0.4.0
+  - @klymbak/react@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

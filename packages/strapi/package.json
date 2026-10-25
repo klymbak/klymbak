@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/strapi",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "An AI assistant for the Strapi 5 admin panel. It finds, writes and updates content as the signed-in admin, within their Strapi permissions, and asks before it changes anything.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
