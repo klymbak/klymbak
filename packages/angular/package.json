@@ -1,6 +1,6 @@
 {
   "name": "@klymbak/angular",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Angular components for chat-native admin panels: streaming chat, tool cards, approvals, subagent traces, generative UI, model picker.",
   "license": "MIT",
   "author": "Ivan Berezhnyk <ivan@berezhnyk.com>",
