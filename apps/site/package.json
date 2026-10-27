@@ -11,14 +11,17 @@
     "preview": "vite preview --port 5174",
     "deploy": "wrangler deploy",
     "deploy:preview": "wrangler preview",
-    "typecheck": "vue-tsc -p tsconfig.json --noEmit"
+    "content:pull": "node --import tsx cms/pull.ts",
+    "typecheck": "vue-tsc -p tsconfig.json --noEmit && vue-tsc -p tsconfig.node.json --noEmit"
   },
   "dependencies": {
     "@klymbak/vue": "workspace:*",
     "vue": "^3.5.22"
   },
   "devDependencies": {
+    "@types/markdown-it": "^14.2.0",
     "@vitejs/plugin-vue": "^6.0.1",
+    "markdown-it": "^14.3.2",
     "vite": "^8.3.0",
     "vite-plugin-singlefile": "^2.3.0",
     "vue-tsc": "^3.1.0",

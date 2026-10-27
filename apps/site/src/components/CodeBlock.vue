@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { text } from "../content.ts";
 
 /** One file, or several shown as tabs (the same snippet in Vue, React and Angular). */
 const props = defineProps<{ files: { file: string; source: string }[] }>();
@@ -47,11 +48,11 @@ async function copy() {
 <template>
   <div class="code">
     <div class="code__bar">
-      <div v-if="files.length > 1" class="code__tabs" role="group" aria-label="Framework">
+      <div v-if="files.length > 1" class="code__tabs" role="group" :aria-label="text('common', 'code.tabs')">
         <button v-for="(f, i) in files" :key="f.file" type="button" class="code__tab" :aria-pressed="i === active" @click="active = i">{{ f.file }}</button>
       </div>
       <span v-else class="code__file">{{ files[0]?.file }}</span>
-      <button type="button" class="code__copy" @click="copy">{{ copied ? "Copied" : "Copy" }}</button>
+      <button type="button" class="code__copy" @click="copy">{{ copied ? text("common", "code.copied") : text("common", "code.copy") }}</button>
     </div>
     <pre><code v-html="html" /></pre>
   </div>

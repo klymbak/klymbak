@@ -374,7 +374,7 @@ docker build -t klymbak-demo .
 docker run -p 8787:8787 -e ANTHROPIC_API_KEY=… klymbak-demo
 ```
 
-The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Set `VITE_DEMO_URL`, `VITE_REPO_URL` and `VITE_CONTACT_EMAIL` at build time; without `VITE_DEMO_URL` the demo buttons are hidden.
+The explainer site is static (`pnpm --filter site build` → `apps/site/dist`). Its copy, in every language, comes from the Strapi CMS at strapi.berezhnyk.com when the build has `STRAPI_TOKEN` (a read-only API token; `STRAPI_URL` points elsewhere), and from the committed `apps/site/cms/snapshot.json` otherwise. Refresh that snapshot with `pnpm --filter site content:pull`. English lives at `/`, other languages at `/<code>/` once their home page is published. Set `VITE_DEMO_URL` at build time to show the demo buttons.
 
 It runs on Cloudflare Workers at klymbak.ai (`apps/site/wrangler.jsonc`). Connect the repo under Workers → Import a repository with the build command `pnpm --filter site build` and the deploy command `pnpm --filter site run deploy` (keep `run`: bare `pnpm deploy` is a built-in pnpm command), or run the same two steps locally after `pnpm --filter site exec wrangler login`.
 
