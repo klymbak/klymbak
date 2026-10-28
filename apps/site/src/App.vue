@@ -133,7 +133,7 @@ const more = (label: string, short?: string) => (short && label.startsWith(short
   min-width: 0;
 }
 .brand__name {
-  font-family: var(--font-display);
+  font-family: var(--font-brand);
   font-stretch: 125%;
   font-weight: 800;
   font-size: 1.15rem;
