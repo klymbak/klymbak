@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import logo from "../../../docs/brand/klymbak-logo.svg";
-import ArchitectureDiagram from "./components/ArchitectureDiagram.vue";
-import CodeBlock from "./components/CodeBlock.vue";
-import HeroReplay from "./components/HeroReplay.vue";
-import StrapiSketch from "./components/StrapiSketch.vue";
-import { capabilities, faq, links, pilot, steps, strapiConfig, strapiFacts, strapiPlaces } from "./content";
+import type { Section } from "./cms.ts";
+import LanguageMenu from "./components/LanguageMenu.vue";
+import SiteLink from "./components/SiteLink.vue";
+import CtaSection from "./components/sections/CtaSection.vue";
+import HeroSection from "./components/sections/HeroSection.vue";
+import SectionBody from "./components/sections/SectionBody.vue";
+import SectionHead from "./components/sections/SectionHead.vue";
+import { home, locales, site, text } from "./content.ts";
 
 type Theme = "auto" | "light" | "dark";
 const theme = ref<Theme>("auto");
+const themeName = computed(() => text("common", `theme.${theme.value}`));
 
 onMounted(() => {
   try {
@@ -33,291 +37,67 @@ function cycleTheme() {
   theme.value = theme.value === "auto" ? "dark" : theme.value === "dark" ? "light" : "auto";
 }
 
-const legacyScreens = ["Dashboard", "Orders", "Customers", "Refunds", "Returns", "Shipments", "Inventory", "Purchase orders", "Discounts", "Tickets", "Reports", "Exports", "Users & roles", "Audit log"];
-const copiedEmail = ref(false);
-
-async function copyEmail() {
-  try {
-    await navigator.clipboard.writeText(links.email);
-    copiedEmail.value = true;
-    setTimeout(() => (copiedEmail.value = false), 1500);
-  } catch {
-    // Clipboard refused; the address is selectable text.
-  }
+// A section without an eyebrow continues the one above it, in the same <section>: the Strapi plugin's
+// details follow its three places, “What it won't do” follows the capabilities. The hero and the
+// closing call to action stand alone.
+const alone = (section: Section) => section.type === "hero" || section.type === "cta";
+const groups: { lead: Section; sections: Section[] }[] = [];
+for (const section of home.sections) {
+  const last = groups.at(-1);
+  if (last && !section.eyebrow && !alone(section) && !alone(last.lead)) last.sections.push(section);
+  else groups.push({ lead: section, sections: [section] });
 }
+const titleId = (lead: Section, index: number) => `${lead.anchor ?? `section-${index + 1}`}-title`;
+
+/** What the header button adds to its short label on wide screens: “I want this” + “ in my admin panel”. */
+const more = (label: string, short?: string) => (short && label.startsWith(short) && label !== short ? label.slice(short.length).trimStart() : undefined);
 </script>
 
 <template>
   <header class="top">
     <div class="wrap top__inner">
-      <a class="brand" href="#top" aria-label="Klymbak home">
-        <img :src="logo" width="30" height="30" alt="" />
+      <a class="brand" href="#top" :aria-label="text('common', 'brand.home')">
+        <img :src="site.logo?.url ?? logo" width="30" height="30" alt="" />
         <span class="brand__text">
-          <span class="brand__name">klymbak</span>
-          <span class="brand__note">AI agent package for admin panels</span>
+          <span class="brand__name">{{ site.name }}</span>
+          <span v-if="site.tagline" class="brand__note">{{ site.tagline }}</span>
         </span>
       </a>
-      <nav class="top__nav" aria-label="Sections">
-        <a href="#steps">Six steps</a>
-        <a href="#strapi">Strapi plugin</a>
-        <a href="#inside">What's inside</a>
-        <a href="#pilot">Pilot</a>
-        <a href="#faq">FAQ</a>
+      <nav v-if="site.navigation.length" class="top__nav" :aria-label="text('common', 'nav.label')">
+        <SiteLink v-for="item in site.navigation" :key="item.url" :link="item" />
       </nav>
-      <button type="button" class="top__theme" :aria-label="`Theme: ${theme}. Change theme`" :title="`Theme: ${theme}`" @click="cycleTheme">
+      <LanguageMenu v-if="locales.length > 1" class="top__lang" />
+      <button
+        type="button"
+        class="top__theme"
+        :aria-label="text('common', 'theme.button', { theme: themeName })"
+        :title="text('common', 'theme.title', { theme: themeName })"
+        @click="cycleTheme"
+      >
         <svg v-if="theme === 'dark'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" /></svg>
         <svg v-else-if="theme === 'light'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
         <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" /></svg>
       </button>
-      <a class="btn btn--primary top__cta" :href="links.contact">I want this<span class="top__cta-more">&nbsp;in my admin panel</span></a>
+      <SiteLink v-for="action in site.actions" :key="action.url" :link="action" class="btn btn--primary top__cta">
+        <template v-if="more(action.label, action.shortLabel)">{{ action.shortLabel }}<span class="top__cta-more">&nbsp;{{ more(action.label, action.shortLabel) }}</span></template>
+      </SiteLink>
     </div>
   </header>
 
   <main id="top">
-    <!-- Hero ------------------------------------------------------------------>
-    <section class="hero wrap">
-      <div class="hero__copy">
-        <p class="label">For teams who live in admin screens</p>
-        <h1>Your admin panel, as a <mark>conversation</mark>.</h1>
-        <p class="hero__lede">
-          I replace the screens your team clicks through every day with an AI agent they can talk to. It looks things up in your systems,
-          shows results as tables and charts, and asks before it changes anything.
-        </p>
-        <div class="hero__ctas">
-          <a v-if="links.demo" class="btn btn--primary" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
-          <a class="btn" :class="links.demo ? 'btn--ghost' : 'btn--primary'" href="#steps">See the six steps</a>
-        </div>
-        <ul class="hero__facts">
-          <li><strong>Pilot</strong> in three weeks, on one real workflow</li>
-          <li><strong>Any model</strong>: Claude, GPT, Gemini or your own hardware</li>
-          <li><strong>Open stack</strong>: Vue, React or Angular + Node, on the MIT-licensed pi agent harness</li>
-        </ul>
-      </div>
-      <div class="hero__demo">
-        <HeroReplay :theme="theme" />
-      </div>
-    </section>
-
-    <!-- Before / after ----------------------------------------------------------->
-    <section class="section wrap" aria-labelledby="change-title">
-      <div class="section__head">
-        <p class="label">What changes</p>
-        <div>
-          <h2 id="change-title">Fourteen screens become one sentence.</h2>
-          <p class="section__lede">Handling one damaged-item complaint used to mean six screens and a carrier website. Now it's a request, a check, and one approval.</p>
-        </div>
-      </div>
-      <div class="ba">
-        <div class="ba__side ba__side--before">
-          <p class="label">Before · about 4 minutes</p>
-          <div class="legacy" aria-hidden="true">
-            <ul class="legacy__menu">
-              <li v-for="(screen, i) in legacyScreens" :key="screen" :class="{ on: [1, 2, 3, 5, 9].includes(i) }">{{ screen }}</li>
-            </ul>
-            <div class="legacy__page">
-              <div class="legacy__filters"><span /><span /><span /><span /></div>
-              <div v-for="n in 7" :key="n" class="legacy__row"><span /><span /><span /><span /></div>
-            </div>
-          </div>
-          <ol class="ba__list">
-            <li>Search the customer, open the order</li>
-            <li>Check the carrier's site for the parcel</li>
-            <li>Issue the refund in the payments screen</li>
-            <li>Create a return label, copy it into an email</li>
-            <li>Reply on the ticket and close it</li>
-          </ol>
-        </div>
-        <div class="ba__side ba__side--after">
-          <p class="label">After · about 20 seconds</p>
-          <div class="ask">
-            <span class="ask__who">Ops lead</span>
-            <p>“Jane's tent arrived torn. Refund the tent, send her a return label, and reply on her ticket.”</p>
-          </div>
-          <div class="stamp-row">
-            <span class="stamp">Approved</span>
-            <span>Refund $329.00 to Jane Cooper · <span class="faint">by Olivia Hart</span></span>
-          </div>
-          <ul class="ba__checks">
-            <li>Customer, order and shipment looked up in parallel</li>
-            <li>Refund and label created after one approval</li>
-            <li>Reply drafted in your tone, logged in the audit trail</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- Steps ---------------------------------------------------------------------->
-    <section id="steps" class="section wrap" aria-labelledby="steps-title">
-      <div class="section__head">
-        <p class="label">What happens next</p>
-        <div>
-          <h2 id="steps-title">Six steps to bring an agent into your product.</h2>
-          <p class="section__lede">You keep your systems, your login and your data. The agent goes on top of what you already run, one workflow at a time.</p>
-        </div>
-      </div>
-      <ol class="steps">
-        <li v-for="(step, i) in steps" :id="`step-${step.id}`" :key="step.id" class="ledger step">
-          <div class="ledger__margin step__margin">
-            <span class="step__num">{{ String(i + 1).padStart(2, "0") }}</span>
-            <span class="label">{{ step.time }}</span>
-          </div>
-          <div class="ledger__body step__body" :class="{ 'step__body--code': step.code }">
-            <div class="step__text">
-              <h3>{{ step.title }}</h3>
-              <p>{{ step.body }}</p>
-              <ul class="step__points">
-                <li v-for="point in step.points" :key="point">{{ point }}</li>
-              </ul>
-              <p class="step__deliverable"><span class="label">You get</span> {{ step.deliverable }}</p>
-            </div>
-            <CodeBlock v-if="step.code" :files="step.code" />
-          </div>
-        </li>
-      </ol>
-    </section>
-
-    <!-- Architecture ------------------------------------------------------------------->
-    <section class="section wrap" aria-labelledby="arch-heading">
-      <div class="section__head">
-        <p class="label">Architecture</p>
-        <div>
-          <h2 id="arch-heading">Plain web tech, in your infrastructure.</h2>
-          <p class="section__lede">
-            The chat is a Vue, React or Angular component. The agent is a Node service you mount next to your API. They talk over HTTPS and
-            server-sent events, behind the login you already have.
-          </p>
-        </div>
-      </div>
-      <ArchitectureDiagram />
-    </section>
-
-    <!-- Strapi ------------------------------------------------------------------------>
-    <section id="strapi" class="section wrap" aria-labelledby="strapi-title">
-      <div class="section__head">
-        <p class="label">A real integration</p>
-        <div>
-          <h2 id="strapi-title">Already inside a real admin panel: Strapi.</h2>
-          <p class="section__lede">
-            <code>@klymbak/strapi</code> is a Strapi 5 plugin built from the same packages. Install it, add a model key, and editors can ask
-            the assistant for what they need in three places in the admin.
-          </p>
-        </div>
-      </div>
-      <ol class="places">
-        <li v-for="place in strapiPlaces" :key="place.id" class="place">
-          <StrapiSketch :view="place.id" />
-          <span class="label">{{ place.where }}</span>
-          <h3>{{ place.title }}</h3>
-          <p>{{ place.text }}</p>
-        </li>
-      </ol>
-      <div class="strapi">
-        <div class="strapi__text">
-          <ul class="strapi__facts">
-            <li v-for="fact in strapiFacts" :key="fact">{{ fact }}</li>
-          </ul>
-          <p class="strapi__links">
-            <a :href="links.strapi" target="_blank" rel="noopener">Plugin docs and source</a>
-            <a href="https://www.npmjs.com/package/@klymbak/strapi" target="_blank" rel="noopener">@klymbak/strapi on npm</a>
-          </p>
-        </div>
-        <CodeBlock :files="[{ file: 'config/plugins.ts', source: strapiConfig }]" />
-      </div>
-    </section>
-
-    <!-- Capabilities --------------------------------------------------------------------->
-    <section id="inside" class="section wrap" aria-labelledby="inside-title">
-      <div class="section__head">
-        <p class="label">What's inside</p>
-        <div>
-          <h2 id="inside-title">Built for work that has consequences.</h2>
-          <p class="section__lede">Everything an admin panel enforced through screens and permissions, enforced in code around the model.</p>
-        </div>
-      </div>
-      <div class="caps">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Capability</th>
-              <th scope="col">What it means for your team</th>
-              <th scope="col">In the code</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="cap in capabilities" :key="cap.name">
-              <th scope="row">{{ cap.name }}</th>
-              <td>{{ cap.what }}</td>
-              <td><code>{{ cap.code }}</code></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="wont">
-        <h3>What it won't do</h3>
-        <dl>
-          <div><dt>Act as someone else</dt><dd>Tools run with the signed-in person's roles, so the agent can't do anything they couldn't.</dd></div>
-          <div><dt>Change data quietly</dt><dd>Writes wait for an approval that shows exactly what will happen. Denials are recorded too.</dd></div>
-          <div><dt>Talk its way past policy</dt><dd>Limits live in hooks that run before every call, whatever the prompt says.</dd></div>
-          <div><dt>Show what it shouldn't</dt><dd>Contact details are masked by role, and ad-hoc SQL runs on a read-only connection.</dd></div>
-          <div><dt>Send data where you didn't choose</dt><dd>Run local models, or your own Azure or Bedrock account.</dd></div>
-        </dl>
-      </div>
-    </section>
-
-    <!-- Pilot ------------------------------------------------------------------------>
-    <section id="pilot" class="section wrap" aria-labelledby="pilot-title">
-      <div class="section__head">
-        <p class="label">Working together</p>
-        <div>
-          <h2 id="pilot-title">A three-week pilot on one real workflow.</h2>
-          <p class="section__lede">Pick the workflow that wastes the most time. By the end of week three, a handful of your people use the agent for it, and you have the numbers to decide what's next.</p>
-        </div>
-      </div>
-      <ol class="pilot">
-        <li v-for="week in pilot" :key="week.week">
-          <span class="label">{{ week.week }}</span>
-          <h3>{{ week.title }}</h3>
-          <p>{{ week.text }}</p>
-        </li>
-      </ol>
-    </section>
-
-    <!-- FAQ --------------------------------------------------------------------------->
-    <section id="faq" class="section wrap" aria-labelledby="faq-title">
-      <div class="section__head">
-        <p class="label">Questions</p>
-        <h2 id="faq-title">What teams ask first.</h2>
-      </div>
-      <div class="faq">
-        <details v-for="item in faq" :key="item.q">
-          <summary>{{ item.q }}</summary>
-          <p>{{ item.a }}</p>
-        </details>
-      </div>
-    </section>
-
-    <!-- CTA ----------------------------------------------------------------------------->
-    <section class="cta">
-      <div class="wrap cta__inner">
-        <h2>Bring one workflow. Leave with a working agent.</h2>
-        <p>Tell me which screens your team lives in. I'll show you what the first three weeks would look like.</p>
-        <div class="hero__ctas">
-          <a class="btn btn--primary" :href="links.contact">I want an AI agent in my admin panel</a>
-          <a v-if="links.demo" class="btn btn--ghost cta__ghost" :href="links.demo" target="_blank" rel="noopener">Open the live demo</a>
-        </div>
-        <p class="cta__email">
-          Or write to <a class="cta__address" :href="`mailto:${links.email}`">{{ links.email }}</a>
-          <button type="button" @click="copyEmail">{{ copiedEmail ? "Copied" : "Copy" }}</button>
-        </p>
-      </div>
-    </section>
+    <template v-for="(group, g) in groups" :key="g">
+      <HeroSection v-if="group.lead.type === 'hero'" :section="group.lead" :theme="theme" />
+      <CtaSection v-else-if="group.lead.type === 'cta'" :section="group.lead" />
+      <section v-else :id="group.lead.anchor" class="section wrap" :aria-labelledby="group.lead.heading ? titleId(group.lead, g) : undefined">
+        <SectionHead :section="group.lead" :title-id="titleId(group.lead, g)" />
+        <SectionBody v-for="(section, i) in group.sections" :key="i" :section="section" :nested="i > 0" />
+      </section>
+    </template>
   </main>
 
   <footer class="foot wrap">
-    <span>klymbak · MIT licensed</span>
-    <span>Built on the <a href="https://github.com/earendil-works/pi" target="_blank" rel="noopener">pi agent harness</a></span>
-    <a :href="links.repo" target="_blank" rel="noopener">Source code</a>
+    <div v-if="site.footerHtml" class="foot__text" v-html="site.footerHtml" />
+    <SiteLink v-for="item in site.footerLinks" :key="item.url" :link="item" />
   </footer>
 </template>
 
@@ -379,6 +159,10 @@ async function copyEmail() {
 .top__nav a:hover {
   color: var(--ink);
   text-decoration: underline;
+}
+.top__lang,
+.top__theme {
+  flex: none;
 }
 .top__theme {
   display: grid;
@@ -520,7 +304,7 @@ async function copyEmail() {
 }
 .ba__list,
 .ba__checks,
-.strapi__facts {
+.feature__points {
   margin: 0;
   padding-left: 1.2rem;
   display: grid;
@@ -535,12 +319,12 @@ async function copyEmail() {
   background: repeating-linear-gradient(180deg, transparent 0 calc(2rem - 1px), var(--rule) calc(2rem - 1px) 2rem);
 }
 .ba__checks,
-.strapi__facts {
+.feature__points {
   list-style: none;
   padding: 0;
 }
 .ba__checks li::before,
-.strapi__facts li::before {
+.feature__points li::before {
   content: "✓";
   margin-right: 0.55rem;
   color: var(--stamp-green);
@@ -643,7 +427,7 @@ async function copyEmail() {
   font-weight: 600;
 }
 
-/* Strapi ---------------------------------------------------------------------------- */
+/* Cards and features ------------------------------------------------------------------ */
 .places {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -668,36 +452,54 @@ async function copyEmail() {
   font-size: 0.96rem;
   max-width: 36ch;
 }
-.strapi {
+.feature {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: 1.6rem 2.4rem;
   align-items: start;
+}
+/* Continuing the section above, under a rule. */
+.feature--continued {
   margin-top: 2.6rem;
   padding-top: 2.2rem;
   border-top: 1px solid var(--rule);
 }
-.strapi__text {
+.feature__text {
   display: grid;
   gap: 1.2rem;
 }
-.strapi__facts {
+.feature__text h3 {
+  font-size: var(--step-1);
+}
+.feature__points {
   gap: 0.55rem;
 }
-.strapi__facts li {
+.feature__points li {
   display: flex;
 }
-.strapi__links {
+.feature__links {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1.4rem;
   font-weight: 600;
   font-size: 0.95rem;
 }
-.strapi__links a::after {
+.feature__links a[target="_blank"]::after {
   content: " ↗";
   font-weight: 400;
   color: var(--ink-faint);
+}
+.section__subhead {
+  margin: 3rem 0 1.4rem;
+  font-size: var(--step-1);
+}
+.prose {
+  max-width: 68ch;
+  margin-left: var(--margin-col);
+  color: var(--ink-soft);
+}
+.prose > * + * {
+  margin-top: 1rem;
 }
 
 /* Capabilities ------------------------------------------------------------------------ */
@@ -915,6 +717,10 @@ async function copyEmail() {
 .foot a {
   color: var(--ink-soft);
 }
+/* Each paragraph of the footer text is one item of the row. */
+.foot__text {
+  display: contents;
+}
 
 /* Responsive --------------------------------------------------------------------------- */
 @media (max-width: 1120px) {
@@ -927,7 +733,7 @@ async function copyEmail() {
     grid-template-columns: minmax(0, 1fr);
   }
   .step__body--code,
-  .strapi {
+  .feature {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -935,8 +741,12 @@ async function copyEmail() {
   .top__nav {
     display: none;
   }
+  .top__lang,
   .top__theme {
     margin-left: auto;
+  }
+  .top__lang + .top__theme {
+    margin-left: 0;
   }
   .top__cta-more {
     display: inline;
@@ -1007,6 +817,12 @@ async function copyEmail() {
 }
 @media (max-width: 480px) {
   .brand__note {
+    display: none;
+  }
+}
+/* The smallest phones: with a language menu in the header, the logo stands for the name. */
+@media (max-width: 360px) {
+  .top__inner:has(.top__lang) .brand__text {
     display: none;
   }
 }

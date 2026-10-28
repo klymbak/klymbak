@@ -1,0 +1,942 @@
+{
+  "site": "klymbak",
+  "defaultLocale": "en",
+  "locales": {
+    "en": {
+      "site": {
+        "name": "klymbak",
+        "key": "klymbak",
+        "url": "https://klymbak.ai",
+        "tagline": "AI agent package for admin panels",
+        "contactEmail": "ivan@berezhnyk.com",
+        "footerText": "klymbak · MIT licensed\n\nBuilt on the [pi agent harness](https://github.com/earendil-works/pi)",
+        "logo": null,
+        "navigation": [
+          {
+            "label": "Six steps",
+            "url": "#steps",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Strapi plugin",
+            "url": "#strapi",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "What's inside",
+            "url": "#inside",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Pilot",
+            "url": "#pilot",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "FAQ",
+            "url": "#faq",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          }
+        ],
+        "actions": [
+          {
+            "label": "I want this in my admin panel",
+            "url": "mailto:ivan@berezhnyk.com?subject=An%20AI%20agent%20in%20our%20admin%20panel&body=Our%20admin%20panel%20is%20built%20with%3A%0AThe%20workflow%20we'd%20start%20with%3A%0A",
+            "shortLabel": "I want this",
+            "variant": "primary",
+            "newTab": false
+          }
+        ],
+        "footerLinks": [
+          {
+            "label": "Source code",
+            "url": "https://github.com/klymbak/klymbak",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": true
+          }
+        ],
+        "seo": {
+          "metaTitle": "Klymbak",
+          "metaDescription": "Replace your internal admin panel with an AI agent that lives in a chat: the six steps, the guardrails, and a working demo.",
+          "noIndex": false,
+          "shareImage": null
+        }
+      },
+      "pages": [
+        {
+          "slug": "home",
+          "title": "Home",
+          "seo": null,
+          "sections": [
+            {
+              "heading": "Your admin panel, as a conversation.",
+              "highlight": "conversation",
+              "eyebrow": "For teams who live in admin screens",
+              "lede": "I replace the screens your team clicks through every day with an AI agent they can talk to. It looks things up in your systems, shows results as tables and charts, and asks before it changes anything.",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "See the six steps",
+                  "url": "#steps",
+                  "shortLabel": null,
+                  "variant": "primary",
+                  "newTab": false
+                }
+              ],
+              "facts": [
+                {
+                  "term": "Pilot",
+                  "text": "in three weeks, on one real workflow"
+                },
+                {
+                  "term": "Any model",
+                  "text": ": Claude, GPT, Gemini or your own hardware"
+                },
+                {
+                  "term": "Open stack",
+                  "text": ": Vue, React or Angular + Node, on the MIT-licensed pi agent harness"
+                }
+              ],
+              "image": null,
+              "__component": "sections.hero"
+            },
+            {
+              "heading": "Fourteen screens become one sentence.",
+              "eyebrow": "What changes",
+              "lede": "Handling one damaged-item complaint used to mean six screens and a carrier website. Now it's a request, a check, and one approval.",
+              "layout": "columns",
+              "anchor": null,
+              "items": [
+                {
+                  "title": null,
+                  "label": "Before · about 4 minutes",
+                  "text": null,
+                  "points": "Search the customer, open the order\nCheck the carrier's site for the parcel\nIssue the refund in the payments screen\nCreate a return label, copy it into an email\nReply on the ticket and close it",
+                  "detail": null,
+                  "key": "before",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": null,
+                  "label": "After · about 20 seconds",
+                  "text": null,
+                  "points": "Customer, order and shipment looked up in parallel\nRefund and label created after one approval\nReply drafted in your tone, logged in the audit trail",
+                  "detail": null,
+                  "key": "after",
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Six steps to bring an agent into your product.",
+              "eyebrow": "What happens next",
+              "lede": "You keep your systems, your login and your data. The agent goes on top of what you already run, one workflow at a time.",
+              "outcomeLabel": "You get",
+              "anchor": "steps",
+              "items": [
+                {
+                  "title": "Map the work people actually do",
+                  "duration": "2–3 days",
+                  "body": "We sit with the people who live in your admin panel (ops, support, finance) and list the twenty tasks they repeat most, where each one touches data, and what could go wrong.",
+                  "points": "Screens and exports used each week\nWhich tasks only read data and which change it\nWho may do what, and the limits that apply",
+                  "outcome": "A capability map: task → system → risk → owner",
+                  "key": "map",
+                  "code": []
+                },
+                {
+                  "title": "Wrap what you already have as tools",
+                  "duration": "Week 1",
+                  "body": "Each task becomes a typed tool over your existing API or database. Nothing gets rewritten, and third-party systems plug in through MCP. Results come back as tables, charts and cards, while the model only reads a compact summary.",
+                  "points": "Typed parameters the model can't get wrong silently\nTables and charts for people, short text for the model\nMCP servers for Stripe, Zendesk, carriers or your own services",
+                  "outcome": "A tool catalogue running against staging",
+                  "key": "wrap",
+                  "code": [
+                    {
+                      "filename": "tools/orders.ts",
+                      "language": null,
+                      "code": "export const refundOrder = defineTool({\n  name: \"refund_order\",\n  description: \"Refund all or part of an order.\",\n  parameters: Type.Object({\n    orderId: Type.Integer(),\n    amount: Type.Optional(Type.Number()),\n    reason: Type.String(),\n  }),\n  // A person signs off before any money moves.\n  approval: ({ amount }) => ({ title: `Refund $${amount}`, risk: \"high\" }),\n  execute: async ({ orderId, amount, reason }, ctx) => {\n    await payments.refund(orderId, amount, { by: ctx.user.id, reason });\n    return { text: \"Refunded.\", ui: ui.alert(\"success\", \"Refund issued\") };\n  },\n});"
+                    }
+                  ]
+                },
+                {
+                  "title": "Put the guardrails in code, not in the prompt",
+                  "duration": "Week 1–2",
+                  "body": "The agent acts as the signed-in person, with their roles. Anything that changes data stops for approval. Policy hooks enforce limits the model can't talk its way around, and every action lands in your audit log.",
+                  "points": "Approvals show the exact amount, recipient and draft\nRole limits, PII masking and blocked actions as hooks\nAudit trail with who asked, what ran and who approved",
+                  "outcome": "Security review notes and a written policy file",
+                  "key": "guard",
+                  "code": [
+                    {
+                      "filename": "hooks.ts",
+                      "language": null,
+                      "code": "export const refundPolicy: Hook = {\n  name: \"refund-policy\",\n  tools: [\"refund_order\"],\n  preToolUse: ({ args, ctx }) => {\n    if (args.amount > 1000)\n      return { decision: \"deny\", reason: \"Over $1,000 goes to finance.\" };\n    if (!ctx.user.roles.includes(\"admin\") && args.amount > 150)\n      return { decision: \"deny\", reason: \"Support can refund up to $150.\" };\n    if (args.amount <= 25) return { decision: \"allow\" }; // goodwill\n  },\n};"
+                    }
+                  ]
+                },
+                {
+                  "title": "Choose the model, or let people choose",
+                  "duration": "Week 2",
+                  "body": "Claude, GPT, Gemini, or private models on your own hardware through Ollama, LM Studio, vLLM, Azure or Bedrock. People can switch models per conversation, and every run reports its tokens and cost.",
+                  "points": "Cloud, private cloud or fully on-premises\nAn allow-list of approved models\nPer-run token and cost reporting",
+                  "outcome": "Model shortlist with cost per typical task",
+                  "key": "models",
+                  "code": []
+                },
+                {
+                  "title": "Drop the chat into your product",
+                  "duration": "Week 2",
+                  "body": "Component packages for Vue 3, React and Angular: a full workspace, a single chat, or a floating widget that sits next to your current panel, so you don't have to switch everything over on day one. Theme it with a few CSS variables.",
+                  "points": "Streaming answers, tool cards and approvals\nYour own components for any tool's results\nWorks behind your existing login",
+                  "outcome": "The agent inside your app, behind your auth",
+                  "key": "embed",
+                  "code": [
+                    {
+                      "filename": "AdminPage.vue",
+                      "language": null,
+                      "code": "<script setup lang=\"ts\">\nimport { AgentWorkspace } from \"@klymbak/vue\";\nimport \"@klymbak/vue/style.css\";\n</script>\n\n<template>\n  <AgentWorkspace base-url=\"/api/agent\" />\n</template>"
+                    },
+                    {
+                      "filename": "AdminPage.tsx",
+                      "language": null,
+                      "code": "import { AgentWorkspace } from \"@klymbak/react\";\nimport \"@klymbak/react/style.css\";\n\nexport function AdminPage() {\n  return <AgentWorkspace baseUrl=\"/api/agent\" />;\n}"
+                    },
+                    {
+                      "filename": "admin-page.ts",
+                      "language": null,
+                      "code": "import { Component } from \"@angular/core\";\nimport { AgentWorkspace } from \"@klymbak/angular\";\n// styles.css: @import \"@klymbak/angular/style.css\";\n\n@Component({\n  selector: \"app-admin-page\",\n  imports: [AgentWorkspace],\n  template: `<kl-agent-workspace baseUrl=\"/api/agent\" />`,\n})\nexport class AdminPage {}"
+                    }
+                  ]
+                },
+                {
+                  "title": "Automate the routine, then measure",
+                  "duration": "Week 3",
+                  "body": "Scheduled tasks send the morning briefing and watch stock or SLAs on their own. Specialist subagents take focused work. Transcripts show what people asked and where the agent struggled, so each week's improvements come from real use.",
+                  "points": "Briefings and watchdogs on a schedule\nSpecialists for analysis, support and inventory\nWeekly review of transcripts, costs and failures",
+                  "outcome": "Pilot report and a rollout plan",
+                  "key": "automate",
+                  "code": []
+                }
+              ],
+              "__component": "sections.steps"
+            },
+            {
+              "heading": "Plain web tech, in your infrastructure.",
+              "eyebrow": "Architecture",
+              "lede": "The chat is a Vue, React or Angular component. The agent is a Node service you mount next to your API. They talk over HTTPS and server-sent events, behind the login you already have.",
+              "name": "architecture-diagram",
+              "anchor": null,
+              "__component": "sections.custom"
+            },
+            {
+              "heading": "Already inside a real admin panel: Strapi.",
+              "eyebrow": "A real integration",
+              "lede": "`@klymbak/strapi` is a Strapi 5 plugin built from the same packages. Install it, add a model key, and editors can ask the assistant for what they need in three places in the admin.",
+              "layout": "grid",
+              "anchor": "strapi",
+              "items": [
+                {
+                  "title": "A page of its own",
+                  "label": "Main menu",
+                  "text": "Conversations, scheduled tasks and the tool list, one click from the Content Manager.",
+                  "points": null,
+                  "detail": null,
+                  "key": "page",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "A side panel on every entry",
+                  "label": "Edit view",
+                  "text": "Ask about the entry that's open. When the assistant changes it, the form refreshes.",
+                  "points": null,
+                  "detail": null,
+                  "key": "panel",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "A bulk action",
+                  "label": "List view",
+                  "text": "Select entries, then ask about them: which are missing a description, what to fix before publishing.",
+                  "points": null,
+                  "detail": null,
+                  "key": "bulk",
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": null,
+              "eyebrow": null,
+              "lede": null,
+              "points": "Works as the signed-in admin: field, locale and “only their own entries” permissions apply as in the Content Manager\nCreating, updating, publishing and deleting each wait for an approval\nKnows the project (version, locales, content types) and answers Strapi questions from the official docs\nConversations and schedules live in Strapi's own database",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Plugin docs and source",
+                  "url": "https://github.com/klymbak/klymbak/tree/main/packages/strapi#readme",
+                  "shortLabel": null,
+                  "variant": "plain",
+                  "newTab": true
+                },
+                {
+                  "label": "@klymbak/strapi on npm",
+                  "url": "https://www.npmjs.com/package/@klymbak/strapi",
+                  "shortLabel": null,
+                  "variant": "plain",
+                  "newTab": true
+                }
+              ],
+              "code": [
+                {
+                  "filename": "config/plugins.ts",
+                  "language": null,
+                  "code": "// npm install @klymbak/strapi\nexport default () => ({\n  klymbak: {\n    config: {\n      models: { providers: [\"anthropic\"], default: \"anthropic/claude-sonnet-5-5\" },\n      instructions: \"Every article needs a category and an author.\",\n    },\n  },\n});"
+                }
+              ],
+              "image": null,
+              "__component": "sections.feature"
+            },
+            {
+              "heading": "Built for work that has consequences.",
+              "eyebrow": "What's inside",
+              "lede": "Everything an admin panel enforced through screens and permissions, enforced in code around the model.",
+              "layout": "table",
+              "anchor": "inside",
+              "items": [
+                {
+                  "title": "Human approval",
+                  "label": null,
+                  "text": "Anything that changes data waits for a person, who sees the exact amount, recipient or draft.",
+                  "points": null,
+                  "detail": "approval: (args) => …",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Policy hooks",
+                  "label": null,
+                  "text": "Role limits, blocked actions and PII masking are enforced in code before and after every tool call.",
+                  "points": null,
+                  "detail": "preToolUse · postToolUse",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Your systems as tools",
+                  "label": null,
+                  "text": "Existing APIs and SQL become typed actions. People see tables and charts; the model reads a summary.",
+                  "points": null,
+                  "detail": "defineTool()",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "MCP integrations",
+                  "label": null,
+                  "text": "Connect third-party or in-house MCP servers and their tools appear in the agent, with approvals respected.",
+                  "points": null,
+                  "detail": "mcpServers: { … }",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Specialist subagents",
+                  "label": null,
+                  "text": "An analyst, a support specialist or an inventory planner with narrower tools, working in parallel.",
+                  "points": null,
+                  "detail": "subagents: [ … ]",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Scheduled tasks",
+                  "label": null,
+                  "text": "Morning briefings and watchdogs run on cron, post to your team chat and notify the people who need it.",
+                  "points": null,
+                  "detail": "schedules: [ … ]",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Any model",
+                  "label": null,
+                  "text": "Claude, GPT, Gemini, or private models via Ollama, LM Studio, vLLM, Azure or Bedrock.",
+                  "points": null,
+                  "detail": "models: { … }",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Steering",
+                  "label": null,
+                  "text": "Add an instruction while the agent works. It reads it after the current step and changes course.",
+                  "points": null,
+                  "detail": "POST /sessions/:id/steer",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Audit trail",
+                  "label": null,
+                  "text": "Who asked, what ran, what changed and who approved it, written to your own store.",
+                  "points": null,
+                  "detail": "auditTrail(sink)",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "What it won't do",
+              "eyebrow": null,
+              "lede": null,
+              "layout": "list",
+              "anchor": null,
+              "items": [
+                {
+                  "title": "Act as someone else",
+                  "label": null,
+                  "text": "Tools run with the signed-in person's roles, so the agent can't do anything they couldn't.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Change data quietly",
+                  "label": null,
+                  "text": "Writes wait for an approval that shows exactly what will happen. Denials are recorded too.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Talk its way past policy",
+                  "label": null,
+                  "text": "Limits live in hooks that run before every call, whatever the prompt says.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Show what it shouldn't",
+                  "label": null,
+                  "text": "Contact details are masked by role, and ad-hoc SQL runs on a read-only connection.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Send data where you didn't choose",
+                  "label": null,
+                  "text": "Run local models, or your own Azure or Bedrock account.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "A three-week pilot on one real workflow.",
+              "eyebrow": "Working together",
+              "lede": "Pick the workflow that wastes the most time. By the end of week three, a handful of your people use the agent for it, and you have the numbers to decide what's next.",
+              "layout": "timeline",
+              "anchor": "pilot",
+              "items": [
+                {
+                  "title": "Map and wrap",
+                  "label": "Week 1",
+                  "text": "Capability map, first ten tools against staging, guardrail design.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Guard and embed",
+                  "label": "Week 2",
+                  "text": "Policy hooks, approvals, audit log; the chat inside your app behind your login.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Pilot",
+                  "label": "Week 3",
+                  "text": "Three to five people use it for real work. We review transcripts and costs, then fix what they hit.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "What teams ask first.",
+              "eyebrow": "Questions",
+              "lede": null,
+              "anchor": "faq",
+              "items": [
+                {
+                  "question": "Will it make things up?",
+                  "answer": "It looks things up through your tools instead of answering from memory, and it's told to say when a tool finds nothing. Numbers come from your systems and are shown to people as the tool returned them, in tables and charts the model doesn't retype."
+                },
+                {
+                  "question": "What if it does something wrong?",
+                  "answer": "Read-only tools run freely. Anything that changes data stops for a person's approval, with the exact details shown. Hooks block what policy forbids, whatever the model asks for, and the audit log records every action with the approver."
+                },
+                {
+                  "question": "Do we have to throw away our admin panel?",
+                  "answer": "No. Most teams start with the floating widget next to the existing panel, then move workflows across as people stop opening the old screens."
+                },
+                {
+                  "question": "Can our data stay on our own servers?",
+                  "answer": "Yes. The agent server runs in your infrastructure, and it can use local models (Ollama, LM Studio, vLLM) or your cloud account's Azure OpenAI or Bedrock, so prompts and data never reach a third party you haven't chosen."
+                },
+                {
+                  "question": "What does it cost to run?",
+                  "answer": "A typical admin task costs a fraction of a cent to a few cents in model tokens, and every run reports its own usage. Local models cost only the hardware."
+                },
+                {
+                  "question": "Which stacks do you support?",
+                  "answer": "The chat comes as components for Vue 3, React (18 and 19) and Angular (21 and 22), and as a ready-made plugin for Strapi 5. The agent server is Node (TypeScript) on the MIT-licensed pi agent harness. The protocol is plain HTTP and server-sent events, so a .NET back end is a straightforward addition."
+                }
+              ],
+              "__component": "sections.faq"
+            },
+            {
+              "heading": "Bring one workflow. Leave with a working agent.",
+              "eyebrow": null,
+              "lede": "Tell me which screens your team lives in. I'll show you what the first three weeks would look like.",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "I want an AI agent in my admin panel",
+                  "url": "mailto:ivan@berezhnyk.com?subject=An%20AI%20agent%20in%20our%20admin%20panel&body=Our%20admin%20panel%20is%20built%20with%3A%0AThe%20workflow%20we'd%20start%20with%3A%0A",
+                  "shortLabel": null,
+                  "variant": "primary",
+                  "newTab": false
+                }
+              ],
+              "__component": "sections.cta"
+            }
+          ]
+        }
+      ],
+      "uiTexts": [
+        {
+          "name": "architecture-diagram",
+          "notes": "The words in the “Plain web tech” diagram. The boxes have a fixed width, so keep translations about as long as the English. app.cards is two lines.",
+          "entries": [
+            {
+              "key": "title",
+              "text": "How the pieces connect"
+            },
+            {
+              "key": "description",
+              "text": "Your app embeds the chat (Vue, React or Angular components), which talks to the agent server over HTTPS and server-sent events using your existing login. The agent server runs the pi agent loop with hooks, approvals, subagents, schedules and sessions, and calls your systems as tools, MCP servers, and model providers."
+            },
+            {
+              "key": "app.eyebrow",
+              "text": "YOUR APP"
+            },
+            {
+              "key": "app.title",
+              "text": "Chat UI"
+            },
+            {
+              "key": "app.stacks",
+              "text": "Vue · React · Angular"
+            },
+            {
+              "key": "app.parts",
+              "text": "Workspace · chat · widget"
+            },
+            {
+              "key": "app.cards",
+              "text": "Tool cards, approvals,\ntables & charts"
+            },
+            {
+              "key": "link.top",
+              "text": "HTTPS + SSE"
+            },
+            {
+              "key": "link.bottom",
+              "text": "your auth"
+            },
+            {
+              "key": "server.eyebrow",
+              "text": "AGENT SERVER · NODE"
+            },
+            {
+              "key": "server.title",
+              "text": "@klymbak/server"
+            },
+            {
+              "key": "server.loop",
+              "text": "pi agent loop"
+            },
+            {
+              "key": "server.license",
+              "text": "MIT"
+            },
+            {
+              "key": "server.hooks",
+              "text": "Hooks · approvals · audit"
+            },
+            {
+              "key": "server.subagents",
+              "text": "Specialist subagents"
+            },
+            {
+              "key": "server.schedules",
+              "text": "Scheduled tasks"
+            },
+            {
+              "key": "server.sessions",
+              "text": "Sessions & streaming"
+            },
+            {
+              "key": "server.where",
+              "text": "Runs in your infrastructure"
+            },
+            {
+              "key": "systems.eyebrow",
+              "text": "YOUR SYSTEMS"
+            },
+            {
+              "key": "systems.title",
+              "text": "Typed tools"
+            },
+            {
+              "key": "systems.text",
+              "text": "over your APIs and DB"
+            },
+            {
+              "key": "integrations.eyebrow",
+              "text": "INTEGRATIONS"
+            },
+            {
+              "key": "integrations.title",
+              "text": "MCP servers"
+            },
+            {
+              "key": "integrations.text",
+              "text": "Stripe, Zendesk, carriers…"
+            },
+            {
+              "key": "models.eyebrow",
+              "text": "MODELS"
+            },
+            {
+              "key": "models.title",
+              "text": "Any provider"
+            },
+            {
+              "key": "models.text",
+              "text": "Claude · GPT · Gemini · local"
+            }
+          ]
+        },
+        {
+          "name": "before-after",
+          "notes": "The pictures in “Fourteen screens become one sentence”: the old admin menu (one screen per line) and the request with its approval stamp.",
+          "entries": [
+            {
+              "key": "screens",
+              "text": "Dashboard\nOrders\nCustomers\nRefunds\nReturns\nShipments\nInventory\nPurchase orders\nDiscounts\nTickets\nReports\nExports\nUsers & roles\nAudit log"
+            },
+            {
+              "key": "ask.who",
+              "text": "Ops lead"
+            },
+            {
+              "key": "ask.text",
+              "text": "“Jane's tent arrived torn. Refund the tent, send her a return label, and reply on her ticket.”"
+            },
+            {
+              "key": "stamp",
+              "text": "Approved"
+            },
+            {
+              "key": "stamp.text",
+              "text": "Refund $329.00 to Jane Cooper"
+            },
+            {
+              "key": "stamp.by",
+              "text": "by Olivia Hart"
+            }
+          ]
+        },
+        {
+          "name": "common",
+          "notes": "Around the page: the header, theme button, language menu, demo buttons, code blocks, the contact line and the capability table’s column titles. {theme} is replaced by one of the theme words.",
+          "entries": [
+            {
+              "key": "brand.home",
+              "text": "Klymbak home"
+            },
+            {
+              "key": "nav.label",
+              "text": "Sections"
+            },
+            {
+              "key": "language.label",
+              "text": "Language"
+            },
+            {
+              "key": "theme.button",
+              "text": "Theme: {theme}. Change theme"
+            },
+            {
+              "key": "theme.title",
+              "text": "Theme: {theme}"
+            },
+            {
+              "key": "theme.auto",
+              "text": "auto"
+            },
+            {
+              "key": "theme.light",
+              "text": "light"
+            },
+            {
+              "key": "theme.dark",
+              "text": "dark"
+            },
+            {
+              "key": "demo.open",
+              "text": "Open the live demo"
+            },
+            {
+              "key": "email.or",
+              "text": "Or write to"
+            },
+            {
+              "key": "email.copy",
+              "text": "Copy"
+            },
+            {
+              "key": "email.copied",
+              "text": "Copied"
+            },
+            {
+              "key": "code.copy",
+              "text": "Copy"
+            },
+            {
+              "key": "code.copied",
+              "text": "Copied"
+            },
+            {
+              "key": "code.tabs",
+              "text": "Framework"
+            },
+            {
+              "key": "table.title",
+              "text": "Capability"
+            },
+            {
+              "key": "table.text",
+              "text": "What it means for your team"
+            },
+            {
+              "key": "table.detail",
+              "text": "In the code"
+            }
+          ]
+        },
+        {
+          "name": "hero-replay",
+          "notes": "The recorded session next to the hero: what the person asks, the tools, the approval and the replies. **bold** works in the replies; `code` works in the note.",
+          "entries": [
+            {
+              "key": "label",
+              "text": "A recorded agent session you can replay"
+            },
+            {
+              "key": "app",
+              "text": "Acme Back Office"
+            },
+            {
+              "key": "user",
+              "text": "Olivia Hart · admin"
+            },
+            {
+              "key": "note",
+              "text": "Live `@klymbak/vue` components. Replay the run and approve the refund yourself."
+            },
+            {
+              "key": "cue",
+              "text": "Your turn: approve or deny the refund ↑"
+            },
+            {
+              "key": "play",
+              "text": "Replay the run"
+            },
+            {
+              "key": "playing",
+              "text": "Playing…"
+            },
+            {
+              "key": "prompt",
+              "text": "Jane Cooper's tent arrived with a torn rainfly. Refund the tent and send her a return label."
+            },
+            {
+              "key": "tool.customer",
+              "text": "Customer profile"
+            },
+            {
+              "key": "tool.tickets",
+              "text": "Support tickets"
+            },
+            {
+              "key": "tool.refund",
+              "text": "Refund order"
+            },
+            {
+              "key": "tool.label",
+              "text": "Create return label"
+            },
+            {
+              "key": "result.customer",
+              "text": "Jane Cooper, VIP, 29 orders."
+            },
+            {
+              "key": "result.tickets",
+              "text": "#39 urgent: Tent arrived with a torn rainfly (order #2691)."
+            },
+            {
+              "key": "result.refund",
+              "text": "Refunded $329.00."
+            },
+            {
+              "key": "result.label",
+              "text": "Label RTN-2691 emailed to jane.cooper@example.com."
+            },
+            {
+              "key": "result.denied",
+              "text": "The user denied this action."
+            },
+            {
+              "key": "plan",
+              "text": "Order #2691 has the Ridgeline 2P tent at $329. I'll refund it and send a prepaid return label."
+            },
+            {
+              "key": "refund.reason",
+              "text": "Torn rainfly on arrival"
+            },
+            {
+              "key": "label.reason",
+              "text": "Damaged tent"
+            },
+            {
+              "key": "approval.title",
+              "text": "Refund $329.00 to Jane Cooper"
+            },
+            {
+              "key": "approval.description",
+              "text": "Order #2691 (Ridgeline 2P Tent). Reason: torn rainfly on arrival."
+            },
+            {
+              "key": "alert.title",
+              "text": "Refund issued"
+            },
+            {
+              "key": "alert.text",
+              "text": "$329.00 refunded to Jane Cooper for order #2691."
+            },
+            {
+              "key": "done",
+              "text": "Done. **$329.00** is back on Jane's card, and a prepaid UPS return label (RTN-2691) is in her inbox. Want me to reply on ticket #39 and close it?"
+            },
+            {
+              "key": "denied",
+              "text": "Understood, no refund. Should I offer Jane a replacement tent with express shipping instead, or a **20% goodwill code** for her next order?"
+            },
+            {
+              "key": "approver.you",
+              "text": "You"
+            },
+            {
+              "key": "approver.admin",
+              "text": "Olivia Hart"
+            }
+          ]
+        },
+        {
+          "name": "strapi-sketch",
+          "notes": "The words in the three small Strapi admin sketches under “Already inside a real admin panel”.",
+          "entries": [
+            {
+              "key": "assistant",
+              "text": "Assistant"
+            },
+            {
+              "key": "article",
+              "text": "Article"
+            },
+            {
+              "key": "approve",
+              "text": "Approve"
+            },
+            {
+              "key": "articles",
+              "text": "Articles"
+            },
+            {
+              "key": "selected",
+              "text": "2 selected"
+            },
+            {
+              "key": "ask",
+              "text": "Ask the assistant"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

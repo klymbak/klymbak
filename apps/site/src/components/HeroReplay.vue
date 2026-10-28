@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onBeforeUnmount, reactive, ref, toRaw } from "vue";
+import { onBeforeUnmount, reactive, ref, shallowRef, toRaw } from "vue";
 import {
   applyEvent,
+  loadMessages,
   MessageList,
   provideAgentStore,
+  provideI18n,
   type AgentEvent,
   type AgentStore,
   type ApprovalDecision,
@@ -11,6 +13,7 @@ import {
   type ToolPart,
   type UiBlock,
 } from "@klymbak/vue";
+import { locale, text } from "../content.ts";
 
 /**
  * The real @klymbak/vue components, replaying a scripted session.
@@ -18,20 +21,29 @@ import {
  */
 const props = defineProps<{ theme: "auto" | "light" | "dark" }>();
 
+/** The session's words, from the "hero-replay" UI text. */
+const t = (key: string) => text("hero-replay", key);
+
+// The components' own words (Approve, Deny…) in the page's language, where @klymbak/vue has a catalog for it.
+const catalog = shallowRef<Awaited<ReturnType<typeof loadMessages>>>();
+void loadMessages(locale).then((loaded) => (catalog.value = loaded));
+provideI18n(() => ({ locale, messages: catalog.value }));
+
 type Step =
   | { wait: number; event: AgentEvent }
   | { wait: number; text: string; messageId: string; index: number }
   | { wait: number; finish: string }
   | { wait: number; approval: true };
 
-const PROMPT = "Jane Cooper's tent arrived with a torn rainfly. Refund the tent and send her a return label.";
 const APPROVAL = {
   id: "replay-approval",
-  title: "Refund $329.00 to Jane Cooper",
-  description: "Order #2691 (Ridgeline 2P Tent). Reason: torn rainfly on arrival.",
+  title: t("approval.title"),
+  description: t("approval.description"),
   risk: "high" as const,
   status: "pending" as const,
 };
+// The caption's note, with `code` spans: odd parts are code.
+const note = t("note").split("`");
 
 const user = (id: string, text: string): ChatMessage => ({ id, role: "user", parts: [{ type: "text", text }], createdAt: 0, status: "done" });
 const assistant = (id: string): ChatMessage => ({ id, role: "assistant", parts: [], createdAt: 0, status: "streaming", model: { provider: "anthropic", id: "claude-sonnet-5-5" } });
@@ -52,18 +64,18 @@ const done = (id: string, text: string, ui?: UiBlock[], ms = 140): AgentEvent =>
 const end = (id: string): Step => ({ wait: 0, finish: id });
 
 const BEFORE_APPROVAL: Step[] = [
-  { wait: 0, event: { type: "message_start", message: user("u1", PROMPT) } },
+  { wait: 0, event: { type: "message_start", message: user("u1", t("prompt")) } },
   { wait: 450, event: { type: "message_start", message: assistant("a1") } },
-  { wait: 250, event: { type: "part_start", messageId: "a1", index: 0, part: tool("t1", "get_customer", "Customer profile", { email: "jane.cooper@example.com" }) } },
-  { wait: 120, event: { type: "part_start", messageId: "a1", index: 1, part: tool("t2", "list_tickets", "Support tickets", { customerEmail: "jane.cooper@example.com" }) } },
+  { wait: 250, event: { type: "part_start", messageId: "a1", index: 0, part: tool("t1", "get_customer", t("tool.customer"), { email: "jane.cooper@example.com" }) } },
+  { wait: 120, event: { type: "part_start", messageId: "a1", index: 1, part: tool("t2", "list_tickets", t("tool.tickets"), { customerEmail: "jane.cooper@example.com" }) } },
   { wait: 200, event: { type: "tool_update", toolCallId: "t1", patch: { status: "running" } } },
   { wait: 0, event: { type: "tool_update", toolCallId: "t2", patch: { status: "running" } } },
-  { wait: 650, event: done("t1", "Jane Cooper, VIP, 29 orders.", undefined, 38) },
-  { wait: 120, event: done("t2", "#39 urgent: Tent arrived with a torn rainfly (order #2691).", undefined, 22) },
+  { wait: 650, event: done("t1", t("result.customer"), undefined, 38) },
+  { wait: 120, event: done("t2", t("result.tickets"), undefined, 22) },
   { wait: 300, event: { type: "message_start", message: assistant("a2") } },
   { wait: 0, event: { type: "part_start", messageId: "a2", index: 0, part: { type: "text", text: "" } } },
-  { wait: 200, text: "Order #2691 has the Ridgeline 2P tent at $329. I'll refund it and send a prepaid return label.", messageId: "a2", index: 0 },
-  { wait: 250, event: { type: "part_start", messageId: "a2", index: 1, part: tool("t3", "refund_order", "Refund order", { orderId: 2691, amount: 329, reason: "Torn rainfly on arrival" }) } },
+  { wait: 200, text: t("plan"), messageId: "a2", index: 0 },
+  { wait: 250, event: { type: "part_start", messageId: "a2", index: 1, part: tool("t3", "refund_order", t("tool.refund"), { orderId: 2691, amount: 329, reason: t("refund.reason") }) } },
   { wait: 450, event: { type: "tool_update", toolCallId: "t3", patch: { status: "awaiting_approval", approval: APPROVAL } } },
   { wait: 0, approval: true },
 ];
@@ -71,24 +83,24 @@ const BEFORE_APPROVAL: Step[] = [
 function afterApproval(decision: ApprovalDecision, by: string): Step[] {
   if (!decision.approved) {
     return [
-      { wait: 0, event: { type: "tool_update", toolCallId: "t3", patch: { status: "denied", approval: { ...APPROVAL, status: "denied", decidedBy: by, reason: decision.reason }, result: { text: "The user denied this action.", isError: true } } } },
+      { wait: 0, event: { type: "tool_update", toolCallId: "t3", patch: { status: "denied", approval: { ...APPROVAL, status: "denied", decidedBy: by, reason: decision.reason }, result: { text: t("result.denied"), isError: true } } } },
       end("a2"),
       { wait: 300, event: { type: "message_start", message: assistant("a3") } },
       { wait: 0, event: { type: "part_start", messageId: "a3", index: 0, part: { type: "text", text: "" } } },
-      { wait: 150, text: "Understood, no refund. Should I offer Jane a replacement tent with express shipping instead, or a **20% goodwill code** for her next order?", messageId: "a3", index: 0 },
+      { wait: 150, text: t("denied"), messageId: "a3", index: 0 },
       end("a3"),
     ];
   }
   return [
     { wait: 0, event: { type: "tool_update", toolCallId: "t3", patch: { status: "running", approval: { ...APPROVAL, status: "approved", decidedBy: by } } } },
-    { wait: 500, event: done("t3", "Refunded $329.00.", [{ type: "alert", tone: "success", title: "Refund issued", text: "$329.00 refunded to Jane Cooper for order #2691." }], 412) },
-    { wait: 250, event: { type: "part_start", messageId: "a2", index: 2, part: tool("t4", "carrier_create_return_label", "Create return label", { orderId: 2691, reason: "Damaged tent" }, { source: "mcp", server: "carrier" }) } },
+    { wait: 500, event: done("t3", t("result.refund"), [{ type: "alert", tone: "success", title: t("alert.title"), text: t("alert.text") }], 412) },
+    { wait: 250, event: { type: "part_start", messageId: "a2", index: 2, part: tool("t4", "carrier_create_return_label", t("tool.label"), { orderId: 2691, reason: t("label.reason") }, { source: "mcp", server: "carrier" }) } },
     { wait: 250, event: { type: "tool_update", toolCallId: "t4", patch: { status: "running" } } },
-    { wait: 700, event: done("t4", "Label RTN-2691 emailed to jane.cooper@example.com.", undefined, 640) },
+    { wait: 700, event: done("t4", t("result.label"), undefined, 640) },
     end("a2"),
     { wait: 300, event: { type: "message_start", message: assistant("a3") } },
     { wait: 0, event: { type: "part_start", messageId: "a3", index: 0, part: { type: "text", text: "" } } },
-    { wait: 150, text: "Done. **$329.00** is back on Jane's card, and a prepaid UPS return label (RTN-2691) is in her inbox. Want me to reply on ticket #39 and close it?", messageId: "a3", index: 0 },
+    { wait: 150, text: t("done"), messageId: "a3", index: 0 },
     end("a3"),
   ];
 }
@@ -136,7 +148,7 @@ async function showFinished() {
   const token = ++generation;
   messages.splice(0);
   await run(BEFORE_APPROVAL, token, true);
-  await run(afterApproval({ approved: true }, "Olivia Hart"), token, true);
+  await run(afterApproval({ approved: true }, t("approver.admin")), token, true);
 }
 
 async function replay() {
@@ -151,7 +163,7 @@ async function replay() {
   decide = undefined;
   waiting.value = false;
   if (token !== generation) return;
-  await run(afterApproval(decision, "You"), token, false);
+  await run(afterApproval(decision, t("approver.you")), token, false);
   if (token === generation) playing.value = false;
 }
 
@@ -162,21 +174,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <figure class="replay" aria-label="A recorded agent session you can replay">
+  <figure class="replay" :aria-label="t('label')">
     <div class="replay__bar">
       <span class="replay__dots" aria-hidden="true"><i /><i /><i /></span>
-      <span class="replay__title">Acme Back Office</span>
-      <span class="replay__user">Olivia Hart · admin</span>
+      <span class="replay__title">{{ t("app") }}</span>
+      <span class="replay__user">{{ t("user") }}</span>
     </div>
     <div class="kl-root replay__screen" :data-kl-theme="props.theme">
       <MessageList :messages="messages" :running="playing" />
     </div>
     <figcaption class="replay__caption">
-      <span v-if="waiting" class="replay__cue">Your turn: approve or deny the refund ↑</span>
-      <span v-else class="replay__note">Live <code>@klymbak/vue</code> components. Replay the run and approve the refund yourself.</span>
+      <span v-if="waiting" class="replay__cue">{{ t("cue") }}</span>
+      <span v-else class="replay__note"
+        ><template v-for="(part, i) in note" :key="i"><code v-if="i % 2">{{ part }}</code><template v-else>{{ part }}</template></template></span
+      >
       <button type="button" class="replay__play" :class="{ 'replay__play--hint': !played }" :disabled="playing && !waiting" @click="replay">
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M8 5l11 7-11 7z" fill="currentColor" /></svg>
-        {{ playing ? "Playing…" : "Replay the run" }}
+        {{ playing ? t("playing") : t("play") }}
       </button>
     </figcaption>
   </figure>

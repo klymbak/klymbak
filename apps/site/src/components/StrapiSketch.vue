@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import { text } from "../content.ts";
+
 /** A sketch of the Strapi admin, showing where the plugin puts the assistant. Decorative: the text beside it says the same. */
 defineProps<{ view: "page" | "panel" | "bulk" }>();
+
+/** The sketch's words, from the "strapi-sketch" UI text. */
+const t = (key: string) => text("strapi-sketch", key);
 </script>
 
 <template>
@@ -10,7 +15,7 @@ defineProps<{ view: "page" | "panel" | "bulk" }>();
     </div>
 
     <div v-if="view === 'page'" class="sk__main sk__chat">
-      <span class="sk__head">Assistant</span>
+      <span class="sk__head">{{ t("assistant") }}</span>
       <span class="sk__bubble" />
       <span class="sk__line" />
       <span class="sk__line sk__line--short" />
@@ -20,24 +25,24 @@ defineProps<{ view: "page" | "panel" | "bulk" }>();
 
     <div v-else-if="view === 'panel'" class="sk__main sk__split">
       <div class="sk__form">
-        <span class="sk__head">Article</span>
+        <span class="sk__head">{{ t("article") }}</span>
         <template v-for="n in 3" :key="n">
           <span class="sk__label" />
           <span class="sk__input" />
         </template>
       </div>
       <div class="sk__side">
-        <span class="sk__head">Assistant</span>
+        <span class="sk__head">{{ t("assistant") }}</span>
         <span class="sk__bubble" />
         <span class="sk__line" />
-        <span class="sk__approve">Approve</span>
+        <span class="sk__approve">{{ t("approve") }}</span>
       </div>
     </div>
 
     <div v-else class="sk__main sk__list">
-      <span class="sk__head">Articles</span>
+      <span class="sk__head">{{ t("articles") }}</span>
       <span v-for="n in 5" :key="n" class="sk__row" :class="{ on: n === 2 || n === 3 }"><i /><b /></span>
-      <span class="sk__bar">2 selected · <strong>Ask the assistant</strong></span>
+      <span class="sk__bar">{{ t("selected") }} · <strong>{{ t("ask") }}</strong></span>
     </div>
   </div>
 </template>
