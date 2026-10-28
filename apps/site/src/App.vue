@@ -729,15 +729,7 @@ const more = (label: string, short?: string) => (short && label.startsWith(short
   }
 }
 @media (max-width: 1020px) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .step__body--code,
-  .feature {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-@media (max-width: 860px) {
+  /* The menu would wrap here, sooner in languages with longer words; the button gets its full label back. */
   .top__nav {
     display: none;
   }
@@ -751,6 +743,15 @@ const more = (label: string, short?: string) => (short && label.startsWith(short
   .top__cta-more {
     display: inline;
   }
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .step__body--code,
+  .feature {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 860px) {
   .places {
     grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
