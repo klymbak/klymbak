@@ -937,6 +937,1878 @@
           ]
         }
       ]
+    },
+    "cs": {
+      "site": {
+        "name": "klymbak",
+        "key": "klymbak",
+        "url": "https://klymbak.ai",
+        "tagline": "Balíček AI agenta pro administrace",
+        "contactEmail": "ivan@berezhnyk.com",
+        "footerText": "klymbak · licence MIT\n\nPostaveno na [pi agent harness](https://github.com/earendil-works/pi)",
+        "logo": null,
+        "navigation": [
+          {
+            "label": "Šest kroků",
+            "url": "#steps",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Plugin pro Strapi",
+            "url": "#strapi",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Co je uvnitř",
+            "url": "#inside",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Pilot",
+            "url": "#pilot",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Otázky",
+            "url": "#faq",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          }
+        ],
+        "actions": [
+          {
+            "label": "Chci to ve své administraci",
+            "url": "mailto:ivan@berezhnyk.com?subject=AI%20agent%20v%20naší%20administraci&body=Naše%20administrace%20je%20postavená%20na%3A%0AProces%2C%20kterým%20bychom%20začali%3A%0A",
+            "shortLabel": "Chci to",
+            "variant": "primary",
+            "newTab": false
+          }
+        ],
+        "footerLinks": [
+          {
+            "label": "Zdrojový kód",
+            "url": "https://github.com/klymbak/klymbak",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": true
+          }
+        ],
+        "seo": {
+          "metaTitle": "Klymbak",
+          "metaDescription": "Nahraďte interní administraci AI agentem, který žije v chatu: šest kroků, pojistky a funkční demo.",
+          "noIndex": false,
+          "shareImage": null
+        }
+      },
+      "pages": [
+        {
+          "slug": "home",
+          "title": "Úvod",
+          "seo": null,
+          "sections": [
+            {
+              "heading": "Vaše administrace jako konverzace.",
+              "highlight": "konverzace",
+              "eyebrow": "Pro týmy, které žijí v administraci",
+              "lede": "Obrazovky, kterými se váš tým každý den proklikává, nahrazuji AI agentem, se kterým stačí mluvit. Vyhledá údaje ve vašich systémech, výsledky ukáže v tabulkách a grafech, a než cokoli změní, zeptá se.",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Zobrazit šest kroků",
+                  "url": "#steps",
+                  "shortLabel": null,
+                  "variant": "primary",
+                  "newTab": false
+                }
+              ],
+              "facts": [
+                {
+                  "term": "Pilot",
+                  "text": "za tři týdny, na jednom skutečném procesu"
+                },
+                {
+                  "term": "Jakýkoli model",
+                  "text": ": Claude, GPT, Gemini nebo váš vlastní hardware"
+                },
+                {
+                  "term": "Otevřený stack",
+                  "text": ": Vue, React nebo Angular + Node, nad pi agent harness s licencí MIT"
+                }
+              ],
+              "image": null,
+              "__component": "sections.hero"
+            },
+            {
+              "heading": "Ze čtrnácti obrazovek je jedna věta.",
+              "eyebrow": "Co se změní",
+              "lede": "Vyřízení jedné reklamace poškozeného zboží dřív znamenalo šest obrazovek a web dopravce. Teď je to žádost, kontrola a jedno schválení.",
+              "layout": "columns",
+              "anchor": null,
+              "items": [
+                {
+                  "title": null,
+                  "label": "Dřív · asi 4 minuty",
+                  "text": null,
+                  "points": "Najít zákazníka, otevřít objednávku\nDohledat zásilku na webu dopravce\nVrátit peníze na obrazovce plateb\nVytvořit štítek pro vrácení a vložit ho do e-mailu\nOdpovědět na tiket a uzavřít ho",
+                  "detail": null,
+                  "key": "before",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": null,
+                  "label": "Teď · asi 20 sekund",
+                  "text": null,
+                  "points": "Zákazník, objednávka i zásilka dohledané souběžně\nVrácení peněz i štítek po jediném schválení\nOdpověď ve vašem tónu, zapsaná v auditním záznamu",
+                  "detail": null,
+                  "key": "after",
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Šest kroků k agentovi ve vašem produktu.",
+              "eyebrow": "Co bude dál",
+              "lede": "Systémy, přihlašování i data zůstávají vaše. Agent se postaví nad to, co už provozujete, jeden proces po druhém.",
+              "outcomeLabel": "Dostanete",
+              "anchor": "steps",
+              "items": [
+                {
+                  "title": "Zmapujte práci, kterou lidé skutečně dělají",
+                  "duration": "2–3 dny",
+                  "body": "Sedneme si s lidmi, kteří žijí ve vaší administraci (provoz, podpora, finance), a sepíšeme dvacet úkolů, které nejčastěji opakují, kde se každý z nich dotýká dat a co se může pokazit.",
+                  "points": "Obrazovky a exporty používané každý týden\nKteré úkoly data jen čtou a které je mění\nKdo smí co dělat a jaké platí limity",
+                  "outcome": "Mapa schopností: úkol → systém → riziko → vlastník",
+                  "key": "map",
+                  "code": []
+                },
+                {
+                  "title": "Zabalte to, co už máte, do nástrojů",
+                  "duration": "1. týden",
+                  "body": "Každý úkol se stane typovaným nástrojem nad vaším stávajícím API nebo databází. Nic se nepřepisuje a systémy třetích stran se připojí přes MCP. Výsledky se vrací jako tabulky, grafy a karty, zatímco model čte jen stručné shrnutí.",
+                  "points": "Typované parametry, ve kterých se model nesplete potichu\nTabulky a grafy pro lidi, krátký text pro model\nMCP servery pro Stripe, Zendesk, dopravce nebo vaše vlastní služby",
+                  "outcome": "Katalog nástrojů běžící proti testovacímu prostředí",
+                  "key": "wrap",
+                  "code": [
+                    {
+                      "filename": "tools/orders.ts",
+                      "language": null,
+                      "code": "export const refundOrder = defineTool({\n  name: \"refund_order\",\n  description: \"Refund all or part of an order.\",\n  parameters: Type.Object({\n    orderId: Type.Integer(),\n    amount: Type.Optional(Type.Number()),\n    reason: Type.String(),\n  }),\n  // Než se pohnou peníze, schválí to člověk.\n  approval: ({ amount }) => ({ title: `Refund $${amount}`, risk: \"high\" }),\n  execute: async ({ orderId, amount, reason }, ctx) => {\n    await payments.refund(orderId, amount, { by: ctx.user.id, reason });\n    return { text: \"Refunded.\", ui: ui.alert(\"success\", \"Refund issued\") };\n  },\n});"
+                    }
+                  ]
+                },
+                {
+                  "title": "Pojistky patří do kódu, ne do promptu",
+                  "duration": "1.–2. týden",
+                  "body": "Agent jedná jako přihlášený uživatel, s jeho rolemi. Cokoli, co mění data, čeká na schválení. Hooky pravidel vynucují limity, které model nedokáže ukecat, a každá akce skončí ve vašem auditním logu.",
+                  "points": "Schválení ukazují přesnou částku, příjemce i koncept\nLimity rolí, maskování osobních údajů a zakázané akce jako hooky\nAuditní záznam: kdo žádal, co proběhlo a kdo schválil",
+                  "outcome": "Poznámky z bezpečnostní revize a sepsaný soubor pravidel",
+                  "key": "guard",
+                  "code": [
+                    {
+                      "filename": "hooks.ts",
+                      "language": null,
+                      "code": "export const refundPolicy: Hook = {\n  name: \"refund-policy\",\n  tools: [\"refund_order\"],\n  preToolUse: ({ args, ctx }) => {\n    if (args.amount > 1000)\n      return { decision: \"deny\", reason: \"Over $1,000 goes to finance.\" };\n    if (!ctx.user.roles.includes(\"admin\") && args.amount > 150)\n      return { decision: \"deny\", reason: \"Support can refund up to $150.\" };\n    if (args.amount <= 25) return { decision: \"allow\" }; // vstřícnost\n  },\n};"
+                    }
+                  ]
+                },
+                {
+                  "title": "Vyberte model, nebo nechte vybírat lidi",
+                  "duration": "2. týden",
+                  "body": "Claude, GPT, Gemini nebo soukromé modely na vašem vlastním hardwaru přes Ollama, LM Studio, vLLM, Azure či Bedrock. Lidé můžou model měnit pro každou konverzaci a každý běh hlásí své tokeny a cenu.",
+                  "points": "Cloud, privátní cloud nebo plně ve vlastním datacentru\nSeznam schválených modelů\nPřehled tokenů a ceny za každý běh",
+                  "outcome": "Užší výběr modelů s cenou za typický úkol",
+                  "key": "models",
+                  "code": []
+                },
+                {
+                  "title": "Vložte chat do svého produktu",
+                  "duration": "2. týden",
+                  "body": "Balíčky komponent pro Vue 3, React a Angular: celé pracovní prostředí, samostatný chat nebo plovoucí widget vedle vaší současné administrace, takže nemusíte všechno přepnout hned první den. Vzhled upravíte pár proměnnými CSS.",
+                  "points": "Streamované odpovědi, karty nástrojů a schvalování\nVlastní komponenty pro výsledky libovolného nástroje\nFunguje za vaším stávajícím přihlášením",
+                  "outcome": "Agent uvnitř vaší aplikace, za vaším přihlášením",
+                  "key": "embed",
+                  "code": [
+                    {
+                      "filename": "AdminPage.vue",
+                      "language": null,
+                      "code": "<script setup lang=\"ts\">\nimport { AgentWorkspace } from \"@klymbak/vue\";\nimport \"@klymbak/vue/style.css\";\n</script>\n\n<template>\n  <AgentWorkspace base-url=\"/api/agent\" />\n</template>"
+                    },
+                    {
+                      "filename": "AdminPage.tsx",
+                      "language": null,
+                      "code": "import { AgentWorkspace } from \"@klymbak/react\";\nimport \"@klymbak/react/style.css\";\n\nexport function AdminPage() {\n  return <AgentWorkspace baseUrl=\"/api/agent\" />;\n}"
+                    },
+                    {
+                      "filename": "admin-page.ts",
+                      "language": null,
+                      "code": "import { Component } from \"@angular/core\";\nimport { AgentWorkspace } from \"@klymbak/angular\";\n// styles.css: @import \"@klymbak/angular/style.css\";\n\n@Component({\n  selector: \"app-admin-page\",\n  imports: [AgentWorkspace],\n  template: `<kl-agent-workspace baseUrl=\"/api/agent\" />`,\n})\nexport class AdminPage {}"
+                    }
+                  ]
+                },
+                {
+                  "title": "Zautomatizujte rutinu a pak měřte",
+                  "duration": "3. týden",
+                  "body": "Plánované úlohy samy pošlou ranní přehled a hlídají zásoby nebo SLA. Specializovaní subagenti převezmou úzce zaměřenou práci. Přepisy ukazují, na co se lidé ptali a kde si agent nevěděl rady, takže každotýdenní vylepšení vycházejí ze skutečného používání.",
+                  "points": "Přehledy a hlídání podle plánu\nSpecialisté na analýzy, podporu a sklad\nTýdenní revize přepisů, nákladů a chyb",
+                  "outcome": "Zpráva z pilotu a plán zavedení",
+                  "key": "automate",
+                  "code": []
+                }
+              ],
+              "__component": "sections.steps"
+            },
+            {
+              "heading": "Běžné webové technologie ve vaší infrastruktuře.",
+              "eyebrow": "Architektura",
+              "lede": "Chat je komponenta pro Vue, React nebo Angular. Agent je služba v Node, kterou připojíte vedle svého API. Komunikují přes HTTPS a server-sent events, za přihlášením, které už máte.",
+              "name": "architecture-diagram",
+              "anchor": null,
+              "__component": "sections.custom"
+            },
+            {
+              "heading": "Už uvnitř skutečné administrace: Strapi.",
+              "eyebrow": "Skutečná integrace",
+              "lede": "`@klymbak/strapi` je plugin pro Strapi 5 postavený ze stejných balíčků. Nainstalujte ho, přidejte klíč k modelu a redaktoři můžou asistenta požádat o to, co potřebují, na třech místech administrace.",
+              "layout": "grid",
+              "anchor": "strapi",
+              "items": [
+                {
+                  "title": "Vlastní stránka",
+                  "label": "Hlavní menu",
+                  "text": "Konverzace, plánované úlohy a seznam nástrojů, jedno kliknutí od Content Manageru.",
+                  "points": null,
+                  "detail": null,
+                  "key": "page",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Boční panel u každého záznamu",
+                  "label": "Úprava záznamu",
+                  "text": "Ptejte se na otevřený záznam. Když ho asistent změní, formulář se obnoví.",
+                  "points": null,
+                  "detail": null,
+                  "key": "panel",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Hromadná akce",
+                  "label": "Seznam záznamů",
+                  "text": "Vyberte záznamy a zeptejte se na ně: kterým chybí popis, co opravit před publikováním.",
+                  "points": null,
+                  "detail": null,
+                  "key": "bulk",
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": null,
+              "eyebrow": null,
+              "lede": null,
+              "points": "Pracuje jako přihlášený administrátor: oprávnění k polím, jazykům a „jen vlastním záznamům“ platí stejně jako v Content Manageru\nVytvoření, úprava, publikování i smazání čekají na schválení\nZná projekt (verzi, jazyky, typy obsahu) a na otázky ke Strapi odpovídá z oficiální dokumentace\nKonverzace a plány se ukládají přímo v databázi Strapi",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Dokumentace a zdrojový kód pluginu",
+                  "url": "https://github.com/klymbak/klymbak/tree/main/packages/strapi#readme",
+                  "shortLabel": null,
+                  "variant": "plain",
+                  "newTab": true
+                },
+                {
+                  "label": "@klymbak/strapi na npm",
+                  "url": "https://www.npmjs.com/package/@klymbak/strapi",
+                  "shortLabel": null,
+                  "variant": "plain",
+                  "newTab": true
+                }
+              ],
+              "code": [
+                {
+                  "filename": "config/plugins.ts",
+                  "language": null,
+                  "code": "// npm install @klymbak/strapi\nexport default () => ({\n  klymbak: {\n    config: {\n      models: { providers: [\"anthropic\"], default: \"anthropic/claude-sonnet-5-5\" },\n      instructions: \"Every article needs a category and an author.\",\n    },\n  },\n});"
+                }
+              ],
+              "image": null,
+              "__component": "sections.feature"
+            },
+            {
+              "heading": "Postaveno pro práci, která má následky.",
+              "eyebrow": "Co je uvnitř",
+              "lede": "Všechno, co administrace hlídala obrazovkami a oprávněními, hlídá kód kolem modelu.",
+              "layout": "table",
+              "anchor": "inside",
+              "items": [
+                {
+                  "title": "Schválení člověkem",
+                  "label": null,
+                  "text": "Cokoli, co mění data, čeká na člověka, který vidí přesnou částku, příjemce nebo koncept.",
+                  "points": null,
+                  "detail": "approval: (args) => …",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Hooky pravidel",
+                  "label": null,
+                  "text": "Limity rolí, zakázané akce a maskování osobních údajů vynucuje kód před každým voláním nástroje i po něm.",
+                  "points": null,
+                  "detail": "preToolUse · postToolUse",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Vaše systémy jako nástroje",
+                  "label": null,
+                  "text": "Stávající API a SQL se stanou typovanými akcemi. Lidé vidí tabulky a grafy, model čte shrnutí.",
+                  "points": null,
+                  "detail": "defineTool()",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Integrace MCP",
+                  "label": null,
+                  "text": "Připojte MCP servery třetích stran nebo vlastní a jejich nástroje se v agentovi objeví, včetně schvalování.",
+                  "points": null,
+                  "detail": "mcpServers: { … }",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Specializovaní subagenti",
+                  "label": null,
+                  "text": "Analytik, specialista podpory nebo plánovač zásob s užší sadou nástrojů, pracující souběžně.",
+                  "points": null,
+                  "detail": "subagents: [ … ]",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Plánované úlohy",
+                  "label": null,
+                  "text": "Ranní přehledy a hlídání běží přes cron, píšou do týmového chatu a upozorní ty, koho se to týká.",
+                  "points": null,
+                  "detail": "schedules: [ … ]",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Jakýkoli model",
+                  "label": null,
+                  "text": "Claude, GPT, Gemini nebo soukromé modely přes Ollama, LM Studio, vLLM, Azure či Bedrock.",
+                  "points": null,
+                  "detail": "models: { … }",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Usměrňování",
+                  "label": null,
+                  "text": "Přidejte pokyn, zatímco agent pracuje. Přečte si ho po aktuálním kroku a změní směr.",
+                  "points": null,
+                  "detail": "POST /sessions/:id/steer",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Auditní záznam",
+                  "label": null,
+                  "text": "Kdo žádal, co proběhlo, co se změnilo a kdo to schválil, zapsané do vašeho vlastního úložiště.",
+                  "points": null,
+                  "detail": "auditTrail(sink)",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Co nedělá",
+              "eyebrow": null,
+              "lede": null,
+              "layout": "list",
+              "anchor": null,
+              "items": [
+                {
+                  "title": "Vydávat se za někoho jiného",
+                  "label": null,
+                  "text": "Nástroje běží s rolemi přihlášeného uživatele, takže agent nesmí nic, co by nesměl on.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Potichu měnit data",
+                  "label": null,
+                  "text": "Zápisy čekají na schválení, které přesně ukáže, co se stane. Zamítnutí se také zaznamenávají.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Ukecat pravidla",
+                  "label": null,
+                  "text": "Limity sídlí v hoocích, které běží před každým voláním, ať prompt říká cokoli.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Ukazovat, co nemá",
+                  "label": null,
+                  "text": "Kontaktní údaje se maskují podle role a ad-hoc SQL běží přes připojení jen pro čtení.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Posílat data, kam nechcete",
+                  "label": null,
+                  "text": "Používejte lokální modely nebo vlastní účet Azure či Bedrock.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Třítýdenní pilot na jednom skutečném procesu.",
+              "eyebrow": "Spolupráce",
+              "lede": "Vyberte proces, který zabírá nejvíc času. Do konce třetího týdne ho pár vašich lidí dělá s agentem a vy máte čísla, podle kterých se rozhodnete, co dál.",
+              "layout": "timeline",
+              "anchor": "pilot",
+              "items": [
+                {
+                  "title": "Mapa a nástroje",
+                  "label": "1. týden",
+                  "text": "Mapa schopností, prvních deset nástrojů proti testovacímu prostředí, návrh pojistek.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Pojistky a vložení",
+                  "label": "2. týden",
+                  "text": "Hooky pravidel, schvalování, auditní log; chat ve vaší aplikaci za vaším přihlášením.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Pilot",
+                  "label": "3. týden",
+                  "text": "Tři až pět lidí ho používá při skutečné práci. Projdeme přepisy a náklady a opravíme, na co narazí.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Na co se týmy ptají nejdřív.",
+              "eyebrow": "Otázky",
+              "lede": null,
+              "anchor": "faq",
+              "items": [
+                {
+                  "question": "Nebude si vymýšlet?",
+                  "answer": "Údaje dohledává přes vaše nástroje, místo aby odpovídal zpaměti, a má říct, když nástroj nic nenajde. Čísla pocházejí z vašich systémů a lidé je vidí tak, jak je nástroj vrátil, v tabulkách a grafech, které model nepřepisuje."
+                },
+                {
+                  "question": "Co když udělá něco špatně?",
+                  "answer": "Nástroje jen pro čtení běží volně. Cokoli, co mění data, se zastaví a čeká na schválení člověkem, s přesnými detaily. Hooky blokují, co pravidla zakazují, ať model žádá o cokoli, a auditní log zaznamená každou akci i to, kdo ji schválil."
+                },
+                {
+                  "question": "Musíme svou administraci zahodit?",
+                  "answer": "Ne. Většina týmů začne plovoucím widgetem vedle stávající administrace a procesy přesouvá postupně, jak lidé přestávají otevírat staré obrazovky."
+                },
+                {
+                  "question": "Můžou naše data zůstat na našich serverech?",
+                  "answer": "Ano. Server agenta běží ve vaší infrastruktuře a může používat lokální modely (Ollama, LM Studio, vLLM) nebo Azure OpenAI či Bedrock ve vašem cloudovém účtu, takže prompty a data se nikdy nedostanou k třetí straně, kterou jste si nevybrali."
+                },
+                {
+                  "question": "Kolik stojí provoz?",
+                  "answer": "Typický administrativní úkol stojí v tokenech modelu zlomek centu až pár centů a každý běh hlásí svou spotřebu. U lokálních modelů platíte jen za hardware."
+                },
+                {
+                  "question": "Jaké technologie podporujete?",
+                  "answer": "Chat je k dispozici jako komponenty pro Vue 3, React (18 a 19) a Angular (21 a 22) a jako hotový plugin pro Strapi 5. Server agenta je Node (TypeScript) nad pi agent harness s licencí MIT. Protokol je obyčejné HTTP a server-sent events, takže backend v .NET se dá doplnit snadno."
+                }
+              ],
+              "__component": "sections.faq"
+            },
+            {
+              "heading": "Přineste jeden proces. Odneste si fungujícího agenta.",
+              "eyebrow": null,
+              "lede": "Napište mi, ve kterých obrazovkách váš tým žije. Ukážu vám, jak by vypadaly první tři týdny.",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Chci AI agenta ve své administraci",
+                  "url": "mailto:ivan@berezhnyk.com?subject=AI%20agent%20v%20naší%20administraci&body=Naše%20administrace%20je%20postavená%20na%3A%0AProces%2C%20kterým%20bychom%20začali%3A%0A",
+                  "shortLabel": null,
+                  "variant": "primary",
+                  "newTab": false
+                }
+              ],
+              "__component": "sections.cta"
+            }
+          ]
+        }
+      ],
+      "uiTexts": [
+        {
+          "name": "architecture-diagram",
+          "notes": "The words in the “Plain web tech” diagram. The boxes have a fixed width, so keep translations about as long as the English. app.cards is two lines.",
+          "entries": [
+            {
+              "key": "title",
+              "text": "Jak spolu části souvisejí"
+            },
+            {
+              "key": "description",
+              "text": "Vaše aplikace vkládá chat (komponenty pro Vue, React nebo Angular), který komunikuje se serverem agenta přes HTTPS a server-sent events pomocí vašeho stávajícího přihlášení. Server agenta pouští smyčku agenta pi s hooky, schvalováním, subagenty, plány a relacemi a volá vaše systémy jako nástroje, MCP servery a poskytovatele modelů."
+            },
+            {
+              "key": "app.eyebrow",
+              "text": "VAŠE APLIKACE"
+            },
+            {
+              "key": "app.title",
+              "text": "Rozhraní chatu"
+            },
+            {
+              "key": "app.stacks",
+              "text": "Vue · React · Angular"
+            },
+            {
+              "key": "app.parts",
+              "text": "Prostor · chat · widget"
+            },
+            {
+              "key": "app.cards",
+              "text": "Karty, schvalování,\ntabulky a grafy"
+            },
+            {
+              "key": "link.top",
+              "text": "HTTPS + SSE"
+            },
+            {
+              "key": "link.bottom",
+              "text": "váš login"
+            },
+            {
+              "key": "server.eyebrow",
+              "text": "SERVER AGENTA · NODE"
+            },
+            {
+              "key": "server.title",
+              "text": "@klymbak/server"
+            },
+            {
+              "key": "server.loop",
+              "text": "smyčka agenta pi"
+            },
+            {
+              "key": "server.license",
+              "text": "MIT"
+            },
+            {
+              "key": "server.hooks",
+              "text": "Hooky · schvalování · audit"
+            },
+            {
+              "key": "server.subagents",
+              "text": "Specializovaní subagenti"
+            },
+            {
+              "key": "server.schedules",
+              "text": "Plánované úlohy"
+            },
+            {
+              "key": "server.sessions",
+              "text": "Relace a streamování"
+            },
+            {
+              "key": "server.where",
+              "text": "Běží ve vaší infrastruktuře"
+            },
+            {
+              "key": "systems.eyebrow",
+              "text": "VAŠE SYSTÉMY"
+            },
+            {
+              "key": "systems.title",
+              "text": "Typované nástroje"
+            },
+            {
+              "key": "systems.text",
+              "text": "nad vašimi API a DB"
+            },
+            {
+              "key": "integrations.eyebrow",
+              "text": "INTEGRACE"
+            },
+            {
+              "key": "integrations.title",
+              "text": "MCP servery"
+            },
+            {
+              "key": "integrations.text",
+              "text": "Stripe, Zendesk, dopravci…"
+            },
+            {
+              "key": "models.eyebrow",
+              "text": "MODELY"
+            },
+            {
+              "key": "models.title",
+              "text": "Jakýkoli model"
+            },
+            {
+              "key": "models.text",
+              "text": "Claude · GPT · Gemini · vaše"
+            }
+          ]
+        },
+        {
+          "name": "before-after",
+          "notes": "The pictures in “Fourteen screens become one sentence”: the old admin menu (one screen per line) and the request with its approval stamp.",
+          "entries": [
+            {
+              "key": "screens",
+              "text": "Přehled\nObjednávky\nZákazníci\nRefundace\nVratky\nZásilky\nSklad\nNákupy\nSlevy\nTikety\nReporty\nExporty\nUživatelé a role\nAuditní log"
+            },
+            {
+              "key": "ask.who",
+              "text": "Provoz"
+            },
+            {
+              "key": "ask.text",
+              "text": "„Jane dorazil roztržený stan. Vrať peníze za stan, pošli jí štítek pro vrácení a odpověz na její tiket.“"
+            },
+            {
+              "key": "stamp",
+              "text": "Schváleno"
+            },
+            {
+              "key": "stamp.text",
+              "text": "Vrácení 329,00 $ zákaznici Jane Cooper"
+            },
+            {
+              "key": "stamp.by",
+              "text": "schválení: Olivia Hart"
+            }
+          ]
+        },
+        {
+          "name": "common",
+          "notes": "Around the page: the header, theme button, language menu, demo buttons, code blocks, the contact line and the capability table’s column titles. {theme} is replaced by one of the theme words.",
+          "entries": [
+            {
+              "key": "brand.home",
+              "text": "Klymbak – úvod"
+            },
+            {
+              "key": "nav.label",
+              "text": "Sekce"
+            },
+            {
+              "key": "language.label",
+              "text": "Jazyk"
+            },
+            {
+              "key": "theme.button",
+              "text": "Motiv: {theme}. Změnit motiv"
+            },
+            {
+              "key": "theme.title",
+              "text": "Motiv: {theme}"
+            },
+            {
+              "key": "theme.auto",
+              "text": "automatický"
+            },
+            {
+              "key": "theme.light",
+              "text": "světlý"
+            },
+            {
+              "key": "theme.dark",
+              "text": "tmavý"
+            },
+            {
+              "key": "demo.open",
+              "text": "Otevřít živé demo"
+            },
+            {
+              "key": "email.or",
+              "text": "Nebo napište na"
+            },
+            {
+              "key": "email.copy",
+              "text": "Kopírovat"
+            },
+            {
+              "key": "email.copied",
+              "text": "Zkopírováno"
+            },
+            {
+              "key": "code.copy",
+              "text": "Kopírovat"
+            },
+            {
+              "key": "code.copied",
+              "text": "Zkopírováno"
+            },
+            {
+              "key": "code.tabs",
+              "text": "Framework"
+            },
+            {
+              "key": "table.title",
+              "text": "Funkce"
+            },
+            {
+              "key": "table.text",
+              "text": "Co to znamená pro váš tým"
+            },
+            {
+              "key": "table.detail",
+              "text": "V kódu"
+            }
+          ]
+        },
+        {
+          "name": "hero-replay",
+          "notes": "The recorded session next to the hero: what the person asks, the tools, the approval and the replies. **bold** works in the replies; `code` works in the note.",
+          "entries": [
+            {
+              "key": "label",
+              "text": "Nahraná relace agenta, kterou si můžete přehrát"
+            },
+            {
+              "key": "app",
+              "text": "Acme Back Office"
+            },
+            {
+              "key": "user",
+              "text": "Olivia Hart · admin"
+            },
+            {
+              "key": "note",
+              "text": "Živé komponenty `@klymbak/vue`. Přehrajte si běh a vrácení peněz schvalte sami."
+            },
+            {
+              "key": "cue",
+              "text": "Jste na tahu: schvalte, nebo zamítněte vrácení peněz ↑"
+            },
+            {
+              "key": "play",
+              "text": "Přehrát běh"
+            },
+            {
+              "key": "playing",
+              "text": "Přehrávám…"
+            },
+            {
+              "key": "prompt",
+              "text": "Jane Cooper dorazil stan s roztrženou plachtou. Vrať peníze za stan a pošli jí štítek pro vrácení."
+            },
+            {
+              "key": "tool.customer",
+              "text": "Profil zákazníka"
+            },
+            {
+              "key": "tool.tickets",
+              "text": "Tikety podpory"
+            },
+            {
+              "key": "tool.refund",
+              "text": "Vrácení peněz"
+            },
+            {
+              "key": "tool.label",
+              "text": "Vytvořit štítek pro vrácení"
+            },
+            {
+              "key": "result.customer",
+              "text": "Jane Cooper, VIP, 29 objednávek."
+            },
+            {
+              "key": "result.tickets",
+              "text": "#39 urgentní: stan dorazil s roztrženou plachtou (objednávka #2691)."
+            },
+            {
+              "key": "result.refund",
+              "text": "Vráceno 329,00 $."
+            },
+            {
+              "key": "result.label",
+              "text": "Štítek RTN-2691 odeslán na jane.cooper@example.com."
+            },
+            {
+              "key": "result.denied",
+              "text": "Akce byla zamítnuta."
+            },
+            {
+              "key": "plan",
+              "text": "Objednávka #2691 obsahuje stan Ridgeline 2P za 329 $. Vrátím za něj peníze a pošlu předplacený štítek pro vrácení."
+            },
+            {
+              "key": "refund.reason",
+              "text": "Plachta roztržená při doručení"
+            },
+            {
+              "key": "label.reason",
+              "text": "Poškozený stan"
+            },
+            {
+              "key": "approval.title",
+              "text": "Vrátit 329,00 $ zákaznici Jane Cooper"
+            },
+            {
+              "key": "approval.description",
+              "text": "Objednávka #2691 (stan Ridgeline 2P). Důvod: plachta roztržená při doručení."
+            },
+            {
+              "key": "alert.title",
+              "text": "Peníze vráceny"
+            },
+            {
+              "key": "alert.text",
+              "text": "329,00 $ vráceno zákaznici Jane Cooper za objednávku #2691."
+            },
+            {
+              "key": "done",
+              "text": "Hotovo. **329,00 $** je zpět na kartě zákaznice a předplacený štítek UPS pro vrácení (RTN-2691) už má v e-mailu. Mám odpovědět na tiket #39 a uzavřít ho?"
+            },
+            {
+              "key": "denied",
+              "text": "Rozumím, peníze nevracím. Mám zákaznici místo toho nabídnout náhradní stan s expresním doručením, nebo **slevový kód na 20 %** na příští objednávku?"
+            },
+            {
+              "key": "approver.you",
+              "text": "Vy"
+            },
+            {
+              "key": "approver.admin",
+              "text": "Olivia Hart"
+            }
+          ]
+        },
+        {
+          "name": "strapi-sketch",
+          "notes": "The words in the three small Strapi admin sketches under “Already inside a real admin panel”.",
+          "entries": [
+            {
+              "key": "assistant",
+              "text": "Asistent"
+            },
+            {
+              "key": "article",
+              "text": "Článek"
+            },
+            {
+              "key": "approve",
+              "text": "Schválit"
+            },
+            {
+              "key": "articles",
+              "text": "Články"
+            },
+            {
+              "key": "selected",
+              "text": "2 vybrané"
+            },
+            {
+              "key": "ask",
+              "text": "Zeptat se asistenta"
+            }
+          ]
+        }
+      ]
+    },
+    "uk": {
+      "site": {
+        "name": "klymbak",
+        "key": "klymbak",
+        "url": "https://klymbak.ai",
+        "tagline": "Пакет AI-агента для адмін-панелей",
+        "contactEmail": "ivan@berezhnyk.com",
+        "footerText": "klymbak · ліцензія MIT\n\nПобудовано на [pi agent harness](https://github.com/earendil-works/pi)",
+        "logo": null,
+        "navigation": [
+          {
+            "label": "Шість кроків",
+            "url": "#steps",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Плагін Strapi",
+            "url": "#strapi",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Що всередині",
+            "url": "#inside",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Пілот",
+            "url": "#pilot",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          },
+          {
+            "label": "Питання",
+            "url": "#faq",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": false
+          }
+        ],
+        "actions": [
+          {
+            "label": "Хочу це у своїй адмін-панелі",
+            "url": "mailto:ivan@berezhnyk.com?subject=AI-агент%20у%20нашій%20адмін-панелі&body=Наша%20адмін-панель%20побудована%20на%3A%0AПроцес%2C%20з%20якого%20ми%20б%20почали%3A%0A",
+            "shortLabel": "Хочу це",
+            "variant": "primary",
+            "newTab": false
+          }
+        ],
+        "footerLinks": [
+          {
+            "label": "Вихідний код",
+            "url": "https://github.com/klymbak/klymbak",
+            "shortLabel": null,
+            "variant": "plain",
+            "newTab": true
+          }
+        ],
+        "seo": {
+          "metaTitle": "Klymbak",
+          "metaDescription": "Замініть внутрішню адмін-панель AI-агентом, який живе в чаті: шість кроків, запобіжники й робоче демо.",
+          "noIndex": false,
+          "shareImage": null
+        }
+      },
+      "pages": [
+        {
+          "slug": "home",
+          "title": "Головна",
+          "seo": null,
+          "sections": [
+            {
+              "heading": "Ваша адмін-панель як розмова.",
+              "highlight": "розмова",
+              "eyebrow": "Для команд, що живуть в адмін-панелях",
+              "lede": "Я замінюю екрани, якими ваша команда щодня клацає, на AI-агента, з яким можна просто поговорити. Він шукає дані у ваших системах, показує результати таблицями й графіками та питає дозволу, перш ніж щось змінити.",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Переглянути шість кроків",
+                  "url": "#steps",
+                  "shortLabel": null,
+                  "variant": "primary",
+                  "newTab": false
+                }
+              ],
+              "facts": [
+                {
+                  "term": "Пілот",
+                  "text": "за три тижні, на одному реальному процесі"
+                },
+                {
+                  "term": "Будь-яка модель",
+                  "text": ": Claude, GPT, Gemini або ваше власне залізо"
+                },
+                {
+                  "term": "Відкритий стек",
+                  "text": ": Vue, React або Angular + Node, на pi agent harness під ліцензією MIT"
+                }
+              ],
+              "image": null,
+              "__component": "sections.hero"
+            },
+            {
+              "heading": "Чотирнадцять екранів стають одним реченням.",
+              "eyebrow": "Що зміниться",
+              "lede": "Розібрати одну скаргу на пошкоджений товар раніше означало шість екранів і сайт перевізника. Тепер це запит, перевірка й одне підтвердження.",
+              "layout": "columns",
+              "anchor": null,
+              "items": [
+                {
+                  "title": null,
+                  "label": "Раніше · близько 4 хвилин",
+                  "text": null,
+                  "points": "Знайти клієнта, відкрити замовлення\nПеревірити посилку на сайті перевізника\nОформити повернення коштів на екрані платежів\nСтворити етикетку повернення, вставити її в лист\nВідповісти на тікет і закрити його",
+                  "detail": null,
+                  "key": "before",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": null,
+                  "label": "Тепер · близько 20 секунд",
+                  "text": null,
+                  "points": "Клієнт, замовлення й доставка знайдені паралельно\nПовернення коштів і етикетка — після одного підтвердження\nВідповідь у вашому тоні, записана в журнал аудиту",
+                  "detail": null,
+                  "key": "after",
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Шість кроків, щоб додати агента у ваш продукт.",
+              "eyebrow": "Що далі",
+              "lede": "Ваші системи, вхід і дані залишаються вашими. Агент працює поверх того, що у вас уже є, — по одному процесу за раз.",
+              "outcomeLabel": "Ви отримуєте",
+              "anchor": "steps",
+              "items": [
+                {
+                  "title": "Опишіть роботу, яку люди справді виконують",
+                  "duration": "2–3 дні",
+                  "body": "Ми сідаємо поруч із людьми, які живуть у вашій адмін-панелі (операції, підтримка, фінанси), і складаємо список двадцяти завдань, які вони повторюють найчастіше: де кожне з них торкається даних і що може піти не так.",
+                  "points": "Екрани й експорти, якими користуються щотижня\nЯкі завдання лише читають дані, а які їх змінюють\nХто що може робити і які обмеження діють",
+                  "outcome": "Мапа можливостей: завдання → система → ризик → відповідальний",
+                  "key": "map",
+                  "code": []
+                },
+                {
+                  "title": "Перетворіть наявне на інструменти",
+                  "duration": "Тиждень 1",
+                  "body": "Кожне завдання стає типізованим інструментом поверх вашого наявного API чи бази даних. Нічого не переписується, а сторонні системи підключаються через MCP. Результати повертаються таблицями, графіками й картками, а модель читає лише стислий підсумок.",
+                  "points": "Типізовані параметри, у яких модель не помилиться непомітно\nТаблиці й графіки для людей, короткий текст для моделі\nMCP-сервери для Stripe, Zendesk, перевізників або ваших власних сервісів",
+                  "outcome": "Каталог інструментів, що працює на тестовому середовищі",
+                  "key": "wrap",
+                  "code": [
+                    {
+                      "filename": "tools/orders.ts",
+                      "language": null,
+                      "code": "export const refundOrder = defineTool({\n  name: \"refund_order\",\n  description: \"Refund all or part of an order.\",\n  parameters: Type.Object({\n    orderId: Type.Integer(),\n    amount: Type.Optional(Type.Number()),\n    reason: Type.String(),\n  }),\n  // Людина підтверджує, перш ніж рухаються гроші.\n  approval: ({ amount }) => ({ title: `Refund $${amount}`, risk: \"high\" }),\n  execute: async ({ orderId, amount, reason }, ctx) => {\n    await payments.refund(orderId, amount, { by: ctx.user.id, reason });\n    return { text: \"Refunded.\", ui: ui.alert(\"success\", \"Refund issued\") };\n  },\n});"
+                    }
+                  ]
+                },
+                {
+                  "title": "Запобіжники — у коді, а не в промпті",
+                  "duration": "Тиждень 1–2",
+                  "body": "Агент діє від імені людини, яка ввійшла в систему, з її ролями. Усе, що змінює дані, чекає на підтвердження. Хуки політик забезпечують обмеження, які модель не зможе обійти балачками, а кожна дія потрапляє у ваш журнал аудиту.",
+                  "points": "Підтвердження показують точну суму, одержувача й чернетку\nОбмеження ролей, маскування персональних даних і заборонені дії — як хуки\nЖурнал аудиту: хто попросив, що виконалося і хто підтвердив",
+                  "outcome": "Нотатки з безпекового огляду й письмовий файл політик",
+                  "key": "guard",
+                  "code": [
+                    {
+                      "filename": "hooks.ts",
+                      "language": null,
+                      "code": "export const refundPolicy: Hook = {\n  name: \"refund-policy\",\n  tools: [\"refund_order\"],\n  preToolUse: ({ args, ctx }) => {\n    if (args.amount > 1000)\n      return { decision: \"deny\", reason: \"Over $1,000 goes to finance.\" };\n    if (!ctx.user.roles.includes(\"admin\") && args.amount > 150)\n      return { decision: \"deny\", reason: \"Support can refund up to $150.\" };\n    if (args.amount <= 25) return { decision: \"allow\" }; // жест доброї волі\n  },\n};"
+                    }
+                  ]
+                },
+                {
+                  "title": "Оберіть модель — або дайте обирати людям",
+                  "duration": "Тиждень 2",
+                  "body": "Claude, GPT, Gemini або приватні моделі на вашому власному залізі через Ollama, LM Studio, vLLM, Azure чи Bedrock. Люди можуть змінювати модель для кожної розмови, а кожен запуск звітує про токени й вартість.",
+                  "points": "Хмара, приватна хмара або повністю у вашому дата-центрі\nСписок дозволених моделей\nЗвіт про токени й вартість для кожного запуску",
+                  "outcome": "Короткий список моделей із вартістю типового завдання",
+                  "key": "models",
+                  "code": []
+                },
+                {
+                  "title": "Вбудуйте чат у свій продукт",
+                  "duration": "Тиждень 2",
+                  "body": "Пакети компонентів для Vue 3, React і Angular: повний робочий простір, окремий чат або плаваючий віджет поруч із вашою поточною панеллю, тож не доведеться переводити все в перший же день. Оформлення налаштовується кількома CSS-змінними.",
+                  "points": "Потокові відповіді, картки інструментів і підтвердження\nВаші власні компоненти для результатів будь-якого інструмента\nПрацює за вашим наявним входом",
+                  "outcome": "Агент усередині вашого застосунку, за вашою автентифікацією",
+                  "key": "embed",
+                  "code": [
+                    {
+                      "filename": "AdminPage.vue",
+                      "language": null,
+                      "code": "<script setup lang=\"ts\">\nimport { AgentWorkspace } from \"@klymbak/vue\";\nimport \"@klymbak/vue/style.css\";\n</script>\n\n<template>\n  <AgentWorkspace base-url=\"/api/agent\" />\n</template>"
+                    },
+                    {
+                      "filename": "AdminPage.tsx",
+                      "language": null,
+                      "code": "import { AgentWorkspace } from \"@klymbak/react\";\nimport \"@klymbak/react/style.css\";\n\nexport function AdminPage() {\n  return <AgentWorkspace baseUrl=\"/api/agent\" />;\n}"
+                    },
+                    {
+                      "filename": "admin-page.ts",
+                      "language": null,
+                      "code": "import { Component } from \"@angular/core\";\nimport { AgentWorkspace } from \"@klymbak/angular\";\n// styles.css: @import \"@klymbak/angular/style.css\";\n\n@Component({\n  selector: \"app-admin-page\",\n  imports: [AgentWorkspace],\n  template: `<kl-agent-workspace baseUrl=\"/api/agent\" />`,\n})\nexport class AdminPage {}"
+                    }
+                  ]
+                },
+                {
+                  "title": "Автоматизуйте рутину, а потім вимірюйте",
+                  "duration": "Тиждень 3",
+                  "body": "Заплановані завдання самі надсилають ранкове зведення й стежать за залишками чи SLA. Спеціалізовані субагенти беруть на себе вузькі задачі. Транскрипти показують, що люди питали і де агентові було важко, тож щотижневі покращення ґрунтуються на реальному використанні.",
+                  "points": "Зведення й нагляд за розкладом\nСпеціалісти з аналітики, підтримки й складу\nЩотижневий огляд транскриптів, витрат і збоїв",
+                  "outcome": "Звіт про пілот і план розгортання",
+                  "key": "automate",
+                  "code": []
+                }
+              ],
+              "__component": "sections.steps"
+            },
+            {
+              "heading": "Звичайні вебтехнології, у вашій інфраструктурі.",
+              "eyebrow": "Архітектура",
+              "lede": "Чат — це компонент Vue, React або Angular. Агент — це сервіс на Node, який ви розгортаєте поруч зі своїм API. Вони спілкуються через HTTPS і server-sent events, за входом, який у вас уже є.",
+              "name": "architecture-diagram",
+              "anchor": null,
+              "__component": "sections.custom"
+            },
+            {
+              "heading": "Уже всередині справжньої адмін-панелі: Strapi.",
+              "eyebrow": "Справжня інтеграція",
+              "lede": "`@klymbak/strapi` — це плагін для Strapi 5, зібраний із тих самих пакетів. Установіть його, додайте ключ моделі, і редактори зможуть просити асистента про потрібне у трьох місцях адмінки.",
+              "layout": "grid",
+              "anchor": "strapi",
+              "items": [
+                {
+                  "title": "Окрема сторінка",
+                  "label": "Головне меню",
+                  "text": "Розмови, заплановані завдання й список інструментів — за один клік від Content Manager.",
+                  "points": null,
+                  "detail": null,
+                  "key": "page",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Бічна панель у кожному записі",
+                  "label": "Екран редагування",
+                  "text": "Питайте про відкритий запис. Коли асистент його змінює, форма оновлюється.",
+                  "points": null,
+                  "detail": null,
+                  "key": "panel",
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Масова дія",
+                  "label": "Список записів",
+                  "text": "Виберіть записи й запитайте про них: у яких бракує опису, що виправити перед публікацією.",
+                  "points": null,
+                  "detail": null,
+                  "key": "bulk",
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": null,
+              "eyebrow": null,
+              "lede": null,
+              "points": "Діє як адміністратор, що ввійшов: права на поля, локалі й «лише власні записи» працюють так само, як у Content Manager\nСтворення, оновлення, публікація й видалення — кожне чекає на підтвердження\nЗнає проєкт (версію, локалі, типи контенту) й відповідає на питання про Strapi за офіційною документацією\nРозмови й розклади зберігаються у власній базі даних Strapi",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Документація й код плагіна",
+                  "url": "https://github.com/klymbak/klymbak/tree/main/packages/strapi#readme",
+                  "shortLabel": null,
+                  "variant": "plain",
+                  "newTab": true
+                },
+                {
+                  "label": "@klymbak/strapi на npm",
+                  "url": "https://www.npmjs.com/package/@klymbak/strapi",
+                  "shortLabel": null,
+                  "variant": "plain",
+                  "newTab": true
+                }
+              ],
+              "code": [
+                {
+                  "filename": "config/plugins.ts",
+                  "language": null,
+                  "code": "// npm install @klymbak/strapi\nexport default () => ({\n  klymbak: {\n    config: {\n      models: { providers: [\"anthropic\"], default: \"anthropic/claude-sonnet-5-5\" },\n      instructions: \"Every article needs a category and an author.\",\n    },\n  },\n});"
+                }
+              ],
+              "image": null,
+              "__component": "sections.feature"
+            },
+            {
+              "heading": "Створено для роботи, яка має наслідки.",
+              "eyebrow": "Що всередині",
+              "lede": "Усе, що адмін-панель забезпечувала екранами й правами, тепер забезпечує код навколо моделі.",
+              "layout": "table",
+              "anchor": "inside",
+              "items": [
+                {
+                  "title": "Підтвердження людиною",
+                  "label": null,
+                  "text": "Усе, що змінює дані, чекає на людину, яка бачить точну суму, одержувача чи чернетку.",
+                  "points": null,
+                  "detail": "approval: (args) => …",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Хуки політик",
+                  "label": null,
+                  "text": "Обмеження ролей, заборонені дії й маскування персональних даних забезпечує код до і після кожного виклику інструмента.",
+                  "points": null,
+                  "detail": "preToolUse · postToolUse",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Ваші системи як інструменти",
+                  "label": null,
+                  "text": "Наявні API та SQL стають типізованими діями. Люди бачать таблиці й графіки, модель читає підсумок.",
+                  "points": null,
+                  "detail": "defineTool()",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Інтеграції MCP",
+                  "label": null,
+                  "text": "Підключіть сторонні чи власні MCP-сервери, і їхні інструменти з’являться в агента — з дотриманням підтверджень.",
+                  "points": null,
+                  "detail": "mcpServers: { … }",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Спеціалізовані субагенти",
+                  "label": null,
+                  "text": "Аналітик, фахівець підтримки чи планувальник запасів із вужчим набором інструментів, які працюють паралельно.",
+                  "points": null,
+                  "detail": "subagents: [ … ]",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Заплановані завдання",
+                  "label": null,
+                  "text": "Ранкові зведення й нагляд працюють за cron, пишуть у чат команди й сповіщають тих, кому це потрібно.",
+                  "points": null,
+                  "detail": "schedules: [ … ]",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Будь-яка модель",
+                  "label": null,
+                  "text": "Claude, GPT, Gemini або приватні моделі через Ollama, LM Studio, vLLM, Azure чи Bedrock.",
+                  "points": null,
+                  "detail": "models: { … }",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Керування на ходу",
+                  "label": null,
+                  "text": "Додайте інструкцію, поки агент працює. Він прочитає її після поточного кроку й змінить курс.",
+                  "points": null,
+                  "detail": "POST /sessions/:id/steer",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Журнал аудиту",
+                  "label": null,
+                  "text": "Хто попросив, що виконалося, що змінилося і хто це підтвердив — записано у ваше власне сховище.",
+                  "points": null,
+                  "detail": "auditTrail(sink)",
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Чого він не робить",
+              "eyebrow": null,
+              "lede": null,
+              "layout": "list",
+              "anchor": null,
+              "items": [
+                {
+                  "title": "Діяти від чужого імені",
+                  "label": null,
+                  "text": "Інструменти працюють із ролями людини, яка ввійшла, тож агент не зробить нічого, чого не могла б зробити вона.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Тихо змінювати дані",
+                  "label": null,
+                  "text": "Записи чекають на підтвердження, яке точно показує, що станеться. Відмови теж записуються.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Обходити правила балачками",
+                  "label": null,
+                  "text": "Обмеження живуть у хуках, що виконуються перед кожним викликом, хоч би що казав промпт.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Показувати зайве",
+                  "label": null,
+                  "text": "Контактні дані маскуються залежно від ролі, а довільний SQL виконується через з’єднання лише для читання.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Надсилати дані туди, куди ви не дозволяли",
+                  "label": null,
+                  "text": "Запускайте локальні моделі або власний акаунт Azure чи Bedrock.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Тритижневий пілот на одному реальному процесі.",
+              "eyebrow": "Спільна робота",
+              "lede": "Оберіть процес, який забирає найбільше часу. До кінця третього тижня кілька ваших людей уже користуються для нього агентом, а у вас є цифри, щоб вирішити, що далі.",
+              "layout": "timeline",
+              "anchor": "pilot",
+              "items": [
+                {
+                  "title": "Мапа й інструменти",
+                  "label": "Тиждень 1",
+                  "text": "Мапа можливостей, перші десять інструментів на тестовому середовищі, дизайн запобіжників.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Захист і вбудовування",
+                  "label": "Тиждень 2",
+                  "text": "Хуки політик, підтвердження, журнал аудиту; чат у вашому застосунку за вашим входом.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                },
+                {
+                  "title": "Пілот",
+                  "label": "Тиждень 3",
+                  "text": "Від трьох до п’яти людей користуються ним у реальній роботі. Ми переглядаємо транскрипти й витрати та виправляємо те, на що вони натрапили.",
+                  "points": null,
+                  "detail": null,
+                  "key": null,
+                  "link": null,
+                  "image": null
+                }
+              ],
+              "__component": "sections.cards"
+            },
+            {
+              "heading": "Про що команди питають насамперед.",
+              "eyebrow": "Питання",
+              "lede": null,
+              "anchor": "faq",
+              "items": [
+                {
+                  "question": "Чи не вигадуватиме він?",
+                  "answer": "Він шукає дані через ваші інструменти, а не відповідає з пам’яті, і має казати, коли інструмент нічого не знайшов. Цифри надходять із ваших систем і показуються людям такими, як їх повернув інструмент, — у таблицях і графіках, які модель не передруковує."
+                },
+                {
+                  "question": "А якщо він зробить щось не так?",
+                  "answer": "Інструменти лише для читання працюють вільно. Усе, що змінює дані, зупиняється й чекає на підтвердження людини з точними деталями. Хуки блокують те, що заборонено правилами, хоч би про що просила модель, а журнал аудиту записує кожну дію разом із тим, хто її підтвердив."
+                },
+                {
+                  "question": "Чи доведеться викинути нашу адмін-панель?",
+                  "answer": "Ні. Більшість команд починає з плаваючого віджета поруч із наявною панеллю, а потім переносить процеси, коли люди перестають відкривати старі екрани."
+                },
+                {
+                  "question": "Чи можуть наші дані залишатися на наших серверах?",
+                  "answer": "Так. Сервер агента працює у вашій інфраструктурі й може використовувати локальні моделі (Ollama, LM Studio, vLLM) або Azure OpenAI чи Bedrock у вашому хмарному акаунті, тож промпти й дані не потрапляють до третьої сторони, яку ви не обрали."
+                },
+                {
+                  "question": "Скільки коштує його робота?",
+                  "answer": "Типове адміністративне завдання коштує від частки цента до кількох центів у токенах моделі, і кожен запуск звітує про власне споживання. Локальні моделі коштують лише залізо."
+                },
+                {
+                  "question": "Які стеки ви підтримуєте?",
+                  "answer": "Чат постачається як компоненти для Vue 3, React (18 і 19) та Angular (21 і 22), а також як готовий плагін для Strapi 5. Сервер агента — це Node (TypeScript) на pi agent harness під ліцензією MIT. Протокол — звичайний HTTP і server-sent events, тож бекенд на .NET додати нескладно."
+                }
+              ],
+              "__component": "sections.faq"
+            },
+            {
+              "heading": "Принесіть один процес. Отримайте робочого агента.",
+              "eyebrow": null,
+              "lede": "Розкажіть, у яких екранах живе ваша команда. Я покажу, як виглядатимуть перші три тижні.",
+              "anchor": null,
+              "actions": [
+                {
+                  "label": "Хочу AI-агента у своїй адмін-панелі",
+                  "url": "mailto:ivan@berezhnyk.com?subject=AI-агент%20у%20нашій%20адмін-панелі&body=Наша%20адмін-панель%20побудована%20на%3A%0AПроцес%2C%20з%20якого%20ми%20б%20почали%3A%0A",
+                  "shortLabel": null,
+                  "variant": "primary",
+                  "newTab": false
+                }
+              ],
+              "__component": "sections.cta"
+            }
+          ]
+        }
+      ],
+      "uiTexts": [
+        {
+          "name": "architecture-diagram",
+          "notes": "The words in the “Plain web tech” diagram. The boxes have a fixed width, so keep translations about as long as the English. app.cards is two lines.",
+          "entries": [
+            {
+              "key": "title",
+              "text": "Як поєднуються частини"
+            },
+            {
+              "key": "description",
+              "text": "Ваш застосунок вбудовує чат (компоненти Vue, React або Angular), який спілкується із сервером агента через HTTPS і server-sent events, використовуючи ваш наявний вхід. Сервер агента виконує цикл агента pi з хуками, підтвердженнями, субагентами, розкладами й сесіями та викликає ваші системи як інструменти, MCP-сервери й постачальників моделей."
+            },
+            {
+              "key": "app.eyebrow",
+              "text": "ВАШ ЗАСТОСУНОК"
+            },
+            {
+              "key": "app.title",
+              "text": "Інтерфейс чату"
+            },
+            {
+              "key": "app.stacks",
+              "text": "Vue · React · Angular"
+            },
+            {
+              "key": "app.parts",
+              "text": "Простір · чат · віджет"
+            },
+            {
+              "key": "app.cards",
+              "text": "Картки, підтвердження,\nтаблиці й графіки"
+            },
+            {
+              "key": "link.top",
+              "text": "HTTPS + SSE"
+            },
+            {
+              "key": "link.bottom",
+              "text": "ваш вхід"
+            },
+            {
+              "key": "server.eyebrow",
+              "text": "СЕРВЕР АГЕНТА · NODE"
+            },
+            {
+              "key": "server.title",
+              "text": "@klymbak/server"
+            },
+            {
+              "key": "server.loop",
+              "text": "цикл агента pi"
+            },
+            {
+              "key": "server.license",
+              "text": "MIT"
+            },
+            {
+              "key": "server.hooks",
+              "text": "Хуки · підтвердження · аудит"
+            },
+            {
+              "key": "server.subagents",
+              "text": "Спеціалізовані субагенти"
+            },
+            {
+              "key": "server.schedules",
+              "text": "Заплановані завдання"
+            },
+            {
+              "key": "server.sessions",
+              "text": "Сесії та стримінг"
+            },
+            {
+              "key": "server.where",
+              "text": "Працює у вашій інфраструктурі"
+            },
+            {
+              "key": "systems.eyebrow",
+              "text": "ВАШІ СИСТЕМИ"
+            },
+            {
+              "key": "systems.title",
+              "text": "Інструменти"
+            },
+            {
+              "key": "systems.text",
+              "text": "типізовані, над API та БД"
+            },
+            {
+              "key": "integrations.eyebrow",
+              "text": "ІНТЕГРАЦІЇ"
+            },
+            {
+              "key": "integrations.title",
+              "text": "MCP-сервери"
+            },
+            {
+              "key": "integrations.text",
+              "text": "Stripe, Zendesk, доставка…"
+            },
+            {
+              "key": "models.eyebrow",
+              "text": "МОДЕЛІ"
+            },
+            {
+              "key": "models.title",
+              "text": "Будь-яка модель"
+            },
+            {
+              "key": "models.text",
+              "text": "Claude · GPT · Gemini · свої"
+            }
+          ]
+        },
+        {
+          "name": "before-after",
+          "notes": "The pictures in “Fourteen screens become one sentence”: the old admin menu (one screen per line) and the request with its approval stamp.",
+          "entries": [
+            {
+              "key": "screens",
+              "text": "Дашборд\nЗамовлення\nКлієнти\nПовернення коштів\nПовернення товару\nВідправлення\nСклад\nЗакупівлі\nЗнижки\nТікети\nЗвіти\nЕкспорт\nКористувачі й ролі\nЖурнал аудиту"
+            },
+            {
+              "key": "ask.who",
+              "text": "Операційний відділ"
+            },
+            {
+              "key": "ask.text",
+              "text": "«Намет Джейн приїхав порваним. Поверни гроші за намет, надішли їй етикетку повернення й відповідай на її тікет.»"
+            },
+            {
+              "key": "stamp",
+              "text": "Підтверджено"
+            },
+            {
+              "key": "stamp.text",
+              "text": "Повернення 329,00 $ для Джейн Купер"
+            },
+            {
+              "key": "stamp.by",
+              "text": "схвалення: Олівія Гарт"
+            }
+          ]
+        },
+        {
+          "name": "common",
+          "notes": "Around the page: the header, theme button, language menu, demo buttons, code blocks, the contact line and the capability table’s column titles. {theme} is replaced by one of the theme words.",
+          "entries": [
+            {
+              "key": "brand.home",
+              "text": "Klymbak — головна"
+            },
+            {
+              "key": "nav.label",
+              "text": "Розділи"
+            },
+            {
+              "key": "language.label",
+              "text": "Мова"
+            },
+            {
+              "key": "theme.button",
+              "text": "Тема: {theme}. Змінити тему"
+            },
+            {
+              "key": "theme.title",
+              "text": "Тема: {theme}"
+            },
+            {
+              "key": "theme.auto",
+              "text": "авто"
+            },
+            {
+              "key": "theme.light",
+              "text": "світла"
+            },
+            {
+              "key": "theme.dark",
+              "text": "темна"
+            },
+            {
+              "key": "demo.open",
+              "text": "Відкрити живе демо"
+            },
+            {
+              "key": "email.or",
+              "text": "Або напишіть на"
+            },
+            {
+              "key": "email.copy",
+              "text": "Копіювати"
+            },
+            {
+              "key": "email.copied",
+              "text": "Скопійовано"
+            },
+            {
+              "key": "code.copy",
+              "text": "Копіювати"
+            },
+            {
+              "key": "code.copied",
+              "text": "Скопійовано"
+            },
+            {
+              "key": "code.tabs",
+              "text": "Фреймворк"
+            },
+            {
+              "key": "table.title",
+              "text": "Можливість"
+            },
+            {
+              "key": "table.text",
+              "text": "Що це означає для вашої команди"
+            },
+            {
+              "key": "table.detail",
+              "text": "У коді"
+            }
+          ]
+        },
+        {
+          "name": "hero-replay",
+          "notes": "The recorded session next to the hero: what the person asks, the tools, the approval and the replies. **bold** works in the replies; `code` works in the note.",
+          "entries": [
+            {
+              "key": "label",
+              "text": "Записаний сеанс агента, який можна відтворити"
+            },
+            {
+              "key": "app",
+              "text": "Acme Back Office"
+            },
+            {
+              "key": "user",
+              "text": "Олівія Гарт · адмін"
+            },
+            {
+              "key": "note",
+              "text": "Живі компоненти `@klymbak/vue`. Відтворіть запуск і підтвердьте повернення коштів самі."
+            },
+            {
+              "key": "cue",
+              "text": "Ваш хід: підтвердьте або відхиліть повернення ↑"
+            },
+            {
+              "key": "play",
+              "text": "Відтворити запуск"
+            },
+            {
+              "key": "playing",
+              "text": "Відтворення…"
+            },
+            {
+              "key": "prompt",
+              "text": "Намет Джейн Купер прийшов із порваним тентом. Поверни гроші за намет і надішли їй етикетку повернення."
+            },
+            {
+              "key": "tool.customer",
+              "text": "Профіль клієнта"
+            },
+            {
+              "key": "tool.tickets",
+              "text": "Тікети підтримки"
+            },
+            {
+              "key": "tool.refund",
+              "text": "Повернення коштів"
+            },
+            {
+              "key": "tool.label",
+              "text": "Створити етикетку повернення"
+            },
+            {
+              "key": "result.customer",
+              "text": "Джейн Купер, VIP, 29 замовлень."
+            },
+            {
+              "key": "result.tickets",
+              "text": "#39 терміново: намет прийшов із порваним тентом (замовлення #2691)."
+            },
+            {
+              "key": "result.refund",
+              "text": "Повернено 329,00 $."
+            },
+            {
+              "key": "result.label",
+              "text": "Етикетку RTN-2691 надіслано на jane.cooper@example.com."
+            },
+            {
+              "key": "result.denied",
+              "text": "Цю дію відхилено."
+            },
+            {
+              "key": "plan",
+              "text": "У замовленні #2691 намет Ridgeline 2P за 329 $. Поверну за нього гроші й надішлю передплачену етикетку повернення."
+            },
+            {
+              "key": "refund.reason",
+              "text": "Тент порваний при доставці"
+            },
+            {
+              "key": "label.reason",
+              "text": "Пошкоджений намет"
+            },
+            {
+              "key": "approval.title",
+              "text": "Повернути 329,00 $ Джейн Купер"
+            },
+            {
+              "key": "approval.description",
+              "text": "Замовлення #2691 (намет Ridgeline 2P). Причина: тент порваний при доставці."
+            },
+            {
+              "key": "alert.title",
+              "text": "Кошти повернено"
+            },
+            {
+              "key": "alert.text",
+              "text": "329,00 $ повернено Джейн Купер за замовлення #2691."
+            },
+            {
+              "key": "done",
+              "text": "Готово. **329,00 $** повернулися на картку Джейн, а передплачена етикетка повернення UPS (RTN-2691) уже в її пошті. Відповісти на тікет #39 і закрити його?"
+            },
+            {
+              "key": "denied",
+              "text": "Зрозуміло, без повернення коштів. Запропонувати Джейн натомість новий намет з експрес-доставкою або **код на знижку 20%** на наступне замовлення?"
+            },
+            {
+              "key": "approver.you",
+              "text": "Ви"
+            },
+            {
+              "key": "approver.admin",
+              "text": "Олівія Гарт"
+            }
+          ]
+        },
+        {
+          "name": "strapi-sketch",
+          "notes": "The words in the three small Strapi admin sketches under “Already inside a real admin panel”.",
+          "entries": [
+            {
+              "key": "assistant",
+              "text": "Асистент"
+            },
+            {
+              "key": "article",
+              "text": "Стаття"
+            },
+            {
+              "key": "approve",
+              "text": "Підтвердити"
+            },
+            {
+              "key": "articles",
+              "text": "Статті"
+            },
+            {
+              "key": "selected",
+              "text": "Вибрано 2"
+            },
+            {
+              "key": "ask",
+              "text": "Запитати асистента"
+            }
+          ]
+        }
+      ]
     }
   }
 }
