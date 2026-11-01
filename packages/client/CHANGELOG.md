@@ -1,5 +1,12 @@
 # @klymbak/client
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [[`9ab68f7`](https://github.com/klymbak/klymbak/commit/9ab68f7b4d0b65f1d5eef3b9037edb8a53164dcc)]:
+  - @klymbak/protocol@0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
