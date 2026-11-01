@@ -35,6 +35,7 @@ export default {
   "schedule.task": "Zadanie",
   "schedule.cron": "Harmonogram",
   "schedule.nextRun": "Następne uruchomienie",
+  "schedule.model": "Model",
   "schedule.prompt": "Polecenie",
   "schedule.state": "Stan",
   "schedule.active": "Aktywne",

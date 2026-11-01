@@ -35,6 +35,7 @@ export default {
   "schedule.task": "Завдання",
   "schedule.cron": "Розклад",
   "schedule.nextRun": "Наступний запуск",
+  "schedule.model": "Модель",
   "schedule.prompt": "Інструкція",
   "schedule.state": "Стан",
   "schedule.active": "Активне",

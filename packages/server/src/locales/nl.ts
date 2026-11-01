@@ -34,6 +34,7 @@ export default {
   "schedule.task": "Taak",
   "schedule.cron": "Planning",
   "schedule.nextRun": "Volgende run",
+  "schedule.model": "Model",
   "schedule.prompt": "Opdracht",
   "schedule.state": "Status",
   "schedule.active": "Actief",

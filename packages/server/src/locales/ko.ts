@@ -34,6 +34,7 @@ export default {
   "schedule.task": "작업",
   "schedule.cron": "일정",
   "schedule.nextRun": "다음 실행",
+  "schedule.model": "모델",
   "schedule.prompt": "지시",
   "schedule.state": "상태",
   "schedule.active": "활성",

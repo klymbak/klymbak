@@ -167,6 +167,8 @@ export interface ScheduleInfo {
   timezone?: string;
   /** Subagent that runs the task. Defaults to the main agent. */
   agent?: string;
+  /** "provider/model-id" the task runs on. Unset, it runs on the default model, or its subagent's own. */
+  model?: string;
   enabled: boolean;
   source: "config" | "user" | "agent";
   ownerId?: string;
@@ -264,6 +266,8 @@ export interface CreateScheduleRequest {
   cron: string;
   timezone?: string;
   agent?: string;
+  /** "provider/model-id", one of the server's models. Left out, the task runs on the default model, or its subagent's own. */
+  model?: string;
   enabled?: boolean;
 }
 

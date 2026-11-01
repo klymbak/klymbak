@@ -34,6 +34,7 @@ export default {
   "schedule.task": "タスク",
   "schedule.cron": "スケジュール",
   "schedule.nextRun": "次回の実行",
+  "schedule.model": "モデル",
   "schedule.prompt": "指示",
   "schedule.state": "状態",
   "schedule.active": "有効",
