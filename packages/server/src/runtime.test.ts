@@ -59,8 +59,8 @@ const refundOrder = defineTool({
   },
 });
 
-function setup(overrides: Partial<AgentRuntimeConfig> = {}) {
-  faux = fauxProvider({ tokensPerSecond: 0 });
+function setup(overrides: Partial<AgentRuntimeConfig> = {}, fauxOptions: Parameters<typeof fauxProvider>[0] = {}) {
+  faux = fauxProvider({ tokensPerSecond: 0, ...fauxOptions });
   executed = [];
   runtime = new AgentRuntime({
     systemPrompt: "You are a test agent.",
@@ -585,6 +585,41 @@ describe("scheduler", () => {
     expect(session.messages.at(-1)!.parts).toEqual([{ type: "text", text: "All quiet." }]);
     expect(runtime.scheduler!.list(admin)[0]!.lastRun?.status).toBe("completed");
     expect(runtime.scheduler!.list(support)).toEqual([]);
+  });
+
+  it("runs a task scheduled from chat on the conversation's model, unless the person names another", async () => {
+    // "fast" comes first, so it's the default; the conversation runs on "smart".
+    const checker = { name: "checker", description: "Checks figures", systemPrompt: "Check.", model: "faux/fast" };
+    setup({ schedules: [], subagents: [checker] }, { provider: "faux", models: [{ id: "fast" }, { id: "smart" }] });
+    await runtime.start();
+    const session = await runtime.createSession(admin, { model: { provider: "faux", id: "smart" } });
+    const schedule = (args: Record<string, string>) =>
+      fauxAssistantMessage(fauxToolCall("schedule_task", { cron: "0 9 * * 1", prompt: "Summarize", ...args }), { stopReason: "toolUse" });
+    faux.setResponses([
+      schedule({ name: "Digest" }),
+      schedule({ name: "Fast digest", model: "faux/fast" }),
+      schedule({ name: "Check", agent: "checker" }),
+      schedule({ name: "Unknown model", model: "faux/nope" }),
+      fauxAssistantMessage("Scheduled."),
+    ]);
+    await (await runtime.startRun(admin, session.id, { prompt: "Every Monday at 9, summarize the week" })).done;
+
+    const models = Object.fromEntries(runtime.scheduler!.list(admin).map((s) => [s.name, s.model]));
+    expect(models).toEqual({ Digest: "faux/smart", "Fast digest": "faux/fast", Check: undefined });
+    const detail = await runtime.getSession(admin, session.id);
+    expect(tools(detail.messages).map((tool) => tool.status)).toEqual(["done", "done", "done", "error"]);
+
+    let ranOn = "";
+    faux.setResponses([(_context, _options, _state, model) => ((ranOn = model.id), fauxAssistantMessage("All quiet."))]);
+    const finished = new Promise<string>((resolve) => {
+      runtime.subscribe(admin, (event) => {
+        if (event.type === "schedule_run" && event.status === "completed") resolve(event.sessionId);
+      });
+    });
+    runtime.scheduler!.runNow(runtime.scheduler!.list(admin).find((s) => s.name === "Digest")!.id, admin);
+    const run = await runtime.getSession(admin, await finished);
+    expect(ranOn).toBe("smart");
+    expect(run.model).toEqual({ provider: "faux", id: "smart" });
   });
 });
 

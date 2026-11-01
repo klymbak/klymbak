@@ -34,6 +34,7 @@ export default {
   "schedule.task": "Tarefa",
   "schedule.cron": "Agendamento",
   "schedule.nextRun": "Próxima execução",
+  "schedule.model": "Modelo",
   "schedule.prompt": "Instrução",
   "schedule.state": "Situação",
   "schedule.active": "Ativa",

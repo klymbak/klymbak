@@ -34,6 +34,7 @@ export default {
   "schedule.task": "Attività",
   "schedule.cron": "Pianificazione",
   "schedule.nextRun": "Prossima esecuzione",
+  "schedule.model": "Modello",
   "schedule.prompt": "Istruzione",
   "schedule.state": "Stato",
   "schedule.active": "Attiva",

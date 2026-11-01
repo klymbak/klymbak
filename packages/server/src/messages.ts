@@ -51,6 +51,7 @@ export const en = {
   "schedule.task": "Task",
   "schedule.cron": "Schedule",
   "schedule.nextRun": "Next run",
+  "schedule.model": "Model",
   "schedule.prompt": "Prompt",
   "schedule.state": "State",
   "schedule.active": "Active",

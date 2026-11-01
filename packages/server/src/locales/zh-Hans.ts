@@ -34,6 +34,7 @@ export default {
   "schedule.task": "任务",
   "schedule.cron": "计划",
   "schedule.nextRun": "下次运行",
+  "schedule.model": "模型",
   "schedule.prompt": "指令",
   "schedule.state": "状态",
   "schedule.active": "已启用",

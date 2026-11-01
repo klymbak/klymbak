@@ -34,6 +34,7 @@ export default {
   "schedule.task": "Görev",
   "schedule.cron": "Zamanlama",
   "schedule.nextRun": "Sonraki çalışma",
+  "schedule.model": "Model",
   "schedule.prompt": "Talimat",
   "schedule.state": "Durum",
   "schedule.active": "Etkin",

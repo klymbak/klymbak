@@ -1,13 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { Cron } from "croner";
 import { Type } from "@earendil-works/pi-ai";
-import { ui, validLocale, type CreateScheduleRequest, type ScheduleInfo, type UpdateScheduleRequest } from "@klymbak/protocol";
+import {
+  formatModelRef,
+  parseModelRef,
+  ui,
+  validLocale,
+  type CreateScheduleRequest,
+  type ScheduleInfo,
+  type UpdateScheduleRequest,
+} from "@klymbak/protocol";
 import { agentError, notFound } from "./errors.ts";
 import { t } from "./messages.ts";
 import type { AgentRuntime } from "./runtime.ts";
 import type { AgentStorage, ScheduleRecord } from "./storage.ts";
 import { defineTool } from "./tool.ts";
-import type { AgentUser, ScheduleDefinition, ToolDefinition } from "./types.ts";
+import type { AgentUser, ScheduleDefinition, ToolContext, ToolDefinition } from "./types.ts";
 
 interface Job {
   record: ScheduleRecord;
@@ -74,6 +82,7 @@ export class Scheduler {
     if (input.agent && !this.runtime.subagents.some((s) => s.name === input.agent)) {
       throw agentError(400, "error.unknownAgent", undefined, { agent: input.agent });
     }
+    const model = input.model?.trim() ? await this.availableModel(input.model.trim()) : undefined;
     const record: ScheduleRecord = {
       id: randomUUID().slice(0, 8),
       name: input.name.trim().slice(0, 80),
@@ -81,6 +90,7 @@ export class Scheduler {
       cron: input.cron.trim(),
       timezone: input.timezone,
       agent: input.agent,
+      model,
       enabled: input.enabled ?? true,
       source,
       // The owner's language too, so unattended runs write labels and notices in it.
@@ -209,6 +219,25 @@ export class Scheduler {
     }
   }
 
+  /** Checks a "provider/model-id" against the models this server offers, and returns it normalized. */
+  private async availableModel(value: string): Promise<string> {
+    const ref = parseModelRef(value);
+    if (!ref) throw agentError(400, "error.modelUnavailable", "model_unavailable", { model: value });
+    await this.runtime.start();
+    const model = await this.runtime.models.resolve(ref);
+    return formatModelRef({ provider: model.provider, id: model.id });
+  }
+
+  /**
+   * The model a task scheduled from chat runs on when the person didn't name one: the conversation's own, as
+   * delegating would. A specialist with a model of its own keeps it.
+   */
+  private async chatModel(ctx: ToolContext, agent?: string): Promise<string | undefined> {
+    if (agent && this.runtime.subagents.find((s) => s.name === agent)?.model) return undefined;
+    const session = await this.runtime.getSession(ctx.user, ctx.sessionId).catch(() => undefined);
+    return session?.model ? formatModelRef(session.model) : undefined;
+  }
+
   private canSee(record: ScheduleRecord, user: AgentUser) {
     return record.owner?.id === user.id || (record.audience ?? []).some((role) => user.roles.includes(role));
   }
@@ -239,6 +268,7 @@ export class Scheduler {
       cron: record.cron,
       timezone: record.timezone ?? this.runtime.timezone,
       agent: record.agent,
+      model: record.model,
       enabled: record.enabled,
       source: record.source,
       ownerId: record.owner?.id,
@@ -263,18 +293,27 @@ export class Scheduler {
           cron: Type.String({ description: "Cron expression, e.g. '0 9 * * 1' for Mondays at 09:00" }),
           prompt: Type.String({ description: "What the agent should do on each run" }),
           agent: Type.Optional(Type.String({ description: "Specialist to run the task, if any" })),
+          model: Type.Optional(
+            Type.String({
+              description:
+                "Model as 'provider/model-id', only when the user asks for a specific one. Left out, the task runs on the model of this conversation.",
+            }),
+          ),
         }),
         execute: async (args, ctx) => {
-          const schedule = await this.create({ ...args, timezone: this.runtime.timezone }, ctx.user, "agent");
+          const model = args.model?.trim() || (await this.chatModel(ctx, args.agent));
+          const schedule = await this.create({ ...args, model, timezone: this.runtime.timezone }, ctx.user, "agent");
           const next = schedule.nextRunAt ? new Date(schedule.nextRunAt).toLocaleString("en-US", { timeZone: schedule.timezone }) : "never";
           const locale = ctx.user.locale;
+          const runsOn = schedule.model ? `, model ${schedule.model}` : "";
           return {
-            text: `Scheduled "${schedule.name}" (id ${schedule.id}, cron "${schedule.cron}", ${schedule.timezone}). Next run: ${next}.`,
+            text: `Scheduled "${schedule.name}" (id ${schedule.id}, cron "${schedule.cron}", ${schedule.timezone}${runsOn}). Next run: ${next}.`,
             ui: ui.keyValue(
               [
                 { label: t(locale, "schedule.task"), value: schedule.name },
                 { label: t(locale, "schedule.cron"), value: schedule.cron, format: "code" },
                 { label: t(locale, "schedule.nextRun"), value: schedule.nextRunAt, format: "datetime" },
+                ...(schedule.model ? [{ label: t(locale, "schedule.model"), value: schedule.model, format: "code" as const }] : []),
                 { label: t(locale, "schedule.prompt"), value: schedule.prompt },
               ],
               t(locale, "schedule.created"),
@@ -295,7 +334,15 @@ export class Scheduler {
           const locale = ctx.user.locale;
           const [active, paused] = [t(locale, "schedule.active"), t(locale, "schedule.paused")];
           return {
-            data: schedules.map((s) => ({ id: s.id, name: s.name, cron: s.cron, enabled: s.enabled, prompt: s.prompt, lastRun: s.lastRun?.status })),
+            data: schedules.map((s) => ({
+              id: s.id,
+              name: s.name,
+              cron: s.cron,
+              model: s.model,
+              enabled: s.enabled,
+              prompt: s.prompt,
+              lastRun: s.lastRun?.status,
+            })),
             ui: ui.table({
               title: t(locale, "schedule.list"),
               columns: [

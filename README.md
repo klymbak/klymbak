@@ -280,7 +280,7 @@ Sources load on first use. Remote ones refresh daily, and with `cacheDir` a copy
 
 ### Scheduled tasks
 
-Define them in config (`schedules: [{ id, name, cron, prompt, agent?, audience? }]`), create them in the **Schedules** panel, or ask the agent ("every weekday at 8, …"). Each run is an unattended session owned by the schedule's owner. People in its audience see the result and get a notification.
+Define them in config (`schedules: [{ id, name, cron, prompt, agent?, model?, audience? }]`), create them in the **Schedules** panel, or ask the agent ("every weekday at 8, …"). A task runs on its `model`, or the default one; when the agent schedules it from chat, that's the conversation's model unless the person names another (or the task's specialist has a model of its own). Each run is an unattended session owned by the schedule's owner. People in its audience see the result and get a notification.
 
 ### Jobs from your own code
 
